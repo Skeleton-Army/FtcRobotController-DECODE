@@ -32,6 +32,8 @@ proguard/
 
 # Log Files
 *.log
+!example-Full.DcMotor.log
+!example-Quick.DcMotor.log
 
 # Android Studio Navigation editor temp files
 .navigation/
