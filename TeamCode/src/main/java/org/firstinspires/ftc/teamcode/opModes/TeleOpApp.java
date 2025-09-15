@@ -19,6 +19,7 @@ public class TeleOpApp extends CommandOpMode {
     @Override
     public void initialize() {
         follower = Constants.createFollower(hardwareMap);
+        follower.startTeleopDrive(true);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker);
 
@@ -37,5 +38,6 @@ public class TeleOpApp extends CommandOpMode {
     public void run() {
         super.run();
         follower.update();
+        follower.setTeleOpDrive(gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x, true);
     }
 }
