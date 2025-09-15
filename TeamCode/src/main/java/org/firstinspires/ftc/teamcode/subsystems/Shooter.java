@@ -3,37 +3,38 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import com.pedropathing.localization.PoseTracker;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.hardware.ServoEx;
 import com.seattlesolvers.solverslib.hardware.SimpleServo;
-import com.seattlesolvers.solverslib.hardware.motors.Motor;
+import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 public class Shooter extends SubsystemBase {
     private final PoseTracker poseTracker;
 
-    private final Motor flywheel;
-    private final Motor turret;
+    private final MotorEx flywheel;
+    private final MotorEx turret;
     private final SimpleServo hood;
 
-    private double power;
+    private double velocity;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker) {
         this.poseTracker = poseTracker;
 
-        flywheel = new Motor(hardwareMap, "flywheel", Motor.GoBILDA.BARE);
+        flywheel = new MotorEx(hardwareMap, "flywheel", MotorEx.GoBILDA.BARE);
         flywheel.setVeloCoefficients(1, 0, 0);
-        flywheel.setRunMode(Motor.RunMode.VelocityControl);
+        flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
 
-        turret = new Motor(hardwareMap, "turret", Motor.GoBILDA.RPM_312);
+        turret = new MotorEx(hardwareMap, "turret", MotorEx.GoBILDA.RPM_312);
         turret.setPositionCoefficient(1);
-        turret.setRunMode(Motor.RunMode.PositionControl);
-        turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        turret.setRunMode(MotorEx.RunMode.PositionControl);
+        turret.setZeroPowerBehavior(MotorEx.ZeroPowerBehavior.BRAKE);
 
         hood = new SimpleServo(hardwareMap, "hood", 0, Math.PI / 2, AngleUnit.RADIANS);
     }
 
-    private void setPower(double power) {
-        this.power = power;
+    private void setVelocity(double velocity) {
+        this.velocity = velocity;
     }
 
     private void setVerticalAngle(double angleRad) {
@@ -54,7 +55,7 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        flywheel.set(power);
+        flywheel.setVelocity(velocity, AngleUnit.RADIANS);
 
         if (!turret.atTargetPosition())
             turret.set(1);
