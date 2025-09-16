@@ -28,11 +28,13 @@ repositories {
     maven { url = "https://mymaven.bylazar.com/releases" }
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://repo.dairy.foundation/snapshots" }
+    maven { url = "https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind"}
 }
 
 dependencies {
     implementation project(':FtcRobotController')
 
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.20.0")
     implementation 'com.pedropathing:ftc:2.0.1'
     implementation 'com.pedropathing:telemetry:0.0.6'
     implementation 'com.bylazar:fullpanels:1.0.2'
