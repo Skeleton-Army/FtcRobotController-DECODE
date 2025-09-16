@@ -2,7 +2,7 @@ package org.firstinspires.ftc.teamcode.calculators;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.Vector;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,24 +12,34 @@ public class ShooterCalculator implements IShooterCalculator {
         public double[] coefficients;
         public double[] powers;
     }
+
     private final Model model;
-    private final String coefficientsFilePath = "Coefficients.json";
+    private static final String coefficientsFilePath = "Coefficients.json";
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private final double shooterVelocity = 2;
+
     public ShooterCalculator() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
         this.model = mapper.readValue(new File(coefficientsFilePath), Model.class);
     }
-    private double approximateStaticVerticalAngle(double distanceFromGoal)
-    {
+
+    private double approximateStaticVerticalAngle(double distanceFromGoal) {
         double result = 0.0;
         for (int exponent = 0; exponent < model.powers.length; exponent++) {
             result += model.coefficients[exponent] * Math.pow(distanceFromGoal, exponent);
         }
         return result;
     }
-    public ShootingSolution getShootingSolution(Pose robotPose, Vector goalVelocity) {
-        // THIS IS A PLACEHOLDER FOR THE ACTUAL SHOOTER CALCULATOR
-        //TODO: Implement the actual shooter calculator
-        return new ShootingSolution(Math.PI / 2, Math.PI / 2, 1000);
+
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector3D velocity) {
+        double distanceFromGoal = robotPose.distanceFrom(goalPose);
+        double staticVerticalAngle = approximateStaticVerticalAngle(distanceFromGoal);
+        double horizontalAngle = Math.atan2(goalPose.getX() - robotPose.getX(), goalPose.getY() - robotPose.getY());
+        Vector3D targetVelocityBase = new Vector3D(staticVerticalAngle, horizontalAngle);
+        Vector3D targetVelocity = new Vector3D(shooterVelocity, targetVelocityBase);
+        Vector3D v0 = targetVelocity.add(velocity.negate());
+
+        return new ShootingSolution(v0.getDelta(), v0.getAlpha(), v0.getNorm()); //might be mistake from wrong placement of alpha and delta
     }
 }
