@@ -40,6 +40,6 @@ dependencies {
     implementation "org.solverslib:core:SNAPSHOT-7cdcc66"
     implementation "org.solverslib:pedroPathing:SNAPSHOT-7cdcc66"
 
-    implementation "io.github.skeleton-army.marrow:core:0.0.1"
-    implementation "io.github.skeleton-army.marrow:solverslib:0.0.1"
+    implementation "io.github.skeleton-army.marrow:core:0.1.0"
+    implementation "io.github.skeleton-army.marrow:solverslib:0.1.0"
 }
