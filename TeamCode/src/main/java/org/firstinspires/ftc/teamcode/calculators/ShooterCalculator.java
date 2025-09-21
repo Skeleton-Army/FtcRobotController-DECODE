@@ -17,11 +17,15 @@ public class ShooterCalculator implements IShooterCalculator {
     private static final String coefficientsFilePath = "Coefficients.json";
     private final ObjectMapper mapper = new ObjectMapper();
 
+    //These are placeholders for the real values.
+    //TODO: Find the real values
     private final double shooterMinVelocity = -1;
     private final double shooterMaxVelocity = -1;
+    private final double minDistance = 0.7;
+    private final double maxDistance = 3.5;
 
     private double shooterVelocity(double distance) {
-        return distance * (shooterMaxVelocity - shooterMinVelocity);
+        return distance * (shooterMaxVelocity - shooterMinVelocity) / (maxDistance - minDistance);
     }
 
     public ShooterCalculator() throws IOException {
