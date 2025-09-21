@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.*;
+
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
@@ -9,6 +11,8 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.pedroPathing.Tuning;
+import org.firstinspires.ftc.teamcode.pedroPathing.Tuning.*;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
 @TeleOp
@@ -36,6 +40,7 @@ public class TeleOpApp extends CommandOpMode {
 
     @Override
     public void run() {
+        // Tuning.drawCurrent();
         super.run();
         follower.update();
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
