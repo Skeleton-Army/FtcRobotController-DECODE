@@ -25,7 +25,7 @@ public class ShooterCalculator implements IShooterCalculator {
     private final double maxDistance = 3.5;
 
     private double shooterVelocity(double distance) {
-        return distance * (shooterMaxVelocity - shooterMinVelocity) / (maxDistance - minDistance);
+        return shooterMinVelocity + (distance - minDistance) * (shooterMaxVelocity - shooterMinVelocity) / (maxDistance - minDistance);
     }
 
     public ShooterCalculator() throws IOException {
