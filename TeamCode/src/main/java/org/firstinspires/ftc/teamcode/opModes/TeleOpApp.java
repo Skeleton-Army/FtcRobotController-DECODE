@@ -7,6 +7,7 @@ import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
+import org.firstinspires.ftc.teamcode.commands.AdjustAnglesCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
@@ -29,8 +30,11 @@ public class TeleOpApp extends CommandOpMode {
         new Trigger(() -> gamepad1.right_trigger > 0.1)
                 .whenActive(new ShootCommand(shooter));
 
+        AdjustAnglesCommand adjustAngles = new AdjustAnglesCommand(shooter);
+
         schedule(
-                // TODO: Set shooter angle to GOAL
+                // TODO: Set shooter vertical and horizontal angles to GOAL
+                adjustAngles // NOTE: This is a never-ending command, so that the shooter will always aim at the goal
         );
     }
 
