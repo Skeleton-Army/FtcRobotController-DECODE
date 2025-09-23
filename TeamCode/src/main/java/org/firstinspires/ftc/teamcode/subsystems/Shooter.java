@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -9,6 +10,13 @@ import com.seattlesolvers.solverslib.hardware.SimpleServo;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
+import org.firstinspires.ftc.teamcode.consts.Alliance;
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+
+import java.io.IOException;
 
 public class Shooter extends SubsystemBase {
     private final PoseTracker poseTracker;
@@ -16,10 +24,12 @@ public class Shooter extends SubsystemBase {
     private final MotorEx flywheel;
     private final MotorEx turret;
     private final SimpleServo hood;
+    private final IShooterCalculator shooterCalculator;
+    private final Alliance alliance;
 
     private double velocity;
 
-    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker) {
+    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
         flywheel = new MotorEx(hardwareMap, "flywheel", MotorEx.GoBILDA.BARE);
@@ -32,7 +42,12 @@ public class Shooter extends SubsystemBase {
         turret.setZeroPowerBehavior(MotorEx.ZeroPowerBehavior.BRAKE);
 
         hood = new SimpleServo(hardwareMap, "hood", 0, Math.PI / 2, AngleUnit.RADIANS);
+
+        this.shooterCalculator = shooterCalculator;
+
+        this.alliance = alliance;
     }
+
 
     private void setVelocity(double velocity) {
         this.velocity = velocity;
@@ -42,16 +57,9 @@ public class Shooter extends SubsystemBase {
         hood.turnToAngle(angleRad);
     }
 
-    private void setHorizontalAngle(int ticks) {
-        turret.setTargetPosition(ticks);
-    }
-
-    public void updateHorizontalAngle() {
-        // TODO: Do calculations and set horizontal angle to face GOAL
-    }
-
-    public void updateVerticalAngle() {
-        // TODO: Do calculations and set vertical angle to GOAL
+    public void update() {
+        Pose goalPose = alliance == Alliance.BLUE ? GoalPositions.blueGoal : GoalPositions.redGoal;
+        ShootingSolution solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
     }
 
     @Override

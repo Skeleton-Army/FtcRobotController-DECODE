@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.calculators;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pedropathing.geometry.Pose;
+
+import com.pedropathing.math.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import java.io.File;
@@ -13,8 +15,10 @@ public class ShooterCalculator implements IShooterCalculator {
         public double[] powers;
     }
 
-    private final Model model;
-    private static final String coefficientsFilePath = "Coefficients.json";
+    private final Model verticalAngleModel;
+    private final Model velocityToRPMModel;
+    private static final String verticalAnglePath = "VerticalAngleCoefficients.json";
+    private static final String velocityPath = "VelocityCoefficients.json";
     private final ObjectMapper mapper = new ObjectMapper();
 
     //These are placeholders for the real values.
@@ -30,7 +34,8 @@ public class ShooterCalculator implements IShooterCalculator {
 
     public ShooterCalculator() throws IOException {
         ObjectMapper mapper = new ObjectMapper();
-        this.model = mapper.readValue(new File(coefficientsFilePath), Model.class);
+        this.verticalAngleModel = mapper.readValue(new File(verticalAnglePath), Model.class);
+        this.velocityToRPMModel = mapper.readValue(new File(velocityPath), Model.class);
     }
 
     /**
@@ -43,24 +48,32 @@ public class ShooterCalculator implements IShooterCalculator {
         return -1;
     }
 
-    private double approximateStaticVerticalAngle(double distanceFromGoal) {
+    private double getVerticalAngle(double distanceFromGoal) {
         double result = 0.0;
-        for (int exponent = 0; exponent < model.powers.length; exponent++) {
-            result += model.coefficients[exponent] * Math.pow(distanceFromGoal, exponent);
+        for (int exponent = 0; exponent < verticalAngleModel.powers.length; exponent++) {
+            result += verticalAngleModel.coefficients[exponent] * Math.pow(distanceFromGoal, exponent);
         }
         return result;
     }
 
+    public int velocityToRPM(double velocity) {
+        double result = 0.0;
+        for (int exponent = 0; exponent < velocityToRPMModel.powers.length; exponent++) {
+            result += velocityToRPMModel.coefficients[exponent] * Math.pow(velocity, exponent);
+        }
+        return (int)result;
+    }
     /**
      *
      * @param robotPose Robot position (pedro field coordinates)
      * @param goalPose Goal position (pedro field coordinates)
-     * @param velocity Robot velocity vector in meters per second
+     * @param vel Robot velocity vector in meters per second
      * @return ShootingSolution at field coordinates (e.g. horizontal angle at relative to the field and not the robot)
      */
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector3D velocity) {
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector vel) {
+        Vector3D velocity = new Vector3D(vel.getXComponent(), vel.getYComponent(), 0);
         double distanceFromGoal = robotPose.distanceFrom(goalPose);
-        double staticVerticalAngle = approximateStaticVerticalAngle(distanceFromGoal);
+        double staticVerticalAngle = getVerticalAngle(distanceFromGoal);
         double horizontalAngle = Math.atan2(goalPose.getX() - robotPose.getX(), goalPose.getY() - robotPose.getY());
         Vector3D targetVelocityBase = new Vector3D(staticVerticalAngle, horizontalAngle);
         Vector3D targetVelocity = new Vector3D(shooterVelocity(distanceFromGoal), targetVelocityBase);
