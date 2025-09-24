@@ -3,13 +3,18 @@ package org.firstinspires.ftc.teamcode.opModes;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.seattlesolvers.solverslib.geometry.Pose2d;
+import com.seattlesolvers.solverslib.geometry.Rotation2d;
+import com.seattlesolvers.solverslib.geometry.Translation2d;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
@@ -39,7 +44,7 @@ public class LimelightToAdvantageScope extends OpMode {
 
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
-
+        follower.setPose(new Pose(0,0,0));
     }
 
     @Override
@@ -59,22 +64,24 @@ public class LimelightToAdvantageScope extends OpMode {
             Position botpose = result.getBotpose().getPosition().toUnit(DistanceUnit.INCH);
             YawPitchRollAngles orientation = result.getBotpose().getOrientation();
 
-            telemetryPacket.put("Pose x", botpose.x);
-            telemetryPacket.put("Pose y", botpose.y);
-            telemetryPacket.put("Pose z", botpose.z);
-            telemetryPacket.put("Pose heading", orientation.getYaw());
+
+            telemetryPacket.put("AprilTag x", botpose.x);
+            telemetryPacket.put("AprilTag y", botpose.y);
+            telemetryPacket.put("AprilTag z", botpose.z);
+            telemetryPacket.put("AprilTag heading", orientation.getYaw(AngleUnit.DEGREES));
+
+            telemetryPacket.put("Apriltag Pose ", new Pose2d(new Translation2d(botpose.x, botpose.y), new Rotation2d(botpose.x, botpose.y)));
 
             telemetry.addData("Pose x", botpose.x);
             telemetry.addData("Pose y", botpose.y);
             telemetry.addData("Pose Z", botpose.z);
-            telemetryPacket.put("Pose heading", orientation.getYaw());
         }
 
-        // limelights stats
-        telemetryPacket.put("Cpu", status.getCpu());
-        telemetryPacket.put("Ram", status.getRam());
-        telemetryPacket.put("Ram", status.getFps());
 
+        telemetryPacket.put("Odometry x", follower.getPose().getX());
+        telemetryPacket.put("Odometry y", follower.getPose().getY());
+        telemetryPacket.put("Odometry y", follower.getPoseTracker().getLocalizer().getTotalHeading());
+        telemetryPacket.put("Odometry heading ", Math.toDegrees(follower.getPose().getHeading()));
         telemetry.update();
         dashboard.sendTelemetryPacket(telemetryPacket);
 
