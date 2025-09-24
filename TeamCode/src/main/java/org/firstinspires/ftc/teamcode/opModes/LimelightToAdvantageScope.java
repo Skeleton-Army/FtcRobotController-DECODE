@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
 
 import java.util.logging.Logger;
 
@@ -40,6 +41,7 @@ public class LimelightToAdvantageScope extends OpMode {
         if (result.isValid()) {
             // Access general information
             Pose3D botpose = result.getBotpose();
+
 
             telemetryPacket.put("Pose x", botpose.getPosition().x);
             telemetryPacket.put("Pose y", botpose.getPosition().y);
