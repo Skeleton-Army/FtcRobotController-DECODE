@@ -46,4 +46,5 @@ dependencies {
     implementation "io.github.skeleton-army.marrow:core:0.1.0"
     implementation "io.github.skeleton-army.marrow:solverslib:0.1.0"
     implementation "org.apache.commons:commons-math3:3.6.1"
+    implementation "org.apache.commons:commons-math3:3.6.1"
 }
