@@ -33,13 +33,13 @@ repositories {
 dependencies {
     implementation project(':FtcRobotController')
 
-    implementation 'com.pedropathing:ftc:2.0.1'
-    implementation 'com.pedropathing:telemetry:0.0.6'
-    implementation 'com.bylazar:fullpanels:1.0.2'
+    implementation 'com.pedropathing:ftc:2.0.2'
+    implementation 'com.pedropathing:telemetry:1.0.0'
+    implementation 'com.bylazar:fullpanels:1.0.6'
 
     implementation "org.solverslib:core:SNAPSHOT-7cdcc66"
     implementation "org.solverslib:pedroPathing:SNAPSHOT-7cdcc66"
 
-    implementation "io.github.skeleton-army.marrow:core:0.1.1"
-    implementation "io.github.skeleton-army.marrow:solverslib:0.1.1"
+    implementation "io.github.skeleton-army.marrow:core:0.1.2"
+    implementation "io.github.skeleton-army.marrow:solverslib:0.1.2"
 }
