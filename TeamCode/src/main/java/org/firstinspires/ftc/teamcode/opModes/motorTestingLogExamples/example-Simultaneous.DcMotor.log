@@ -1,0 +1,20 @@
+Quick DcMotor test started at Sept 10th 2025, 01:00
+
+Now testing motors: leftFront, leftBack, rightFront, rightBack
+
+Averages of pull 1: 1598 RPM
+Averages of pull 2: 1635 RPM
+Averages of pull 3: 1612 RPM
+Averages of pull 4: 1644 RPM
+Averages of pull 5: 1590 RPM
+Averages of pull 6: 1628 RPM
+Averages of pull 7: 1615 RPM
+Averages of pull 8: 1602 RPM
+
+Averages of all pulls: 1615 RPM
+
+RPM margins are 3% above (1169 RPM) and 1.5% below (1596 RPM) the rated 1620 RPM
+
+Quick DcMotor test: PASSED
+
+
