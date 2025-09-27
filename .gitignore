@@ -33,6 +33,10 @@ proguard/
 # Log Files
 *.log
 
+# Exception for example log for Motor Testing (remove once unneeded)
+!example-Simultaneous.DcMotor.log
+!example-Individual.DcMotor.log
+
 # Android Studio Navigation editor temp files
 .navigation/
 

@@ -1,0 +1,37 @@
+Full DcMotor test started at Sept 10th 2025, 00:55
+
+Now testing Motor leftBack
+
+Pull 1: 5920 RPM
+Pull 2: 6150 RPM
+Pull 3: 5880 RPM
+Pull 4: 6200 RPM
+Pull 5: 6040 RPM
+Pull 6: 5960 RPM
+Pull 7: 6080 RPM
+Pull 8: 6010 RPM
+
+Average RPM: 6030
+
+RPM margins are: 5% above (6300 RPM) and 2.5% below (5650 RPM) the rated 6000 RPM
+
+Motor leftBack: PASSES
+
+------------------------------------------------------------------------------------
+
+Now testing Motor leftFront
+
+Pull 1: 5940 RPM
+Pull 2: 6080 RPM
+Pull 3: 5920 RPM
+Pull 4: 6110 RPM
+Pull 5: 5990 RPM
+Pull 6: 5950 RPM
+Pull 7: 6070 RPM
+Pull 8: 5980 RPM
+
+Average RPM: 6005
+
+RPM margins are: 1% above (6060 RPM) and 0.5% below (5970 RPM) the rated 6000 RPM
+
+Motor leftFront: FAILS
