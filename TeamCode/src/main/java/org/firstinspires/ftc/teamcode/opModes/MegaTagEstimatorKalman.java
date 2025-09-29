@@ -84,11 +84,11 @@ public class MegaTagEstimatorKalman extends OpMode {
         }
 
         telemetryPacket.put("Odometry x", follower.getPose().getX());
-        telemetry.addData("Odometry y", follower.getPose().getY());
+        telemetryPacket.put("Odometry y", follower.getPose().getY());
         telemetryPacket.put("Odometry heading", follower.getHeading());
 
         telemetryPacket.put("Filtered x", xFilter.getState());
-        telemetry.addData("Filtered y", yFilter.getState());
+        telemetryPacket.put("Filtered y", yFilter.getState());
         telemetryPacket.put("Odometry heading", follower.getHeading()); // just for now, It's pretty accurate, right?
 
         dashboard.sendTelemetryPacket(telemetryPacket);
