@@ -28,6 +28,8 @@ repositories {
     maven { url = "https://mymaven.bylazar.com/releases" }
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://repo.dairy.foundation/snapshots" }
+    maven { url = 'https://jitpack.io' }
+    maven { url = 'https://maven.brott.dev/' }
 }
 
 dependencies {
@@ -42,4 +44,7 @@ dependencies {
 
     implementation "io.github.skeleton-army.marrow:core:0.1.0"
     implementation "io.github.skeleton-army.marrow:solverslib:0.1.0"
+
+    implementation 'com.acmerobotics.dashboard:dashboard:0.5.0'
+    implementation "com.github.Thermal-Equilibrium:homeostasis-FTC:1.0.6"
 }
