@@ -19,7 +19,7 @@ public class AprilTagLimelight extends OpMode {
     @Override
     public void init(){
         limelight = hardwareMap.get(Limelight3A.class, "limelight_webcam");
-        limelight.pipelineSwitch(0); //April tag pipeline
+        limelight.pipelineSwitch(3); //April tag pipeline is 3
         imu = hardwareMap.get(IMU.class, "imu");
         RevHubOrientationOnRobot revHubOrientationOnRobot = new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.UP,
                 RevHubOrientationOnRobot.UsbFacingDirection.LEFT);
