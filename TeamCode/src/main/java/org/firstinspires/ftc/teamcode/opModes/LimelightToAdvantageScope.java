@@ -74,7 +74,7 @@ public class LimelightToAdvantageScope extends OpMode {
 
             telemetry.addData("Pose x", botpose.x);
             telemetry.addData("Pose y", botpose.y);
-            telemetry.addData("Pose Z", botpose.z);
+            telemetry.addData("Pose z", botpose.z);
         }
 
 
