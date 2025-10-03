@@ -27,11 +27,11 @@ public class teleop_psikit extends OpMode {
     Limelight3A limelight;
     @Override
     public void init() {
-        RLOGServer server = new RLOGServer();
+        //RLOGServer server = new RLOGServer();
         RLOGWriter writer = new RLOGWriter("logs.rlog");
-        server.start();
+        //server.start();
         writer.start();
-        Logger.addDataReceiver(server);
+        //Logger.addDataReceiver(server);
         Logger.addDataReceiver(writer);
 
         Logger.recordMetadata("OpMode/nonsense", "something blabla");
@@ -46,6 +46,11 @@ public class teleop_psikit extends OpMode {
         limelight.start();
 
         Logger.recordMetadata("limelight/name",limelight.getDeviceName());
+    }
+
+    @Override
+    public void init_loop() {
+
     }
 
     @Override

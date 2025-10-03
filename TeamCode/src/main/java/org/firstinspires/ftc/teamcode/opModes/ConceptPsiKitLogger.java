@@ -15,25 +15,25 @@ import org.psilynx.psikit.core.wpi.Rotation2d;
 import org.psilynx.psikit.ftc.PsiKitOpMode;
 
 @TeleOp(name="ConceptPsiKitLogger")
-class ConceptPsiKitLogger extends PsiKitOpMode {
+public class ConceptPsiKitLogger extends PsiKitOpMode {
 
     Follower follower;
     @Override
     public void runOpMode() {
         psiKitSetup();
-        RLOGServer server = new RLOGServer();
+        //RLOGServer server = new RLOGServer();
         RLOGWriter writer = new RLOGWriter("logs.rlog");
-        server.start();
+        //server.start();
         writer.start();
-        Logger.addDataReceiver(server);
+        //Logger.addDataReceiver(server);
         Logger.addDataReceiver(writer);
         Logger.recordMetadata("some metadata", "string value");
         Logger.start(); // Start logging! No more data receivers, replay sources, or metadata values may be added.
         Logger.periodicAfterUser(0, 0);
 
-        follower = Constants.createFollower(hardwareMap);
+        /*follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
-        follower.setPose(new Pose(0,0,0));
+        follower.setPose(new Pose(0,0,0));*/
 
         // AKA init loop
         while(!getPsiKitIsStarted()){
@@ -70,12 +70,13 @@ class ConceptPsiKitLogger extends PsiKitOpMode {
 
          */
 
-            follower.update();
+            /*follower.update();
             follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+*/
+            //Pose2d pose2d = new Pose2d(follower.getPose().getX(), follower.getPose().getY(), new Rotation2d(follower.getPose().getHeading()));
+            //Logger.recordOutput("OpMode/Pose2D", pose2d);
 
-            Pose2d pose2d = new Pose2d(follower.getPose().getX(), follower.getPose().getY(), new Rotation2d(follower.getPose().getHeading()));
             Logger.recordOutput("OpMode/example", 2.0);
-            Logger.recordOutput("OpMode/Pose2D", pose2d);
             // example
 
             double afterUserStart = Logger.getTimestamp();

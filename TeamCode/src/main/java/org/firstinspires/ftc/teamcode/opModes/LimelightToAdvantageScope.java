@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opModes;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.CoordinateSystem;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLStatus;
@@ -37,10 +38,10 @@ public class LimelightToAdvantageScope extends OpMode {
         telemetryPacket = new TelemetryPacket();
         dashboard = FtcDashboard.getInstance();
 
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        //limelight = hardwareMap.get(Limelight3A.class, "limelight");
         telemetry.setMsTransmissionInterval(11);
-        limelight.pipelineSwitch(0);
-        limelight.start();
+        //limelight.pipelineSwitch(0);
+        //limelight.start();
 
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
@@ -57,7 +58,7 @@ public class LimelightToAdvantageScope extends OpMode {
         telemetryPacket.put("velocity", follower.getVelocity());
         telemetryPacket.put("acceleration", follower.getAcceleration());
 
-        LLStatus status = limelight.getStatus();
+        /*LLStatus status = limelight.getStatus();
         LLResult result = limelight.getLatestResult();
         if (result.isValid()) {
             // Access general information
@@ -75,13 +76,11 @@ public class LimelightToAdvantageScope extends OpMode {
             telemetry.addData("Pose x", botpose.x);
             telemetry.addData("Pose y", botpose.y);
             telemetry.addData("Pose z", botpose.z);
-        }
-
+        }*/
 
         telemetryPacket.put("Odometry x", follower.getPose().getX());
         telemetryPacket.put("Odometry y", follower.getPose().getY());
-        telemetryPacket.put("Odometry y", follower.getPoseTracker().getLocalizer().getTotalHeading());
-        telemetryPacket.put("Odometry heading ", Math.toDegrees(follower.getPose().getHeading()));
+        telemetryPacket.put("Odometry heading", follower.getPose().getHeading());
         telemetry.update();
         dashboard.sendTelemetryPacket(telemetryPacket);
 
