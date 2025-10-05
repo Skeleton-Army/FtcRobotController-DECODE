@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import android.util.Log;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -25,18 +27,9 @@ public class teleop_psikit extends OpMode {
 
     Follower follower;
     Limelight3A limelight;
+
     @Override
     public void init() {
-        //RLOGServer server = new RLOGServer();
-        RLOGWriter writer = new RLOGWriter("logs.rlog");
-        //server.start();
-        writer.start();
-        //Logger.addDataReceiver(server);
-        Logger.addDataReceiver(writer);
-
-        Logger.recordMetadata("OpMode/nonsense", "something blabla");
-        Logger.start();
-
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
         follower.setPose(new Pose(0,0,0));
@@ -45,7 +38,17 @@ public class teleop_psikit extends OpMode {
         limelight.pipelineSwitch(0);
         limelight.start();
 
+        RLOGServer server = new RLOGServer();
+        RLOGWriter writer = new RLOGWriter("/sdcard/FIRST/", "logs.rlog");
+        server.start();
+        writer.start();
+        Logger.addDataReceiver(server);
+        Logger.addDataReceiver(writer);
+
+        Logger.recordMetadata("OpMode/nonsense", "something blabla");
         Logger.recordMetadata("limelight/name",limelight.getDeviceName());
+
+        Logger.start();
     }
 
     @Override
@@ -90,5 +93,11 @@ public class teleop_psikit extends OpMode {
                 afterUserStart - beforeUserEnd,
                 beforeUserEnd - beforeUserStart
         );
+    }
+
+    @Override
+    public void stop() {
+        Logger.end();
+
     }
 }

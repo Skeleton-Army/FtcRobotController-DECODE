@@ -78,9 +78,10 @@ public class LimelightToAdvantageScope extends OpMode {
             telemetry.addData("Pose z", botpose.z);
         }*/
 
-        telemetryPacket.put("Odometry x", follower.getPose().getX());
-        telemetryPacket.put("Odometry y", follower.getPose().getY());
-        telemetryPacket.put("Odometry heading", follower.getPose().getHeading());
+        telemetryPacket.put("Artifact (Purple) x", follower.getPose().getX());
+        telemetryPacket.put("Artifact (Purple) y", follower.getPose().getY());
+        telemetryPacket.put("Artifact (Purple) z", follower.getPose().getY());
+        //telemetryPacket.put("Artifact (Purple) heading", follower.getPose().getHeading());
         telemetry.update();
         dashboard.sendTelemetryPacket(telemetryPacket);
 

@@ -1,25 +1,21 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.*;
-
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.seattlesolvers.solverslib.command.CommandOpMode;
-import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
-import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 
-import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.pedroPathing.Tuning;
-import org.firstinspires.ftc.teamcode.pedroPathing.Tuning.*;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
+import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.core.wpi.Pose2d;
+import org.psilynx.psikit.core.wpi.Rotation2d;
 
 @TeleOp
-public class TeleOpApp extends CommandOpMode {
+public class TeleOpApp extends ComplexOpMode {
     private Follower follower;
     private Shooter shooter;
 
@@ -29,6 +25,8 @@ public class TeleOpApp extends CommandOpMode {
 
     @Override
     public void initialize() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
 
@@ -49,26 +47,28 @@ public class TeleOpApp extends CommandOpMode {
 
     @Override
     public void run() {
-        // Tuning.drawCurrent();
-        super.run();
         follower.update();
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
-
 
         gamepadEx1.readButtons();
         if (gamepadEx1.isDown(GamepadKeys.Button.RIGHT_BUMPER))
         {
             intake.set(-0.75);
         }
-
         if (gamepadEx1.isDown(GamepadKeys.Button.LEFT_BUMPER)) {
             intake.set(-1);
         }
-
         else {
             intake.set(0);
         }
-        telemetry.addData("right bumper: ", gamepadEx1.isDown(GamepadKeys.Button.RIGHT_BUMPER));
+
+        telemetry.addData("Robot x", follower.getPose().getX());
+        telemetry.addData("Robot y", follower.getPose().getY());
+        telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.update();
+
+        double inchesToMeters = 39.37;
+        Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
+        Logger.recordOutput("Robot Pose", robotPose);
     }
 }
