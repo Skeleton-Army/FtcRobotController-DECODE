@@ -60,4 +60,7 @@ dependencies {
     implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.4.17")
 
     implementation("page.j5155.AdvantageScope:lite:v26.0.0")
+
+    implementation 'org.psilynx.psikit:core:0.1.0-beta1'
+    implementation 'org.psilynx.psikit:ftc:0.1.0-beta1'
 }
