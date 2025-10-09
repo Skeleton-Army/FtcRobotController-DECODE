@@ -110,7 +110,9 @@ public abstract class ComplexOpMode extends LinearOpMode {
         String logFileName = className + "_" + date + "_" + time;
 
         Logger.addDataReceiver(new RLOGWriter(folderName, logFileName));
-        Logger.addDataReceiver(new RLOGServer());
+        RLOGServer server = new RLOGServer(3333);
+        Logger.addDataReceiver(server);
+        server.start();
         Logger.start();
     }
 }
