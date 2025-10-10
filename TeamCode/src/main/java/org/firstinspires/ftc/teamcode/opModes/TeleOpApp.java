@@ -44,6 +44,10 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(new InstantCommand(() -> intake.set(-1)))
                 .whenReleased(new InstantCommand(() -> intake.set(0)));
 
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+                .whenPressed(new InstantCommand(() -> intake.set(1)))
+                .whenReleased(new InstantCommand(() -> intake.set(0)));
+
         schedule(
                 // TODO: Set shooter angle to GOAL
         );
