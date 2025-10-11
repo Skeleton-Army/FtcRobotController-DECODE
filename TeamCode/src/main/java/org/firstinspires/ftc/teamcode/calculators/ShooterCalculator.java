@@ -5,66 +5,50 @@ import com.pedropathing.geometry.Pose;
 
 import com.pedropathing.math.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.firstinspires.ftc.teamcode.consts.HoodAngleCoefficients;
+import org.firstinspires.ftc.teamcode.consts.VelocityCoefficients;
 
 import java.io.File;
 import java.io.IOException;
 
 public class ShooterCalculator implements IShooterCalculator {
-    static class Model {
-        public double[] coefficients;
-        public double[] powers;
-    }
-
-    private final Model verticalAngleModel;
-    private final Model velocityToRPMModel;
-    private static final String verticalAnglePath = "VerticalAngleCoefficients.json";
-    private static final String velocityPath = "VelocityCoefficients.json";
-    private final ObjectMapper mapper = new ObjectMapper();
-
-    //These are placeholders for the real values.
-    //TODO: Find the real values
-    private final double shooterMinVelocity = -1;
-    private final double shooterMaxVelocity = -1;
+    private final double shooterMinVelocity = 11;
+    private final double shooterMaxVelocity = 11;
     private final double minDistance = 0.7;
     private final double maxDistance = 3.5;
+    private int[] hoodCoeffs;
+    private int[] velCoeffs;
+
+    public ShooterCalculator(int[] hoodCoeffs, int[] velCoeffs) {
+        this.hoodCoeffs = hoodCoeffs.clone();
+        this.velCoeffs = velCoeffs.clone();
+    }
+
+    private double getVerticalAngle(double distanceFromGoal) {
+        double result = 0.0;
+        for (int exponent = 0; exponent < hoodCoeffs.length; exponent++) {
+            result += hoodCoeffs[exponent] * Math.pow(distanceFromGoal, exponent);
+        }
+        return result;
+    }
+
+    /**
+     * @param velocity Starting velocity in meters/second
+     * @return Motor RPM
+     */
+    public int velocityToRPM(double velocity) {
+        double result = 0.0;
+        for (int exponent = 0; exponent < velCoeffs.length; exponent++) {
+            result += velCoeffs[exponent] * Math.pow(velocity, exponent);
+        }
+        return (int)result;
+    }
 
     private double shooterVelocity(double distance) {
         return shooterMinVelocity + (distance - minDistance) * (shooterMaxVelocity - shooterMinVelocity) / (maxDistance - minDistance);
     }
 
-    public ShooterCalculator() throws IOException {
-        ObjectMapper mapper = new ObjectMapper();
-        this.verticalAngleModel = mapper.readValue(new File(verticalAnglePath), Model.class);
-        this.velocityToRPMModel = mapper.readValue(new File(velocityPath), Model.class);
-    }
-
     /**
-     *
-     * @param metersPerSecond Starting velocity in meters/second
-     * @return Motor RPM
-     */
-    public double convertVelocityToMotorRPM(double metersPerSecond) {
-        //TODO: Find convertion with regression (probably linear but could be parabolic)
-        return -1;
-    }
-
-    private double getVerticalAngle(double distanceFromGoal) {
-        double result = 0.0;
-        for (int exponent = 0; exponent < verticalAngleModel.powers.length; exponent++) {
-            result += verticalAngleModel.coefficients[exponent] * Math.pow(distanceFromGoal, exponent);
-        }
-        return result;
-    }
-
-    public int velocityToRPM(double velocity) {
-        double result = 0.0;
-        for (int exponent = 0; exponent < velocityToRPMModel.powers.length; exponent++) {
-            result += velocityToRPMModel.coefficients[exponent] * Math.pow(velocity, exponent);
-        }
-        return (int)result;
-    }
-    /**
-     *
      * @param robotPose Robot position (pedro field coordinates)
      * @param goalPose Goal position (pedro field coordinates)
      * @param vel Robot velocity vector in meters per second
@@ -79,6 +63,6 @@ public class ShooterCalculator implements IShooterCalculator {
         Vector3D targetVelocity = new Vector3D(shooterVelocity(distanceFromGoal), targetVelocityBase);
         Vector3D v0 = targetVelocity.add(velocity.negate());
 
-        return new ShootingSolution(v0.getDelta(), v0.getAlpha(), v0.getNorm()); //might be mistake from wrong placement of alpha and delta
+        return new ShootingSolution(v0.getDelta(), v0.getAlpha(), velocityToRPM(v0.getNorm())); //might be mistake from wrong placement of alpha and delta
     }
 }

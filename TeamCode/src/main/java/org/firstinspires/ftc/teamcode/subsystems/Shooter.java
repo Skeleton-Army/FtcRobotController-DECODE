@@ -41,7 +41,8 @@ public class Shooter extends SubsystemBase {
         turret.setRunMode(MotorEx.RunMode.PositionControl);
         turret.setZeroPowerBehavior(MotorEx.ZeroPowerBehavior.BRAKE);
 
-        hood = new SimpleServo(hardwareMap, "hood", 0, Math.PI / 2, AngleUnit.RADIANS);
+        //TODO: Change 300 deg to correct max angle
+        hood = new SimpleServo(hardwareMap, "hood", 0, 300, AngleUnit.DEGREES);
 
         this.shooterCalculator = shooterCalculator;
 
@@ -54,12 +55,15 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setVerticalAngle(double angleRad) {
-        hood.turnToAngle(angleRad);
+        hood.turnToAngle(angleRad, AngleUnit.RADIANS);
     }
 
     public void update() {
         Pose goalPose = alliance == Alliance.BLUE ? GoalPositions.blueGoal : GoalPositions.redGoal;
         ShootingSolution solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
+
+        setVerticalAngle(solution.getVerticalAngle());
+        setVelocity(solution.getVelocity());
     }
 
     @Override
