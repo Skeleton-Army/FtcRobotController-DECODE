@@ -3,6 +3,8 @@ package org.firstinspires.ftc.teamcode.opModes;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.util.Timer;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
@@ -24,6 +26,12 @@ public class TeleOpApp extends ComplexOpMode {
     private GamepadEx gamepadEx1;
     private GamepadEx gamepadEx2;
 
+    Timer timer;
+    boolean pastSec = false;
+    double t;
+    boolean wasPressed;
+    private double rotatioVel = 0;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -40,6 +48,7 @@ public class TeleOpApp extends ComplexOpMode {
 //        new Trigger(() -> gamepad1.right_trigger > 0.1)
 //                .whenActive(new ShootCommand(shooter));
 
+        timer = new Timer();
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whenPressed(new InstantCommand(() -> intake.set(-1)))
                 .whenReleased(new InstantCommand(() -> intake.set(0)));
@@ -49,6 +58,12 @@ public class TeleOpApp extends ComplexOpMode {
         );
     }
 
+    boolean calculateVel(double t) {
+        if (timer.getElapsedTimeSeconds()  - t > 1) {
+            return true;
+        }
+        return false;
+    }
     @Override
     public void run() {
         follower.update();
@@ -57,6 +72,27 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
+        telemetry.addData("Heading vector ", follower.getTeleopHeadingVector());
+        telemetry.addData("time sec ", timer.getElapsedTimeSeconds());
+
+        if (gamepad1.a) {
+            t = timer.getElapsedTimeSeconds();
+            wasPressed = true;
+        }
+
+        if(wasPressed) {
+            pastSec = calculateVel(t);
+            telemetry.addData("past some sec: ", pastSec);
+            follower.setPose(new Pose(0,0,0));
+        }
+        if (pastSec) {
+            //telemetry.addData("rotation vel ", follower.getPose().getHeading() / Math.PI);
+            rotatioVel = follower.getPose().getHeading() / 2*Math.PI;
+            pastSec = false;
+            follower.setMaxPower(0);
+        }
+        telemetry.addData("b was pressed",wasPressed);
+        telemetry.addData("rotation vel ", rotatioVel);
         telemetry.update();
 
         double inchesToMeters = 39.37;
