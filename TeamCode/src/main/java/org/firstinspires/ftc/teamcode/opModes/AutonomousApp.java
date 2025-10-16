@@ -8,28 +8,32 @@ import com.pedropathing.follower.Follower;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.skeletonarmy.marrow.prompts.OptionPrompt;
+import com.skeletonarmy.marrow.prompts.Prompter;
 
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
 @Autonomous
 public class AutonomousApp extends ComplexOpMode {
+    private final int[] ARTIFACTS_COUNT = {3, 6, 9, 12, 15, 30000};
+    private final Prompter prompter = new Prompter(this);
+
     private Follower follower;
     private Intake intake;
     private PathChain batata;
     private PathChain potato;
     private Shooter shooter;
 
-    @Override
-    public void initialize() {
-        follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(56.604751619870406,7.464362850971918, Math.toRadians(90)));
+    private Alliance alliance;
+    private StartingPosition startingPosition;
+    private int artifacts;
 
-        intake = new Intake(hardwareMap);
-        shooter = new Shooter(hardwareMap, follower.poseTracker);
-
+    public void setupPaths() {
         batata = follower
                 .pathBuilder()
                 .addPath(
@@ -56,6 +60,29 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
+    public void setupPrompts() {
+        prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
+                .prompt("startPos", new OptionPrompt<>("SELECT STARTING POSITIONS", StartingPosition.FAR, StartingPosition.CLOSE))
+                .prompt("artifacts", new OptionPrompt<>("SELECT AMOUNT OF ARTIFACTS", ARTIFACTS_COUNT))
+                .onComplete(() -> {
+                    alliance = prompter.get("alliance");
+                    startingPosition = prompter.get("startPos");
+                    artifacts = prompter.get("artifacts");
+                });
+    }
+
+    @Override
+    public void initialize() {
+        follower = Constants.createFollower(hardwareMap);
+        follower.setStartingPose(new Pose(56.604751619870406,7.464362850971918, Math.toRadians(90)));
+
+        intake = new Intake(hardwareMap);
+        shooter = new Shooter(hardwareMap, follower.poseTracker);
+
+        setupPaths();
+        setupPrompts();
+    }
+
     @Override
     public void onStart() {
         schedule(
@@ -73,5 +100,10 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void run() {
         follower.update();
+    }
+
+    @Override
+    public void initialize_loop() {
+        prompter.run();
     }
 }
