@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opModes;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
+import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
@@ -41,12 +42,12 @@ public class TeleOpApp extends ComplexOpMode {
 //                .whenActive(new ShootCommand(shooter));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(new InstantCommand(() -> intake.set(-1)))
-                .whenReleased(new InstantCommand(() -> intake.set(0)));
+                .whenPressed(new InstantCommand(() -> intake.collect()))
+                .whenReleased(new InstantCommand(() -> intake.stop()));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whenPressed(new InstantCommand(() -> intake.set(1)))
-                .whenReleased(new InstantCommand(() -> intake.set(0)));
+                .whenPressed(new InstantCommand(() -> intake.release()))
+                .whenReleased(new InstantCommand(() -> intake.stop()));
 
         schedule(
                 // TODO: Set shooter angle to GOAL
