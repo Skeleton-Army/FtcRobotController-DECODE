@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import com.ThermalEquilibrium.homeostasis.Filters.Estimators.KalmanEstimator;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.TelemetryPacket;
 import com.pedropathing.control.KalmanFilter;
@@ -89,7 +88,7 @@ public class MegaTagEstimatorKalman extends OpMode {
 
         telemetryPacket.put("Filtered x", xFilter.getState());
         telemetryPacket.put("Filtered y", yFilter.getState());
-        telemetryPacket.put("Odometry heading", follower.getHeading()); // just for now, It's pretty accurate, right?
+        telemetryPacket.put("Filtered heading", follower.getHeading()); // just for now, It's pretty accurate, right?
 
         dashboard.sendTelemetryPacket(telemetryPacket);
 
