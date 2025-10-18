@@ -25,6 +25,8 @@ public class TeleOpApp extends ComplexOpMode {
     private GamepadEx gamepadEx1;
     private GamepadEx gamepadEx2;
 
+    private double traveledY = 0;
+    private double traveledX = 0;
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -62,7 +64,14 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
-        telemetry.update();
+
+        telemetry.addData("Current velocity: ", follower.getVelocity().getMagnitude());
+        telemetry.addData("angular velocity: ", follower.getAngularVelocity());
+
+        traveledX += follower.poseTracker.getDeltaPose().getX();
+        traveledY += follower.poseTracker.getDeltaPose().getY();
+        telemetry.addData("x distance traveled: ", traveledX);
+        telemetry.addData("y distance traveled: ", traveledY);
 
         double inchesToMeters = 39.37;
         Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
