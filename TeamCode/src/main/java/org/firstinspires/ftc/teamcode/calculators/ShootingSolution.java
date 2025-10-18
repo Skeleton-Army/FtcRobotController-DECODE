@@ -3,8 +3,8 @@ package org.firstinspires.ftc.teamcode.calculators;
 public class ShootingSolution {
     private double horizontalAngle;
     private double verticalAngle;
-    private double velocity;
-    public ShootingSolution(double horizontalAngle, double verticalAngle, double velocity) {
+    private double flywheelRPM;
+    public ShootingSolution(double horizontalAngle, double verticalAngle, double flywheelRPM) {
 
     }
 
@@ -15,6 +15,6 @@ public class ShootingSolution {
         return verticalAngle;
     }
     public double getVelocity() {
-        return velocity;
+        return flywheelRPM;
     }
 }
