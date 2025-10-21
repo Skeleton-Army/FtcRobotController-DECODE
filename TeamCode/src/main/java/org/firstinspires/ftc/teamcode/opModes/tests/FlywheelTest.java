@@ -20,17 +20,17 @@ public class FlywheelTest extends OpMode {
     private boolean isPID = true;
     public static double targetRPM = 4000;
     public static double targetPower = 1;
-    public static double kP = 2;
+    public static double kP = 0.1;
     public static double kI = 0;
-    public static double kD = 0.05;
-    public static double kS = 0;
-    public static double kV = 1.45;
+    public static double kD = 0;
+    public static double kS = 275.00198;
+    public static double kV = 1.130;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        motor = new MotorEx(hardwareMap, "motor", Motor.GoBILDA.BARE);
+        motor = new MotorEx(hardwareMap, "flywheel", Motor.GoBILDA.BARE);
         handlePID();
     }
 
@@ -67,7 +67,7 @@ public class FlywheelTest extends OpMode {
         double motorTPS = motor.getCorrectedVelocity();
 
         // Convert to RPM
-        double motorRPM = (motorTPS * 60.0) / motor.getCPR();
+        double motorRPM = -(motorTPS * 60.0) / motor.getCPR();
 
         telemetry.addData("Velocity (ticks/sec)", motorTPS);
         telemetry.addData("Motor RPM", motorRPM);
