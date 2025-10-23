@@ -27,6 +27,8 @@ public class AutonomousApp extends ComplexOpMode {
     private Intake intake;
     private PathChain batata;
     private PathChain potato;
+    private PathChain avocado;
+    private PathChain tomato;
     private Shooter shooter;
 
     private Alliance alliance;
@@ -38,8 +40,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(56.605, 7.464),
-                                new Pose(60.959, 29.235),
+                                new Pose(56.294, 10.263),
+                                new Pose(57.538, 36.078),
                                 new Pose(17.417, 36.078)
                         )
                 )
@@ -57,6 +59,30 @@ public class AutonomousApp extends ComplexOpMode {
                         )
                 )
                 .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
+                .build();
+
+        avocado = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                new Pose(56.294, 14.307),
+                                new Pose(64.069, 57.227),
+                                new Pose(8.708, 53.495)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .build();
+
+        tomato = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                new Pose(8.708, 53.495),
+                                new Pose(53.184, 55.983),
+                                new Pose(53.495, 9.952)
+                        )
+                )
+                .setTangentHeadingInterpolation()
                 .build();
     }
 
@@ -92,7 +118,11 @@ public class AutonomousApp extends ComplexOpMode {
                         new FollowPathCommand(follower, batata),
                         new InstantCommand(() -> intake.stop()),
                         new FollowPathCommand(follower, potato),
-                        new ShootCommand(shooter)
+                        new ShootCommand(shooter),
+                        new InstantCommand(() -> intake.collect()),
+                        new FollowPathCommand(follower, avocado),
+                        new InstantCommand(() -> intake.stop()),
+                        new FollowPathCommand(follower, tomato)
                 )
         );
     }

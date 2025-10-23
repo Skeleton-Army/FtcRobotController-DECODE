@@ -30,7 +30,7 @@ public class FlywheelTest extends OpMode {
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        motor = new MotorEx(hardwareMap, "motor", Motor.GoBILDA.BARE);
+        motor = new MotorEx(hardwareMap, "shemesh", Motor.GoBILDA.BARE);
         handlePID();
     }
 
