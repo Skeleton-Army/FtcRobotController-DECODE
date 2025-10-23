@@ -101,6 +101,14 @@ public class FOMLocalizer extends OpMode {
         poseFOM = FOMcalculator.calcPos(MT2Pose, cameraApriltagPose);
         follower.setPose(poseFOM); // setting the calculated pose to the follower
 
+        telemetry.addData("Robot x ", follower.getPose().getX());
+        telemetry.addData("Robot y ", follower.getPose().getY());
+        telemetry.addData("Robot heading ", Math.toDegrees(follower.getPose().getHeading()));
+
+        telemetry.addData("mega tag2 x", MT2Pose.getX());
+        telemetry.addData("mega tag2 y", MT2Pose.getY());
+        telemetry.addData("mega tag2 heading", Math.toDegrees(MT2Pose.getHeading()));
+
         telemetry.addData("apriltag FOM", FOMcalculator.apriltagFOM);
         telemetry.addData("odometry FOM", FOMcalculator.odometryFOM);
         telemetry.addData("robot FOM ", FOMcalculator.robotFOM);
