@@ -41,6 +41,7 @@ repositories {
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://repo.dairy.foundation/snapshots" }
     maven { url = 'https://maven.brott.dev/' }
+    mavenCentral()
 }
 
 dependencies {

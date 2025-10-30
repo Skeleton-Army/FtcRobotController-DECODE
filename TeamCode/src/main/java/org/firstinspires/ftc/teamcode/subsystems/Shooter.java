@@ -1,19 +1,25 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.seattlesolvers.solverslib.hardware.ServoEx;
 import com.seattlesolvers.solverslib.hardware.SimpleServo;
+import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
+@Config
 public class Shooter extends SubsystemBase {
+    public static double kP = 1;
+    public static double tolerance = 0.01;
+
     private final PoseTracker poseTracker;
 
     private final MotorEx flywheel;
-    private final MotorEx turret;
+    public final Motor turret;
     private final SimpleServo hood;
 
     private double velocity;
@@ -25,10 +31,12 @@ public class Shooter extends SubsystemBase {
         flywheel.setVeloCoefficients(1, 0, 0);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
 
-        turret = new MotorEx(hardwareMap, "turret", MotorEx.GoBILDA.RPM_312);
-        turret.setPositionCoefficient(1);
-        turret.setRunMode(MotorEx.RunMode.PositionControl);
-        turret.setZeroPowerBehavior(MotorEx.ZeroPowerBehavior.BRAKE);
+        turret = new Motor(hardwareMap, "turret", Motor.GoBILDA.RPM_435);
+        turret.setPositionCoefficient(kP);
+        turret.setRunMode(Motor.RunMode.PositionControl);
+        turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
+        turret.setDistancePerPulse(Math.PI * 2 / (Motor.GoBILDA.RPM_435.getCPR() * (200 / 30)));
+        turret.setPositionTolerance(tolerance);
 
         hood = new SimpleServo(hardwareMap, "hood", 0, Math.PI / 2, AngleUnit.RADIANS);
     }
@@ -41,12 +49,24 @@ public class Shooter extends SubsystemBase {
         hood.turnToAngle(angleRad);
     }
 
-    private void setHorizontalAngle(int ticks) {
-        turret.setTargetPosition(ticks);
+    private void setHorizontalAngle(double target) {
+        turret.setTargetDistance(target);
+    }
+
+    public double getTurretAngle() {
+        double GOAL_X = 0;
+        double GOAL_Y = 140;
+        double DISTANCE_TO_BOT_CENTER = 0;
+
+        double ROBOT_X = poseTracker.getPose().getX();
+        double ROBOT_Y = poseTracker.getPose().getY();
+        double ROBOT_HEADING = poseTracker.getPose().getHeading();
+
+        return Math.atan2(GOAL_Y - ROBOT_Y - DISTANCE_TO_BOT_CENTER * Math.sin(ROBOT_HEADING), GOAL_X - ROBOT_X - DISTANCE_TO_BOT_CENTER * Math.cos(ROBOT_HEADING)) - ROBOT_HEADING;
     }
 
     public void updateHorizontalAngle() {
-        // TODO: Do calculations and set horizontal angle to face GOAL
+        setHorizontalAngle(getTurretAngle());
     }
 
     public void updateVerticalAngle() {
@@ -56,10 +76,6 @@ public class Shooter extends SubsystemBase {
     @Override
     public void periodic() {
         flywheel.setVelocity(velocity, AngleUnit.RADIANS);
-
-        if (!turret.atTargetPosition())
-            turret.set(1);
-        else
-            turret.stopMotor();
+        turret.set(1);
     }
 }
