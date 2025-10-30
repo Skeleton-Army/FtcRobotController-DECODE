@@ -30,8 +30,6 @@ import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 
 @Config
 public class Shooter extends SubsystemBase {
-    public static double tolerance = 0.01;
-
     private final PoseTracker poseTracker;
 
     private final MotorEx flywheel;
@@ -53,7 +51,6 @@ public class Shooter extends SubsystemBase {
         turret.setRunMode(Motor.RunMode.PositionControl);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse(Math.PI * 2 / (turret.getCPR() * GEAR_RATIO));
-        turret.setPositionTolerance(tolerance);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
     }
