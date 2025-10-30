@@ -7,8 +7,12 @@ import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
-import org.firstinspires.ftc.teamcode.commands.AdjustAnglesCommand;
+import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
+import org.firstinspires.ftc.teamcode.consts.Alliance;
+import org.firstinspires.ftc.teamcode.consts.HoodAngleCoefficients;
+import org.firstinspires.ftc.teamcode.consts.VelocityCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
@@ -22,7 +26,9 @@ public class TeleOpApp extends CommandOpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker);
+        IShooterCalculator shooterCalc = new ShooterCalculator(HoodAngleCoefficients.coefficients,
+                VelocityCoefficients.coefficients);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, Alliance.BLUE);
 
         GamepadEx gamepadEx1 = new GamepadEx(gamepad1);
         GamepadEx gamepadEx2 = new GamepadEx(gamepad2);
@@ -30,12 +36,7 @@ public class TeleOpApp extends CommandOpMode {
         new Trigger(() -> gamepad1.right_trigger > 0.1)
                 .whenActive(new ShootCommand(shooter));
 
-        AdjustAnglesCommand adjustAngles = new AdjustAnglesCommand(shooter);
 
-        schedule(
-                // TODO: Set shooter vertical and horizontal angles to GOAL
-                adjustAngles // NOTE: This is a never-ending command, so that the shooter will always aim at the goal
-        );
     }
 
     @Override

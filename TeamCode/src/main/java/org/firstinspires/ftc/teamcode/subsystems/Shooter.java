@@ -26,8 +26,15 @@ public class Shooter extends SubsystemBase {
     private final SimpleServo hood;
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
-
+    private final Pose goalPose;
+    /**
+     * Flywheel velocity [ticks/second]
+     */
     private double velocity;
+    /**
+     * Target hood angle in radians
+     */
+    private double hoodAngle;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -47,6 +54,8 @@ public class Shooter extends SubsystemBase {
         this.shooterCalculator = shooterCalculator;
 
         this.alliance = alliance;
+
+        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
     }
 
 
@@ -55,20 +64,19 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setVerticalAngle(double angleRad) {
-        hood.turnToAngle(angleRad, AngleUnit.RADIANS);
+        this.hoodAngle = angleRad;
     }
 
-    public void update() {
-        Pose goalPose = alliance == Alliance.BLUE ? GoalPositions.blueGoal : GoalPositions.redGoal;
+
+    @Override
+    public void periodic() {
         ShootingSolution solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
 
         setVerticalAngle(solution.getVerticalAngle());
         setVelocity(solution.getVelocity());
-    }
 
-    @Override
-    public void periodic() {
         flywheel.setVelocity(velocity, AngleUnit.RADIANS);
+        hood.turnToAngle(this.hoodAngle, AngleUnit.RADIANS);
 
         if (!turret.atTargetPosition())
             turret.set(1);
