@@ -1,5 +1,22 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KD;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KI;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KP;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KS;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KV;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_MOTOR;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_NAME;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GEAR_RATIO;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MAX;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MIN;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_NAME;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_KP;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_NAME;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_X;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_Y;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.DISTANCE_TO_BOT_CENTER;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
 import com.qualcomm.robotcore.hardware.HardwareMap;
@@ -9,10 +26,10 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 
 @Config
 public class Shooter extends SubsystemBase {
-    public static double kP = 1;
     public static double tolerance = 0.01;
 
     private final PoseTracker poseTracker;
@@ -26,18 +43,19 @@ public class Shooter extends SubsystemBase {
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker) {
         this.poseTracker = poseTracker;
 
-        flywheel = new MotorEx(hardwareMap, "flywheel", MotorEx.GoBILDA.BARE);
-        flywheel.setVeloCoefficients(1, 0, 0);
+        flywheel = new MotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
+        flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+        flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
 
-        turret = new Motor(hardwareMap, "turret", Motor.GoBILDA.RPM_435);
-        turret.setPositionCoefficient(kP);
+        turret = new Motor(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
+        turret.setPositionCoefficient(TURRET_KP);
         turret.setRunMode(Motor.RunMode.PositionControl);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
-        turret.setDistancePerPulse(Math.PI * 2 / (Motor.GoBILDA.RPM_435.getCPR() * (200 / 30)));
+        turret.setDistancePerPulse(Math.PI * 2 / (turret.getCPR() * GEAR_RATIO));
         turret.setPositionTolerance(tolerance);
 
-        hood = new ServoEx(hardwareMap, "hood", 0, Math.PI / 2);
+        hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
     }
 
     private void setVelocity(double velocity) {
@@ -53,15 +71,11 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getTurretAngle() {
-        double GOAL_X = 0;
-        double GOAL_Y = 140;
-        double DISTANCE_TO_BOT_CENTER = 0;
+        double x = poseTracker.getPose().getX();
+        double y = poseTracker.getPose().getY();
+        double heading = poseTracker.getPose().getHeading();
 
-        double ROBOT_X = poseTracker.getPose().getX();
-        double ROBOT_Y = poseTracker.getPose().getY();
-        double ROBOT_HEADING = poseTracker.getPose().getHeading();
-
-        return Math.atan2(GOAL_Y - ROBOT_Y - DISTANCE_TO_BOT_CENTER * Math.sin(ROBOT_HEADING), GOAL_X - ROBOT_X - DISTANCE_TO_BOT_CENTER * Math.cos(ROBOT_HEADING)) - ROBOT_HEADING;
+        return Math.atan2(GOAL_Y - y - DISTANCE_TO_BOT_CENTER * Math.sin(heading), GOAL_X - x - DISTANCE_TO_BOT_CENTER * Math.cos(heading)) - heading;
     }
 
     public void updateHorizontalAngle() {

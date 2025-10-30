@@ -1,0 +1,28 @@
+package org.firstinspires.ftc.teamcode.config;
+
+import com.acmerobotics.dashboard.config.Config;
+import com.seattlesolvers.solverslib.hardware.motors.Motor.GoBILDA;
+
+@Config
+public class ShooterConfig {
+    public static String FLYWHEEL_NAME = "flywheel";
+    public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
+    public static double FLYWHEEL_KP = 1;
+    public static double FLYWHEEL_KI = 0;
+    public static double FLYWHEEL_KD = 0;
+    public static double FLYWHEEL_KS = 0;
+    public static double FLYWHEEL_KV = 0;
+
+    public static String TURRET_NAME = "turret";
+    public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;
+    public static double TURRET_KP = 1.5;
+    public static double GEAR_RATIO = (double) 200 / 30;
+
+    public static String HOOD_NAME = "hood";
+    public static double HOOD_MIN = 0;
+    public static double HOOD_MAX = Math.PI / 2;
+
+    public static double GOAL_X = 0;
+    public static double GOAL_Y = 144;
+    public static double DISTANCE_TO_BOT_CENTER = 0;
+}
