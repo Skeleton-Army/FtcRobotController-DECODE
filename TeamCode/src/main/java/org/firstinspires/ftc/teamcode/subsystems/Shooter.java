@@ -4,11 +4,10 @@ import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.seattlesolvers.solverslib.hardware.SimpleServo;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
+import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
 @Config
@@ -20,7 +19,7 @@ public class Shooter extends SubsystemBase {
 
     private final MotorEx flywheel;
     public final Motor turret;
-    private final SimpleServo hood;
+    private final ServoEx hood;
 
     private double velocity;
 
@@ -38,7 +37,7 @@ public class Shooter extends SubsystemBase {
         turret.setDistancePerPulse(Math.PI * 2 / (Motor.GoBILDA.RPM_435.getCPR() * (200 / 30)));
         turret.setPositionTolerance(tolerance);
 
-        hood = new SimpleServo(hardwareMap, "hood", 0, Math.PI / 2, AngleUnit.RADIANS);
+        hood = new ServoEx(hardwareMap, "hood", 0, Math.PI / 2);
     }
 
     private void setVelocity(double velocity) {
@@ -46,7 +45,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setVerticalAngle(double angleRad) {
-        hood.turnToAngle(angleRad);
+        hood.set(angleRad);
     }
 
     private void setHorizontalAngle(double target) {
