@@ -19,6 +19,7 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.DISTANCE_TO_BO
 
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
+import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
@@ -64,19 +65,16 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setHorizontalAngle(double target) {
-        turret.setTargetDistance(target);
+        double normalizedTarget = MathFunctions.normalizeAngle(target);
+        turret.setTargetDistance(normalizedTarget);
     }
 
-    public double getTurretAngle() {
+    public void updateHorizontalAngle() {
         double x = poseTracker.getPose().getX();
         double y = poseTracker.getPose().getY();
         double heading = poseTracker.getPose().getHeading();
 
-        return Math.atan2(GOAL_Y - y - DISTANCE_TO_BOT_CENTER * Math.sin(heading), GOAL_X - x - DISTANCE_TO_BOT_CENTER * Math.cos(heading)) - heading;
-    }
-
-    public void updateHorizontalAngle() {
-        setHorizontalAngle(getTurretAngle());
+        setHorizontalAngle(getTurretAngle(x, y, heading));
     }
 
     public void updateVerticalAngle() {
@@ -87,5 +85,22 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         flywheel.setVelocity(velocity, AngleUnit.RADIANS);
         turret.set(1);
+    }
+
+    public static double getTurretAngle(double x, double y, double heading) {
+        double turretX = x + DISTANCE_TO_BOT_CENTER * Math.cos(heading);
+        double turretY = y + DISTANCE_TO_BOT_CENTER * Math.sin(heading);
+
+        double angle = Math.abs(Math.atan2(GOAL_Y - turretY, turretX - GOAL_X));
+
+        double target;
+        if (GOAL_X <= turretX) {
+            target = Math.PI - angle - heading;
+        }
+        else {
+            target = angle - heading;
+        }
+
+        return target;
     }
 }
