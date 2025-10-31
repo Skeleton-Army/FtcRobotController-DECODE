@@ -18,19 +18,20 @@ public class FlywheelTest extends OpMode {
     private MotorEx motor;
 
     private boolean isPID = true;
-    public static double targetRPM = 4000;
+    public static double targetRPM = 5000;
     public static double targetPower = 1;
-    public static double kP = 0.1;
+    public static double kP = 0.5;
     public static double kI = 0;
     public static double kD = 0;
     public static double kS = 275.00198;
-    public static double kV = 1.130;
+    public static double kV = 1.5;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         motor = new MotorEx(hardwareMap, "flywheel", Motor.GoBILDA.BARE);
+        motor.setInverted(true);
         handlePID();
     }
 
