@@ -64,7 +64,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Turret Target", shooter.getTurretAngle());
+        telemetry.addData("Turret Target", Shooter.getTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         telemetry.addData("Turret Distance", shooter.turret.getDistance());
         telemetry.addData("Turret Position", shooter.turret.getCurrentPosition());
         telemetry.addData("turret is there?", shooter.turret.atTargetPosition());
