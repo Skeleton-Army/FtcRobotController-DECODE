@@ -19,6 +19,8 @@ public class ShooterConfig {
     public static double TURRET_MIN = -2 * Math.PI;
     public static double TURRET_MAX = 2 * Math.PI;
     public static double GEAR_RATIO = (double) 200 / 30;
+    public static double TURRET_OFFSET_X = 0;
+    public static double TURRET_OFFSET_Y = 0;
 
     public static String HOOD_NAME = "hood";
     public static double HOOD_MIN = 0;

@@ -18,6 +18,8 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_NAME;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_Y;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.DISTANCE_TO_BOT_CENTER;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
@@ -92,8 +94,8 @@ public class Shooter extends SubsystemBase {
     // --- CALCULATIONS ---
 
     public static double getTurretAngle(double x, double y, double heading) {
-        double turretX = x + DISTANCE_TO_BOT_CENTER * Math.cos(heading);
-        double turretY = y + DISTANCE_TO_BOT_CENTER * Math.sin(heading);
+        double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
+        double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 
         double angle = Math.atan2(GOAL_Y - turretY, GOAL_X - turretX);
         double target = angle - heading;
