@@ -91,16 +91,9 @@ public class Shooter extends SubsystemBase {
         double turretX = x + DISTANCE_TO_BOT_CENTER * Math.cos(heading);
         double turretY = y + DISTANCE_TO_BOT_CENTER * Math.sin(heading);
 
-        double angle = Math.abs(Math.atan2(GOAL_Y - turretY, turretX - GOAL_X));
+        double angle = Math.atan2(GOAL_Y - turretY, GOAL_X - turretX);
+        double target = angle - heading;
 
-        double target;
-        if (GOAL_X <= turretX) {
-            target = Math.PI - angle - heading;
-        }
-        else {
-            target = angle - heading;
-        }
-
-        return target;
+        return MathFunctions.normalizeAngle(target);
     }
 }
