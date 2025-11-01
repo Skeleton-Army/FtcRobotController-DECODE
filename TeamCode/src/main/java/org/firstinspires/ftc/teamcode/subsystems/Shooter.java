@@ -17,7 +17,6 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_MIN;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_NAME;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_Y;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.DISTANCE_TO_BOT_CENTER;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
 
@@ -38,7 +37,7 @@ public class Shooter extends SubsystemBase {
     private final PoseTracker poseTracker;
 
     private final MotorEx flywheel;
-    public final Motor turret;
+    private final Motor turret;
     private final ServoEx hood;
 
     private double velocity;
@@ -55,9 +54,27 @@ public class Shooter extends SubsystemBase {
         turret.setPositionCoefficient(TURRET_KP);
         turret.setRunMode(Motor.RunMode.PositionControl);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
-        turret.setDistancePerPulse(Math.PI * 2 / (turret.getCPR() * GEAR_RATIO));
+        turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
 
         hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
+    }
+
+    @Override
+    public void periodic() {
+        flywheel.setVelocity(velocity, AngleUnit.RADIANS);
+        turret.set(1);
+    }
+
+    public void updateHorizontalAngle() {
+        double x = poseTracker.getPose().getX();
+        double y = poseTracker.getPose().getY();
+        double heading = poseTracker.getPose().getHeading();
+
+        setHorizontalAngle(calculateTurretAngle(x, y, heading));
+    }
+
+    public void updateVerticalAngle() {
+        // TODO: Do calculations and set vertical angle to GOAL
     }
 
     private void setVelocity(double velocity) {
@@ -73,27 +90,9 @@ public class Shooter extends SubsystemBase {
         turret.setTargetDistance(wrapped);
     }
 
-    public void updateHorizontalAngle() {
-        double x = poseTracker.getPose().getX();
-        double y = poseTracker.getPose().getY();
-        double heading = poseTracker.getPose().getHeading();
-
-        setHorizontalAngle(getTurretAngle(x, y, heading));
-    }
-
-    public void updateVerticalAngle() {
-        // TODO: Do calculations and set vertical angle to GOAL
-    }
-
-    @Override
-    public void periodic() {
-        flywheel.setVelocity(velocity, AngleUnit.RADIANS);
-        turret.set(1);
-    }
-
     // --- CALCULATIONS ---
 
-    public static double getTurretAngle(double x, double y, double heading) {
+    public static double calculateTurretAngle(double x, double y, double heading) {
         double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
         double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 

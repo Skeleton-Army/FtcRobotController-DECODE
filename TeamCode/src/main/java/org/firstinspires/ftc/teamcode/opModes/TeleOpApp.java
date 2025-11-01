@@ -3,7 +3,6 @@ package org.firstinspires.ftc.teamcode.opModes;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
@@ -64,10 +63,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Turret Target", Shooter.getTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
-        telemetry.addData("Turret Distance", shooter.turret.getDistance());
-        telemetry.addData("Turret Position", shooter.turret.getCurrentPosition());
-        telemetry.addData("turret is there?", shooter.turret.atTargetPosition());
+        telemetry.addData("Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
 
         telemetry.update();
 
