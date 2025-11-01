@@ -64,9 +64,9 @@ public class Shooter extends SubsystemBase {
         hood.set(angleRad);
     }
 
-    private void setHorizontalAngle(double target) {
-        double normalizedTarget = MathFunctions.normalizeAngle(target);
-        turret.setTargetDistance(normalizedTarget);
+    private void setHorizontalAngle(double targetAngleRad) {
+        double wrapped = wrapToTarget(turret.getDistance(), targetAngleRad);
+        turret.setTargetDistance(wrapped);
     }
 
     public void updateHorizontalAngle() {
@@ -87,6 +87,8 @@ public class Shooter extends SubsystemBase {
         turret.set(1);
     }
 
+    // --- CALCULATIONS ---
+
     public static double getTurretAngle(double x, double y, double heading) {
         double turretX = x + DISTANCE_TO_BOT_CENTER * Math.cos(heading);
         double turretY = y + DISTANCE_TO_BOT_CENTER * Math.sin(heading);
@@ -95,5 +97,32 @@ public class Shooter extends SubsystemBase {
         double target = angle - heading;
 
         return MathFunctions.normalizeAngle(target);
+    }
+
+    /**
+     * Computes the nearest wrapped angle target relative to the current angle.
+     * <p>
+     * This ensures that the turret (or any rotating mechanism) always moves along
+     * the shortest angular path to reach the target, properly handling wrap-around
+     * at ±π radians.
+     *
+     * @param current the current angle in radians
+     * @param target  the desired target angle in radians
+     * @return the adjusted target angle, wrapped such that the difference from the current
+     *         angle is the shortest possible rotation (within ±π)
+     */
+    public static double wrapToTarget(double current, double target) {
+        double delta = angleWrap(target - current);
+        return current + delta;
+    }
+
+    /**
+     * Wraps an angle in radians to the range [-π, π].
+     *
+     * @param angle the input angle in radians
+     * @return the equivalent wrapped angle in the range [-π, π]
+     */
+    public static double angleWrap(double angle) {
+        return Math.atan2(Math.sin(angle), Math.cos(angle));
     }
 }
