@@ -80,8 +80,12 @@ public class MovingApriltag implements VisionProcessor {
 
     private OpenGLMatrix robotInCameraFrame;
 
-    Position deltaPos;
+    Position newAngles;
     YawPitchRollAngles deltaAngles;
+
+    static MatOfDouble distortion;
+    Position CameraPosStart;
+    YawPitchRollAngles cameraOrientationStart;
     public enum TagFamily
     {
         TAG_36h11(AprilTagDetectorJNI.TagFamily.TAG_36h11),
@@ -113,7 +117,7 @@ public class MovingApriltag implements VisionProcessor {
             this.code = code;
         }
     }
-    public MovingApriltag(Position CameraPos, YawPitchRollAngles cameraOrientation, double fx, double fy, double cx, double cy, DistanceUnit outputUnitsLength, AngleUnit outputUnitsAngle, AprilTagLibrary tagLibrary,
+    public MovingApriltag(Position CameraPos, YawPitchRollAngles cameraOrientation, MatOfDouble distortion,double fx, double fy, double cx, double cy, DistanceUnit outputUnitsLength, AngleUnit outputUnitsAngle, AprilTagLibrary tagLibrary,
                                  boolean drawAxes, boolean drawCube, boolean drawOutline, boolean drawTagID, TagFamily tagFamily, int threads, boolean suppressCalibrationWarnings)
     {
 
@@ -123,6 +127,9 @@ public class MovingApriltag implements VisionProcessor {
         this.cx = cx;
         this.cy = cy;
 
+        this.CameraPosStart = CameraPos;
+        this.cameraOrientationStart = cameraOrientation;
+        this.distortion = distortion;
         this.tagLibrary = tagLibrary;
         this.outputUnitsLength = outputUnitsLength;
         this.outputUnitsAngle = outputUnitsAngle;
@@ -504,12 +511,28 @@ public class MovingApriltag implements VisionProcessor {
         }
     }
 
-    public void updatePos(Position deltaPos, YawPitchRollAngles deltaAngles) {
-        this.deltaPos = deltaPos;
-        this.deltaAngles = deltaAngles;
+    // changes the Camera offset to get localization
+    public void updatePos(Position deltaPos, YawPitchRollAngles newAngles) {
+        OpenGLMatrix cameraRotationMatrix = new Orientation(
+                AxesReference.INTRINSIC, AxesOrder.ZXZ, AngleUnit.DEGREES,
+                (float) newAngles.getYaw(AngleUnit.DEGREES),
+                (float) newAngles.getPitch(AngleUnit.DEGREES),
+                (float) newAngles.getRoll(AngleUnit.DEGREES),
+                newAngles.getAcquisitionTime())
+                .getRotationMatrix();
 
-        robotInCameraFrame.translate((float) deltaPos.x, (float)deltaPos.y, (float)deltaPos.z);
-        robotInCameraFrame.ro
+        robotInCameraFrame = OpenGLMatrix.identityMatrix()
+                .translated(
+                        (float) (CameraPosStart.toUnit(DistanceUnit.INCH).x + deltaPos.x),
+                        (float) (CameraPosStart.toUnit(DistanceUnit.INCH).y + deltaPos.y),
+                        (float) (CameraPosStart.toUnit(DistanceUnit.INCH).z + deltaPos.z))
+                .multiplied(cameraRotationMatrix)
+                .inverted();
+
+        // without creating new Matrices overtime
+
+        //robotInCameraFrame.multiply();
+       // robotInCameraFrame.translate((float) deltaPos.x, (float)deltaPos.y, (float)deltaPos.z); // adding the changes to the starting pos
     }
     public void setPoseSolver(PoseSolver poseSolver)
     {
@@ -613,7 +636,7 @@ public class MovingApriltag implements VisionProcessor {
 
         // Using this information, actually solve for pose
         Pose pose = new Pose();
-        Calib3d.solvePnP(points3d, points2d, cameraMatrix, new MatOfDouble(), pose.rvec, pose.tvec, false, solveMethod); // why paste an empty Mat to dist coeffs?? bunch of baboons
+        Calib3d.solvePnP(points3d, points2d, cameraMatrix, distortion, pose.rvec, pose.tvec, false, solveMethod); // why paste an empty Mat to dist coeffs?? bunch of baboons
 
         return pose;
     }
