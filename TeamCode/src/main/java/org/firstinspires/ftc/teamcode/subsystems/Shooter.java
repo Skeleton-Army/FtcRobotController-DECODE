@@ -12,6 +12,8 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MAX;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MIN;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_NAME;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_KP;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_MAX;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_MIN;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_NAME;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_Y;
@@ -65,7 +67,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setHorizontalAngle(double targetAngleRad) {
-        double wrapped = wrapToTarget(turret.getDistance(), targetAngleRad);
+        double wrapped = wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX);
         turret.setTargetDistance(wrapped);
     }
 
@@ -100,29 +102,26 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-     * Computes the nearest wrapped angle target relative to the current angle.
-     * <p>
-     * This ensures that the turret (or any rotating mechanism) always moves along
-     * the shortest angular path to reach the target, properly handling wrap-around
-     * at ±π radians.
+     * Compute the equivalent of {@code target} (mod 2π) that is nearest to {@code current},
+     * but force the result into the physical turret limits [min, max].
      *
-     * @param current the current angle in radians
-     * @param target  the desired target angle in radians
-     * @return the adjusted target angle, wrapped such that the difference from the current
-     *         angle is the shortest possible rotation (within ±π)
-     */
-    public static double wrapToTarget(double current, double target) {
-        double delta = angleWrap(target - current);
-        return current + delta;
-    }
-
-    /**
-     * Wraps an angle in radians to the range [-π, π].
+     * <p><b>Assumption:</b> {@code current} is inside [min, max]. {@code target} is assumed
+     * to be in [0, 2π).
      *
-     * @param angle the input angle in radians
-     * @return the equivalent wrapped angle in the range [-π, π]
+     * @param current current angle in radians (must satisfy min <= current <= max)
+     * @param target  desired target angle in radians (0 <= target < 2π)
+     * @param min     minimal allowed angle (radians)
+     * @param max     maximal allowed angle (radians)
+     * @return the target equivalent nearest to current, clamped to [min, max]
      */
-    public static double angleWrap(double angle) {
-        return Math.atan2(Math.sin(angle), Math.cos(angle));
+    public static double wrapToTarget(double current, double target, double min, double max) {
+        double closestEquiv = target + 2 * Math.PI * Math.round((current - target) / (2 * Math.PI));
+        if (closestEquiv < min) {
+            return closestEquiv + 2 * Math.PI;
+        }
+        if (closestEquiv > max) {
+            return closestEquiv - 2 * Math.PI;
+        }
+        return closestEquiv;
     }
 }

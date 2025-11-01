@@ -17,9 +17,16 @@ public class ShooterTurretAngleTest {
 
     @Test
     public void testAngleWrapping() {
-        assertEquals(50, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(0), Math.toRadians(50))), EPS);
-        assertEquals(60, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(40), Math.toRadians(-300))), EPS);
-        assertEquals(361, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(359), Math.toRadians(1))), EPS);
+        assertEquals(50, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(0), Math.toRadians(50), -2 * Math.PI, 2 * Math.PI)), EPS);
+        assertEquals(60, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(40), Math.toRadians(60), -2 * Math.PI, 2 * Math.PI)), EPS);
+        assertEquals(1, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(359), Math.toRadians(1), -2 * Math.PI, 2 * Math.PI)), EPS);
+        assertEquals(-60, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(60), Math.toRadians(300), -2 * Math.PI, 2 * Math.PI)), EPS);
+        assertEquals(-1, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(-359), Math.toRadians(359), -2 * Math.PI, 2 * Math.PI)), EPS);
+
+        assertEquals(179, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(-179), Math.toRadians(179), -Math.PI, Math.PI)), EPS);
+        assertEquals(1, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(-1), Math.toRadians(1), -Math.PI, Math.PI)), EPS);
+        assertEquals(-179, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(179), Math.toRadians(181), -Math.PI, Math.PI)), EPS);
+        assertEquals(180, Math.toDegrees(Shooter.wrapToTarget(Math.toRadians(180), Math.toRadians(180), -Math.PI, Math.PI)), EPS);
     }
 
     @Test
