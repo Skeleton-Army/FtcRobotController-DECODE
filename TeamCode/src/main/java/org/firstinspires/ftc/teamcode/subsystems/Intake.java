@@ -11,7 +11,15 @@ public class Intake extends SubsystemBase {
         intake = new MotorEx(hardwareMap, "intake");
     }
 
-    public void set(double output) {
-        intake.set(output);
+    public void collect() {
+        intake.set(-1);
+    }
+
+    public void release() {
+        intake.set(1);
+    }
+
+    public void stop() {
+        intake.set(0);
     }
 }
