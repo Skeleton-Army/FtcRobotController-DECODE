@@ -1,15 +1,9 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.pedropathing.geometry.Pose;
 
 import com.pedropathing.math.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.firstinspires.ftc.teamcode.consts.HoodAngleCoefficients;
-import org.firstinspires.ftc.teamcode.consts.VelocityCoefficients;
-
-import java.io.File;
-import java.io.IOException;
 
 public class ShooterCalculator implements IShooterCalculator {
     private final double shooterMinVelocity = 11;
