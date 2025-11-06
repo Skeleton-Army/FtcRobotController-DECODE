@@ -20,11 +20,11 @@ public class FlywheelTest extends OpMode {
     private boolean isPID = true;
     public static double targetRPM = 5000;
     public static double targetPower = 1;
-    public static double kP = 0.5;
+    public static double kP = 2.321;
     public static double kI = 0;
     public static double kD = 0;
-    public static double kS = 275.00198;
-    public static double kV = 1.5;
+    public static double kS = 0;
+    public static double kV = 1.756;
 
     @Override
     public void init() {
@@ -55,7 +55,6 @@ public class FlywheelTest extends OpMode {
         if (isPID) {
             double targetTPS = (targetRPM * motor.getCPR()) / 60.0;
             motor.setVelocity(targetTPS);
-
             telemetry.addData("Target", targetRPM);
         }
         else {
@@ -68,7 +67,7 @@ public class FlywheelTest extends OpMode {
         double motorTPS = motor.getCorrectedVelocity();
 
         // Convert to RPM
-        double motorRPM = -(motorTPS * 60.0) / motor.getCPR();
+        double motorRPM = (motorTPS * 60.0) / motor.getCPR();
 
         telemetry.addData("Velocity (ticks/sec)", motorTPS);
         telemetry.addData("Motor RPM", motorRPM);
