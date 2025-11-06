@@ -7,11 +7,11 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor.GoBILDA;
 public class ShooterConfig {
     public static String FLYWHEEL_NAME = "flywheel";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
-    public static double FLYWHEEL_KP = 1;
+    public static double FLYWHEEL_KP = 2.321;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
     public static double FLYWHEEL_KS = 0;
-    public static double FLYWHEEL_KV = 0;
+    public static double FLYWHEEL_KV = 1.756;
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;

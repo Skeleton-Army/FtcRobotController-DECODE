@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -20,11 +22,6 @@ public class FlywheelTest extends OpMode {
     private boolean isPID = true;
     public static double targetRPM = 5000;
     public static double targetPower = 1;
-    public static double kP = 2.321;
-    public static double kI = 0;
-    public static double kD = 0;
-    public static double kS = 0;
-    public static double kV = 1.756;
 
     @Override
     public void init() {
@@ -80,8 +77,8 @@ public class FlywheelTest extends OpMode {
     private void handlePID() {
         if (isPID) {
             motor.setRunMode(Motor.RunMode.VelocityControl);
-            motor.setVeloCoefficients(kP, kI, kD);
-            motor.setFeedforwardCoefficients(kS, kV);
+            motor.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+            motor.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
         }
         else {
             motor.setRunMode(Motor.RunMode.RawPower);
