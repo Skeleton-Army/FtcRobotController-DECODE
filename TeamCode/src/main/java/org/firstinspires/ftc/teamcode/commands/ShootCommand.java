@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.commands;
 
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
@@ -9,6 +10,7 @@ public class ShootCommand extends SequentialCommandGroup {
         addRequirements(subsystem);
 
         addCommands(
+                new WaitCommand(1500)
                 // TODO: Add commands here
                 // 1) Set shooter velocity
                 // 2) Wait for shooter to reach velocity
