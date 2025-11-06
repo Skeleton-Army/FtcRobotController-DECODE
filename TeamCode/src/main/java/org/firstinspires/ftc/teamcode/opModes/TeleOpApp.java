@@ -38,7 +38,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(true);
 
         intake = new Intake(hardwareMap);
-        //shooter = new Shooter(hardwareMap, follower.poseTracker);
+        shooter = new Shooter(hardwareMap, follower.poseTracker);
 
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
@@ -54,9 +54,6 @@ public class TeleOpApp extends ComplexOpMode {
                 )
                 .setLinearHeadingInterpolation(follower.getHeading(), Math.toRadians(getClosestRightAngle(follower)))
                 .build();
-
-//        new Trigger(() -> gamepad1.right_trigger > 0.1)
-//                .whenActive(new ShootCommand(shooter));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whenPressed(new InstantCommand(() -> intake.collect()))
@@ -75,9 +72,13 @@ public class TeleOpApp extends ComplexOpMode {
         follower.update();
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
+        shooter.updateHorizontalAngle();
+
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
+        telemetry.addData("Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
+
         telemetry.update();
 
         double inchesToMeters = 39.37;
