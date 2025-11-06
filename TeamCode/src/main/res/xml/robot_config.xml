@@ -21,6 +21,8 @@
 
             <ControlHubImuBHI260AP name="imu" port="0" bus="0" />
             <goBILDAPinpoint name="pinpoint" port="0" bus="1" />
+
+            <ContinuousRotationServo name="transfer" port="0" />
         </LynxModule>
     </LynxUsbDevice>
 </Robot>

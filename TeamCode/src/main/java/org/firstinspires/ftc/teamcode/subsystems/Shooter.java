@@ -7,6 +7,7 @@ import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.hardware.motors.CRServoEx;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
@@ -20,6 +21,7 @@ public class Shooter extends SubsystemBase {
     private final MotorEx flywheel;
     private final Motor turret;
     private final ServoEx hood;
+    private final CRServoEx transfer;
 
     private double velocity;
 
@@ -30,14 +32,19 @@ public class Shooter extends SubsystemBase {
         flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
+        flywheel.setInverted(FLYWHEEL_INVERTED);
 
         turret = new Motor(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
         turret.setPositionCoefficient(TURRET_KP);
         turret.setRunMode(Motor.RunMode.PositionControl);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
+        turret.setTargetDistance(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
+
+        transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
+        transfer.set(0);
 
         setRPM(FLYWHEEL_TARGET);
     }
@@ -46,6 +53,10 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         flywheel.setVelocity(velocity);
         turret.set(1);
+    }
+
+    public void toggleTransfer(boolean isOn) {
+        transfer.set(isOn ? TRANSFER_POWER : 0);
     }
 
     public void updateHorizontalAngle() {

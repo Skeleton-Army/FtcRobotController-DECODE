@@ -64,8 +64,12 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(new InstantCommand(() -> intake.release()))
                 .whenReleased(new InstantCommand(() -> intake.stop()));
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
-                .whenPressed(new FollowPathCommand(follower, parking));
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
+//                .whenPressed(new FollowPathCommand(follower, parking));
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
+                .whenPressed(new InstantCommand(() -> shooter.toggleTransfer(true)))
+                .whenReleased(new InstantCommand(() -> shooter.toggleTransfer(false)));
     }
 
     @Override
@@ -73,8 +77,8 @@ public class TeleOpApp extends ComplexOpMode {
         follower.update();
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
-        shooter.updateHorizontalAngle();
-        shooter.updateVerticalAngle();
+//        shooter.updateHorizontalAngle();
+//        shooter.updateVerticalAngle();
 
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
