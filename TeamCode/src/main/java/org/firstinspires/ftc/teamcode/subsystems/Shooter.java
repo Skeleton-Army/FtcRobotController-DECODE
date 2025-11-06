@@ -1,24 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KD;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KI;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KP;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KS;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_KV;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_MOTOR;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_NAME;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GEAR_RATIO;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MAX;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MIN;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_NAME;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_KP;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_MAX;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_MIN;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_NAME;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_X;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.GOAL_Y;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
