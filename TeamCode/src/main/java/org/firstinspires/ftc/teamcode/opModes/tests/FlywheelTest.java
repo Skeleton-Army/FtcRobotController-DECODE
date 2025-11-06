@@ -20,7 +20,6 @@ public class FlywheelTest extends OpMode {
     private MotorEx motor;
 
     private boolean isPID = true;
-    public static double targetRPM = 5000;
     public static double targetPower = 1;
 
     @Override
@@ -40,19 +39,19 @@ public class FlywheelTest extends OpMode {
         }
 
         if (gamepad1.dpadUpWasPressed()) {
-            if (isPID) targetRPM = MathUtils.clamp(targetRPM + 100, 0, 6000);
+            if (isPID) FLYWHEEL_TARGET = MathUtils.clamp(FLYWHEEL_TARGET + 100, 0, 6000);
             else targetPower = MathUtils.clamp(targetPower + 0.1, 0, 1);
         }
 
         if (gamepad1.dpadDownWasPressed()) {
-            if (isPID) targetRPM = MathUtils.clamp(targetRPM - 100, 0, 6000);
+            if (isPID) FLYWHEEL_TARGET = MathUtils.clamp(FLYWHEEL_TARGET - 100, 0, 6000);
             else targetPower = MathUtils.clamp(targetPower - 0.1, 0, 1);
         }
 
         if (isPID) {
-            double targetTPS = (targetRPM * motor.getCPR()) / 60.0;
+            double targetTPS = (FLYWHEEL_TARGET * motor.getCPR()) / 60.0;
             motor.setVelocity(targetTPS);
-            telemetry.addData("Target", targetRPM);
+            telemetry.addData("Target", FLYWHEEL_TARGET);
         }
         else {
             motor.set(targetPower);

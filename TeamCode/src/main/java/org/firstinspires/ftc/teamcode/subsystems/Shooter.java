@@ -11,7 +11,6 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
-import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 
 @Config
@@ -39,11 +38,13 @@ public class Shooter extends SubsystemBase {
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
 
         hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
+
+        setRPM(FLYWHEEL_TARGET);
     }
 
     @Override
     public void periodic() {
-        flywheel.setVelocity(velocity, AngleUnit.RADIANS);
+        flywheel.setVelocity(velocity);
         turret.set(1);
     }
 
@@ -59,8 +60,13 @@ public class Shooter extends SubsystemBase {
         // TODO: Do calculations and set vertical angle to GOAL
     }
 
-    private void setVelocity(double velocity) {
-        this.velocity = velocity;
+    public double getRPM() {
+        double motorTPS = flywheel.getCorrectedVelocity();
+        return (motorTPS * 60.0) / flywheel.getCPR();
+    }
+
+    private void setRPM(double rpm) {
+        this.velocity = (rpm * flywheel.getCPR()) / 60.0;
     }
 
     private void setVerticalAngle(double angleRad) {

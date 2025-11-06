@@ -36,6 +36,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
+        follower.setPose(new Pose(72, 72));
 
         intake = new Intake(hardwareMap);
         shooter = new Shooter(hardwareMap, follower.poseTracker);
@@ -73,17 +74,21 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
         shooter.updateHorizontalAngle();
+        shooter.updateVerticalAngle();
 
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.addData("Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
+        telemetry.addData("Flywheel RPM", shooter.getRPM());
 
         telemetry.update();
 
         double inchesToMeters = 39.37;
         Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
         Logger.recordOutput("Robot Pose", robotPose);
+        Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
+        Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
     }
 
     public int getClosestRightAngle(Follower follower) {
