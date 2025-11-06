@@ -57,7 +57,7 @@ public class Shooter extends SubsystemBase {
      */
     private double velocity;
 
-    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker) {
+    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
         flywheel = new MotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
@@ -72,10 +72,9 @@ public class Shooter extends SubsystemBase {
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
 
         hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
+
         this.shooterCalculator = shooterCalculator;
-
         this.alliance = alliance;
-
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
     }
 
@@ -88,7 +87,6 @@ public class Shooter extends SubsystemBase {
 
         flywheel.setVelocity(velocity, AngleUnit.RADIANS);
         turret.set(1);
-        hood.set(this.hoodAngle, AngleUnit.RADIANS);
     }
 
     public void updateHorizontalAngle() {
