@@ -37,11 +37,11 @@ public class TeleOpApp extends ComplexOpMode {
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-        follower = Constants.createFollower(hardwareMap);
-        follower.startTeleopDrive(true);
-        follower.setStartingPose(new Pose(72, 72));
+//        follower = Constants.createFollower(hardwareMap);
+//        follower.startTeleopDrive(true);
+//        follower.setStartingPose(new Pose(72, 72));
 
-        intake = new Intake(hardwareMap);
+//        intake = new Intake(hardwareMap);
         //shooter = new Shooter(hardwareMap, follower.poseTracker);
 
         gamepadEx1 = new GamepadEx(gamepad1);
@@ -50,13 +50,13 @@ public class TeleOpApp extends ComplexOpMode {
 //        new Trigger(() -> gamepad1.right_trigger > 0.1)
 //                .whenActive(new ShootCommand(shooter));
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(new InstantCommand(() -> intake.set(-1)))
-                .whenReleased(new InstantCommand(() -> intake.set(0)));
-
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whenPressed(new InstantCommand(() -> intake.set(1)))
-                .whenReleased(new InstantCommand(() -> intake.set(0)));
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
+//                .whenPressed(new InstantCommand(() -> intake.set(-1)))
+//                .whenReleased(new InstantCommand(() -> intake.set(0)));
+//
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+//                .whenPressed(new InstantCommand(() -> intake.set(1)))
+//                .whenReleased(new InstantCommand(() -> intake.set(0)));
 
         schedule(
                 // TODO: Set shooter angle to GOAL
@@ -65,11 +65,11 @@ public class TeleOpApp extends ComplexOpMode {
 
     @Override
     public void run() {
-        follower.update();
-        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+//        follower.update();
+//        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
-        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
-        robotZone.setRotation(follower.getPose().getHeading());
+//        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
+//        robotZone.setRotation(follower.getPose().getHeading());
 
         telemetry.addData("Is inside close LAUNCH ZONE?", robotZone.isInside(closeLaunchZone));
         telemetry.addData("Is fully inside close LAUNCH ZONE?", robotZone.isFullyInside(closeLaunchZone));
@@ -87,13 +87,16 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Fully parked RED BASE?", robotZone.isFullyInside(redBase));
         telemetry.addData("Distance to RED BASE", robotZone.distanceTo(redBase));
         telemetry.addLine();
-        telemetry.addData("Robot x", follower.getPose().getX());
-        telemetry.addData("Robot y", follower.getPose().getY());
-        telemetry.addData("Robot heading", follower.getPose().getHeading());
+//        telemetry.addData("Robot x", follower.getPose().getX());
+//        telemetry.addData("Robot y", follower.getPose().getY());
+//        telemetry.addData("Robot heading", follower.getPose().getHeading());
+        telemetry.addData("Debug Mode", TestSettings.get("debug"));
+//        Buh buh = TestSettings.get("buh");
+//        telemetry.addData("Buh", buh);
         telemetry.update();
 
-        double inchesToMeters = 39.37;
-        Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
-        Logger.recordOutput("Robot Pose", robotPose);
+//        double inchesToMeters = 39.37;
+//        Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
+//        Logger.recordOutput("Robot Pose", robotPose);
     }
 }
