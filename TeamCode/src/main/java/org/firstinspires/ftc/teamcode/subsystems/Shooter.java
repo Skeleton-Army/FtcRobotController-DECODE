@@ -41,10 +41,11 @@ public class Shooter extends SubsystemBase {
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
         turret.setTargetDistance(0);
 
-        hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
+        hood = new ServoEx(hardwareMap, HOOD_NAME);
+        setVerticalAngle(0);
 
         transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
-        transfer.set(0);
+        setHorizontalAngle(0);
 
         setRPM(FLYWHEEL_TARGET);
     }
@@ -76,15 +77,28 @@ public class Shooter extends SubsystemBase {
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
+    public double getRawHoodPosition() {
+        return hood.getRawPosition();
+    }
+
+    public double getTurretPosition() {
+        return turret.getCurrentPosition();
+    }
+
     private void setRPM(double rpm) {
         this.velocity = (rpm * flywheel.getCPR()) / 60.0;
     }
 
-    private void setVerticalAngle(double angleRad) {
-        hood.set(angleRad);
+    public void setRawHoodPosition(double angle) {
+        hood.set(angle + HOOD_POSSIBLE_MIN);
     }
 
-    private void setHorizontalAngle(double targetAngleRad) {
+    public void setVerticalAngle(double angle) {
+        double normalized = (angle - HOOD_MIN) / (HOOD_MAX - HOOD_MIN);
+        setRawHoodPosition(normalized);
+    }
+
+    public void setHorizontalAngle(double targetAngleRad) {
         double wrapped = wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX);
         turret.setTargetDistance(wrapped);
     }

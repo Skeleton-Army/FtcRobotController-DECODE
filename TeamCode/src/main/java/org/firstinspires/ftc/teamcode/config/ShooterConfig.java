@@ -8,7 +8,7 @@ public class ShooterConfig {
     public static String FLYWHEEL_NAME = "flywheel";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL_INVERTED = true;
-    public static double FLYWHEEL_TARGET = 4500;
+    public static double FLYWHEEL_TARGET = 4000;
     public static double FLYWHEEL_KP = 2.321;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
@@ -25,6 +25,7 @@ public class ShooterConfig {
     public static double TURRET_OFFSET_Y = 0;
 
     public static String HOOD_NAME = "hood";
+    public static double HOOD_POSSIBLE_MIN = 0.03;
     public static double HOOD_MIN = 0;
     public static double HOOD_MAX = Math.PI / 2;
 
