@@ -63,4 +63,7 @@ dependencies {
 
     implementation 'org.psilynx.psikit:core:0.1.0-beta1'
     implementation 'org.psilynx.psikit:ftc:0.1.0-beta1'
+
+    implementation 'com.bylazar:fullpanels:1.0.6'
+    implementation "com.bylazar:limelightproxy:1.0.3"
 }

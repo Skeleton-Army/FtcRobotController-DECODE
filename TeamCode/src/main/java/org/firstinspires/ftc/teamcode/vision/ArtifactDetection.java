@@ -11,7 +11,7 @@ public class ArtifactDetection extends OpMode {
     @Override
     public void init() {
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.pipelineSwitch(1);
+        limelight.pipelineSwitch(0);
         // 0: apriltag detection
         // 1: artifact detection
         limelight.start();
@@ -26,9 +26,10 @@ public class ArtifactDetection extends OpMode {
             telemetry.addData("ty: ", llResult.getTy());
             telemetry.addData("ta: ", llResult.getTa());
 
-
-            for( double pythonResult: llResult.getPythonOutput()) {
-                telemetry.addData("python output : ", pythonResult);
+            double[] pythonOutput = llResult.getPythonOutput();
+            if (pythonOutput != null && pythonOutput.length > 0) {
+                double firstOutput = pythonOutput[0];
+                telemetry.addData("firstOutput", firstOutput);
             }
         }
 
