@@ -147,22 +147,22 @@ public class LocalizerFOM implements Localizer {
     }
     @Override
     public double getTotalHeading() {
-        return 0;
+        return totalHeading;
     }
 
     @Override
     public double getForwardMultiplier() {
-        return 0;
+        return odo.getEncoderY();
     }
 
     @Override
     public double getLateralMultiplier() {
-        return 0;
+        return odo.getEncoderX();
     }
 
     @Override
     public double getTurningMultiplier() {
-        return 0;
+        return odo.getYawScalar();
     }
 
     @Override
