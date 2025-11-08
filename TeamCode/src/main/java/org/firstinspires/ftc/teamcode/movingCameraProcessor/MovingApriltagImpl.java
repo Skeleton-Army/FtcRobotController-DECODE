@@ -20,7 +20,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibrationHelper;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.PlaceholderCalibratedAspectRatioMismatch;
-import org.firstinspires.ftc.vision.VisionProcessor;
 import org.firstinspires.ftc.vision.apriltag.AprilTagCanvasAnnotator;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
@@ -42,8 +41,7 @@ import org.openftc.apriltag.ApriltagDetectionJNI;
 
 import java.util.ArrayList;
 
-// TODO: Do it properly by extending ApriltagProcessorImpl
-public class MovingApriltagImpl extends MovingApriltag {
+public class MovingApriltagImpl extends MovingApriltagProcessor {
     public static final String TAG = "MovingApriltag";
 
     private long nativeApriltagPtr;
