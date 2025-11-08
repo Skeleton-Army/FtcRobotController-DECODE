@@ -72,6 +72,9 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new InstantCommand(() -> shooter.toggleTransfer(true)))
                 .whenReleased(new InstantCommand(() -> shooter.toggleTransfer(false)));
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
+                .whenPressed(new InstantCommand(() -> shooter.kick()));
     }
 
     @Override

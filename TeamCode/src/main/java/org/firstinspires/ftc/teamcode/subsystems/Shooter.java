@@ -6,7 +6,11 @@ import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.hardware.motors.CRServoEx;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
@@ -22,6 +26,7 @@ public class Shooter extends SubsystemBase {
     private final Motor turret;
     private final ServoEx hood;
     private final CRServoEx transfer;
+    private final ServoEx kicker;
 
     private double velocity;
 
@@ -39,13 +44,16 @@ public class Shooter extends SubsystemBase {
         turret.setRunMode(Motor.RunMode.PositionControl);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
-        turret.setTargetDistance(0);
+        setHorizontalAngle(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
         setVerticalAngle(0);
 
         transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
-        setHorizontalAngle(0);
+        toggleTransfer(false);
+
+        kicker = new ServoEx(hardwareMap, KICKER_NAME);
+        kicker.set(0);
 
         setRPM(FLYWHEEL_TARGET);
     }
@@ -58,6 +66,16 @@ public class Shooter extends SubsystemBase {
 
     public void toggleTransfer(boolean isOn) {
         transfer.set(isOn ? TRANSFER_POWER : 0);
+    }
+
+    public void kick() {
+        CommandScheduler.getInstance().schedule(
+                new SequentialCommandGroup(
+                        new InstantCommand(() -> kicker.set(KICKER_MAX)),
+                        new WaitCommand(KICK_TIME),
+                        new InstantCommand(() -> kicker.set(KICKER_MIN))
+                )
+        );
     }
 
     public void updateHorizontalAngle() {

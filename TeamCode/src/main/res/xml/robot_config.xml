@@ -11,6 +11,7 @@
             <goBILDA5202SeriesMotor name="turret" port="2" />
 
             <Servo name="hood" port="0" />
+            <Servo name="kicker" port="1" />
         </LynxModule>
 
         <LynxModule name="Control Hub" port="173">
