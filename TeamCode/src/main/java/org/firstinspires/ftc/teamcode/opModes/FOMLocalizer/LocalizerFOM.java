@@ -33,7 +33,7 @@ public class LocalizerFOM implements Localizer {
     private Pose3D cameraApriltagPose;
     private FOMCalculator FOMcalculator;
 
-    public LocalizerFOM(HardwareMap hardwareMap, FOMLocalizerConstants constants, Pose setStartPose ) {
+    public LocalizerFOM(HardwareMap hardwareMap, FOMLocalizerConstants constants, Pose setStartPose) {
 
         odo = hardwareMap.get(GoBildaPinpointDriver.class,constants.hardwareMapName);
         setOffsets(constants.forwardPodY, constants.strafePodX, constants.distanceUnit);
@@ -56,6 +56,8 @@ public class LocalizerFOM implements Localizer {
         currentVelocity = new Pose();
         previousHeading = setStartPose.getHeading();
 
+
+
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(0);
         limelight.start();
@@ -63,17 +65,44 @@ public class LocalizerFOM implements Localizer {
 
     @Override
     public Pose getPose() {
-        return null;
+        return robotPose;
+    }
+    public Pose getLimelightPose() {
+        LLResult result = limelight.getLatestResult();
+        double robotYaw = odo.getHeading(AngleUnit.DEGREES);
+        limelight.updateRobotOrientation(robotYaw);
+        if (result.isValid()) {
+            // Access general information
+
+            Position botpose_mt2 = result.getBotpose_MT2().getPosition().toUnit(DistanceUnit.INCH);
+            if (botpose_mt2 != null) {
+                YawPitchRollAngles orientation = result.getBotpose_MT2().getOrientation();
+
+                cameraApriltagPose = result.getFiducialResults().get(0).getCameraPoseTargetSpace();
+
+                limelightPose = new Pose(botpose_mt2.x, botpose_mt2.y, orientation.getYaw(AngleUnit.DEGREES));
+
+                limelightPose = PoseConverter.pose2DToPose(new Pose2D(DistanceUnit.INCH, botpose_mt2.x, botpose_mt2.y, AngleUnit.DEGREES, orientation.getYaw()), limelightPose.getCoordinateSystem());
+
+            }
+            else {
+                limelightPose = new Pose(0,0,0);
+            }
+        }
+        return limelightPose;
     }
 
+    public Pose getPinpointPose() {
+        return pinpointPose;
+    }
     @Override
     public Pose getVelocity() {
-        return null;
+        return currentVelocity;
     }
 
     @Override
     public Vector getVelocityVector() {
-        return null;
+        return currentVelocity.getAsVector();
     }
 
     @Override
@@ -97,6 +126,7 @@ public class LocalizerFOM implements Localizer {
         previousHeading = currentPinpointPose.getHeading();
         currentVelocity = new Pose(odo.getVelX(DistanceUnit.INCH), odo.getVelY(DistanceUnit.INCH), odo.getHeading(AngleUnit.RADIANS));
         pinpointPose = currentPinpointPose;
+        robotPose = currentPinpointPose; // setting also the calculated robot pose
     }
 
     @Override
@@ -110,32 +140,11 @@ public class LocalizerFOM implements Localizer {
         currentVelocity = new Pose(odo.getVelX(DistanceUnit.INCH), odo.getVelY(DistanceUnit.INCH), odo.getHeading(AngleUnit.RADIANS));
         pinpointPose = currentPinpointPose;
 
-        LLResult result = limelight.getLatestResult();
-        double robotYaw = odo.getHeading(AngleUnit.DEGREES);
-        limelight.updateRobotOrientation(robotYaw);
-        if (result.isValid()) {
-            // Access general information
-
-            Position botpose_mt2 = result.getBotpose_MT2().getPosition().toUnit(DistanceUnit.INCH);
-            if (botpose_mt2 != null) {
-                YawPitchRollAngles orientation = result.getBotpose_MT2().getOrientation();
-
-                cameraApriltagPose = result.getFiducialResults().get(0).getCameraPoseTargetSpace();
-
-                limelightPose = new Pose(botpose_mt2.x, botpose_mt2.y, orientation.getYaw(AngleUnit.DEGREES));
-
-                limelightPose = PoseConverter.pose2DToPose(new Pose2D(DistanceUnit.INCH, botpose_mt2.x, botpose_mt2.y, AngleUnit.DEGREES, orientation.getYaw()), limelightPose.getCoordinateSystem());
-
-            }
-            else {
-                limelightPose = new Pose(0,0,0);
-            }
-        }
+        limelightPose = getLimelightPose(); // updates the limelight pose for calculation
 
         robotPose = FOMcalculator.calcPos(limelightPose, cameraApriltagPose);
 
     }
-
     @Override
     public double getTotalHeading() {
         return 0;
@@ -158,14 +167,23 @@ public class LocalizerFOM implements Localizer {
 
     @Override
     public void resetIMU() throws InterruptedException {
-
+        resetPinpoint();
     }
 
     @Override
     public double getIMUHeading() {
-        return 0;
+        return Double.NaN;
     }
 
+    private void resetPinpoint() {
+        odo.resetPosAndIMU();
+
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
     @Override
     public boolean isNAN() {
         return false;
@@ -173,5 +191,19 @@ public class LocalizerFOM implements Localizer {
 
     private void setOffsets(double xOffset, double yOffset, DistanceUnit unit) {
         odo.setOffsets(xOffset, yOffset, unit);
+    }
+
+    public void recalibrate() {
+        odo.recalibrateIMU();
+    }
+
+    /**
+     * This returns the GoBildaPinpointDriver object used by this localizer, in case you want to
+     * access any of its methods directly.
+     *
+     * @return returns the GoBildaPinpointDriver object used by this localizer
+     */
+    public GoBildaPinpointDriver getPinpoint() {
+        return odo;
     }
 }

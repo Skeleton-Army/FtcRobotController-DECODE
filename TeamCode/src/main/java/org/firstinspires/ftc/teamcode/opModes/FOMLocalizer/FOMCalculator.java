@@ -46,7 +46,7 @@ public class FOMCalculator {
      */
     public void calcApriltagFOM(Pose limelightPose, Pose3D cameraApriltagPose) {
         if (!limelightPose.equals(new Pose(0,0,0))) {
-            // the relative distace to the detected tag
+            // the relative distance to the detected tag
             double distanceToTag = Math.sqrt(Math.pow(cameraApriltagPose.getPosition().x, 2) + Math.pow(cameraApriltagPose.getPosition().y, 2));
 
             apriltagFOM = distanceToTag/apriltagFOMDistanceCoeff + apriltagFOMVelCoeff*follower.getVelocity().getMagnitude()/ maxVel;
