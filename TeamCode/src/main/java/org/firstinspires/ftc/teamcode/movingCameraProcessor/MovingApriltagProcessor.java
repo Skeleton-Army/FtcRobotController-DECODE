@@ -6,7 +6,7 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.opencv.calib3d.Calib3d;
 import org.openftc.apriltag.AprilTagDetectorJNI;
 
-public abstract class MovingApriltag extends AprilTagProcessor {
+public abstract class MovingApriltagProcessor extends AprilTagProcessor {
    public abstract void updatePos(Position deltaPos, YawPitchRollAngles newAngles);
     public enum PoseSolver
     {
