@@ -57,9 +57,9 @@ dependencies {
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.mockito:mockito-core:5.7.0'
 
-    implementation 'com.pedropathing:ftc:2.0.3'
+    implementation 'com.pedropathing:ftc:2.0.4'
     implementation 'com.pedropathing:telemetry:1.0.0'
-    implementation 'com.bylazar:fullpanels:1.0.6'
+    implementation 'com.bylazar:fullpanels:1.0.9'
 
     implementation "org.solverslib:core:0.3.3"
     implementation "org.solverslib:pedroPathing:0.3.3"
