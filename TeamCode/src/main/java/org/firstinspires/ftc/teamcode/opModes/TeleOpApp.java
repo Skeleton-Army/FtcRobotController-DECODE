@@ -11,9 +11,8 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
-import org.firstinspires.ftc.teamcode.consts.Alliance;
-import org.firstinspires.ftc.teamcode.consts.HoodAngleCoefficients;
-import org.firstinspires.ftc.teamcode.consts.VelocityCoefficients;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
@@ -37,8 +36,8 @@ public class TeleOpApp extends ComplexOpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
 
-        IShooterCalculator shooterCalc = new ShooterCalculator(HoodAngleCoefficients.coefficients,
-                VelocityCoefficients.coefficients);
+        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.hoodCoeffs,
+                ShooterCoefficients.velCoeffs);
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, Alliance.BLUE);
         intake = new Intake(hardwareMap);
 
@@ -62,12 +61,10 @@ public class TeleOpApp extends ComplexOpMode {
         follower.update();
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
-        shooter.updateHorizontalAngle();
 
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
 
         telemetry.update();
 

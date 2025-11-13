@@ -11,7 +11,9 @@ import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
 
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
+import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -103,7 +105,7 @@ public class AutonomousApp extends ComplexOpMode {
         follower.setStartingPose(new Pose(56.604751619870406,7.464362850971918, Math.toRadians(90)));
 
         intake = new Intake(hardwareMap);
-        shooter = new Shooter(hardwareMap, follower.poseTracker);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs), Alliance.BLUE);
 
         setupPaths();
         setupPrompts();

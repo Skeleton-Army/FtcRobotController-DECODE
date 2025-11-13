@@ -5,7 +5,9 @@ public class ShootingSolution {
     private double verticalAngle;
     private double flywheelRPM;
     public ShootingSolution(double horizontalAngle, double verticalAngle, double flywheelRPM) {
-
+        this.horizontalAngle = horizontalAngle;
+        this.verticalAngle = verticalAngle;
+        this.flywheelRPM = flywheelRPM;
     }
 
     public double getHorizontalAngle() {

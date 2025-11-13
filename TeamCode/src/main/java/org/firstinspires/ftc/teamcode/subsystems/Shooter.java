@@ -18,7 +18,7 @@ import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
-import org.firstinspires.ftc.teamcode.consts.Alliance;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 
 import java.io.IOException;
@@ -71,14 +71,6 @@ public class Shooter extends SubsystemBase {
         turret.set(1);
     }
 
-    public void updateHorizontalAngle() {
-        double x = poseTracker.getPose().getX();
-        double y = poseTracker.getPose().getY();
-        double heading = poseTracker.getPose().getHeading();
-
-        setHorizontalAngle(calculateTurretAngle(x, y, heading));
-    }
-
     public void updateVerticalAngle() {
         // TODO: Do calculations and set vertical angle to GOAL
     }
@@ -92,43 +84,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setHorizontalAngle(double targetAngleRad) {
-        double wrapped = wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX);
+        double wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX);
         turret.setTargetDistance(wrapped);
-    }
-
-    // --- CALCULATIONS ---
-
-    public static double calculateTurretAngle(double x, double y, double heading) {
-        double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
-        double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
-
-        double angle = Math.atan2(GOAL_Y - turretY, GOAL_X - turretX);
-        double target = angle - heading;
-
-        return MathFunctions.normalizeAngle(target);
-    }
-
-    /**
-     * Compute the equivalent of {@code target} (mod 2π) that is nearest to {@code current},
-     * but force the result into the physical turret limits [min, max].
-     *
-     * <p><b>Assumption:</b> {@code current} is inside [min, max]. {@code target} is assumed
-     * to be in [0, 2π).
-     *
-     * @param current current angle in radians (must satisfy min <= current <= max)
-     * @param target  desired target angle in radians (0 <= target < 2π)
-     * @param min     minimal allowed angle (radians)
-     * @param max     maximal allowed angle (radians)
-     * @return the target equivalent nearest to current, clamped to [min, max]
-     */
-    public static double wrapToTarget(double current, double target, double min, double max) {
-        double closestEquiv = target + 2 * Math.PI * Math.round((current - target) / (2 * Math.PI));
-        if (closestEquiv < min) {
-            return closestEquiv + 2 * Math.PI;
-        }
-        if (closestEquiv > max) {
-            return closestEquiv - 2 * Math.PI;
-        }
-        return closestEquiv;
     }
 }
