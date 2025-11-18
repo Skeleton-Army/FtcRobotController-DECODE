@@ -27,7 +27,8 @@ public class ShooterConfig {
     public static String HOOD_NAME = "hood";
     public static double HOOD_POSSIBLE_MIN = 0.03;
     public static double HOOD_MIN = 0;
-    public static double HOOD_MAX = Math.PI / 2;
+    public static double HOOD_MAX = 260;
+    public static double HOOD_START_ANGLE = 180 - 62.5; // according to hardware team
 
     public static String TRANSFER_NAME = "transfer";
     public static double TRANSFER_POWER = 1;

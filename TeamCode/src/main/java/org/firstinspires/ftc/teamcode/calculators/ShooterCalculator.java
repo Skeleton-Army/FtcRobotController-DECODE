@@ -27,7 +27,7 @@ public class ShooterCalculator implements IShooterCalculator {
     private double calculateVerticalAngle(double distanceFromGoal) {
         double result = 0.0;
         for (int exponent = 0; exponent < hoodCoeffs.length; exponent++) {
-            result += hoodCoeffs[exponent] * Math.pow(distanceFromGoal, exponent);
+            result += hoodCoeffs[exponent] * Math.pow(distanceFromGoal, hoodCoeffs.length - exponent - 1);
         }
         return result;
     }
@@ -68,12 +68,13 @@ public class ShooterCalculator implements IShooterCalculator {
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector vel) {
         Vector3D velocity = new Vector3D(vel.getXComponent(), vel.getYComponent(), 0);
         double distanceFromGoal = robotPose.distanceFrom(goalPose);
-        double staticVerticalAngle = calculateVerticalAngle(distanceFromGoal);
+        double staticVerticalAngle = calculateVerticalAngle(distanceFromGoal / 39.37);
         double horizontalAngle = calculateTurretAngle(robotPose.getX(), robotPose.getY(), robotPose.getHeading());
         Vector3D targetVelocityBase = new Vector3D(staticVerticalAngle, horizontalAngle);
         Vector3D targetVelocity = new Vector3D(shooterVelocity(distanceFromGoal), targetVelocityBase);
         Vector3D v0 = targetVelocity.add(velocity.negate());
 
-        return new ShootingSolution(v0.getDelta(), v0.getAlpha(), velocityToRPM(v0.getNorm())); //might be mistake from wrong placement of alpha and delta
+        //return new ShootingSolution(v0.getDelta(), v0.getAlpha(), velocityToRPM(v0.getNorm())); //might be mistake from wrong placement of alpha and delta
+        return new ShootingSolution(horizontalAngle, staticVerticalAngle, shooterMaxVelocity);
     }
 }

@@ -41,11 +41,13 @@ public class Shooter extends SubsystemBase {
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
     private final Pose goalPose;
+
     /**
      * Flywheel velocity [ticks/second]
      */
     private double velocity;
 
+    public ShootingSolution solution;
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
@@ -63,7 +65,7 @@ public class Shooter extends SubsystemBase {
         setHorizontalAngle(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
-        setVerticalAngle(0);
+        setVerticalAngle(1);
 
         transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
         toggleTransfer(false);
@@ -80,13 +82,18 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        ShootingSolution solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
+        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
 
         setVerticalAngle(solution.getVerticalAngle());
         setVelocity(solution.getVelocity());
 
         //flywheel.setVelocity(velocity, AngleUnit.RADIANS);
         flywheel.setVelocity(velocity);
+
+        //flywheel.setRunMode(Motor.RunMode.VelocityControl);
+        //flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+        //flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
+
         turret.set(1);
     }
 
@@ -133,9 +140,14 @@ public class Shooter extends SubsystemBase {
         hood.set(angle + HOOD_POSSIBLE_MIN);
     }
 
+    /**
+        set the hood angle relative to the ground
+
+       * @param angle the hood angle given by the calculations (deg)
+     **/
     public void setVerticalAngle(double angle) {
-        double normalized = (angle - HOOD_MIN) / (HOOD_MAX - HOOD_MIN);
-        setRawHoodPosition(normalized);
+        double normalized = (angle - 62.5 * Math.PI / 180) / (-34.7 * Math.PI / 180); // normalized/converted to servo position
+        setRawHoodPosition(MathFunctions.clamp(normalized, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
     }
 
     private void setHorizontalAngle(double targetAngleRad) {

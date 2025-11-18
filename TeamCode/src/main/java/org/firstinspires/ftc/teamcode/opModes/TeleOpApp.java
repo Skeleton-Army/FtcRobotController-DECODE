@@ -16,6 +16,7 @@ import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -91,26 +92,38 @@ public class TeleOpApp extends ComplexOpMode {
 //        shooter.updateHorizontalAngle();
 //        shooter.updateVerticalAngle();
 
-        if (gamepad1.dpad_up) {
-            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() + 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
+        if (gamepadEx1.isDown(GamepadKeys.Button.DPAD_UP)) {
+            //shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() + 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
+            shooter.setVerticalAngle(50);
         }
 
-        if (gamepad1.dpad_down) {
-            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
+        if (gamepadEx1.isDown(GamepadKeys.Button.DPAD_DOWN)) {
+            //shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
+            shooter.setVerticalAngle(60);
         }
 
+        if (gamepadEx1.isDown(GamepadKeys.Button.DPAD_RIGHT)) {
+            //shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
+            shooter.setVerticalAngle(30);
+        }
+
+        double inchesToMeters = 39.37;
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.addData("Turret angle", shooter.getTurretPosition());
+        telemetry.addData("hood pos", shooter.getRawHoodPosition());
+        telemetry.addData("hood angle(deg)", (-34.7) * shooter.getRawHoodPosition() + 62.5);
+        telemetry.addData("solution angle(rad)", shooter.solution.getVerticalAngle());
+        telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
+        telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         //telemetry.addData("Turret Target", shooterCalc.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         telemetry.addData("Flywheel RPM", shooter.getRPM());
-        telemetry.addData("Intake RPM", intake.getRPM());
-        telemetry.addData("PodX ticks", follower.getPoseTracker().getLocalizer().getLateralMultiplier());
-        telemetry.addData("PodY ticks", follower.getPoseTracker().getLocalizer().getForwardMultiplier());
+        //telemetry.addData("Intake RPM", intake.getRPM());
+        //telemetry.addData("PodX ticks", follower.getPoseTracker().getLocalizer().getLateralMultiplier());
+        //telemetry.addData("PodY ticks", follower.getPoseTracker().getLocalizer().getForwardMultiplier());
         telemetry.update();
 
-        double inchesToMeters = 39.37;
         Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
         Logger.recordOutput("Robot Pose", robotPose);
         //Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
