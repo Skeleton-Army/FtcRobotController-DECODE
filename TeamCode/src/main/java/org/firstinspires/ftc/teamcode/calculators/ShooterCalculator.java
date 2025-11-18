@@ -48,7 +48,7 @@ public class ShooterCalculator implements IShooterCalculator {
         return shooterMinVelocity + (distance - minDistance) * (shooterMaxVelocity - shooterMinVelocity) / (maxDistance - minDistance);
     }
 
-    double calculateTurretAngle(double x, double y, double heading) {
+    public double calculateTurretAngle(double x, double y, double heading) {
         double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
         double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 

@@ -15,6 +15,7 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
+import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -91,17 +92,18 @@ public class TeleOpApp extends ComplexOpMode {
 //        shooter.updateVerticalAngle();
 
         if (gamepad1.dpad_up) {
-            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() + 0.05, HOOD_POSSIBLE_MIN, 1));
+            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() + 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
         }
 
         if (gamepad1.dpad_down) {
-            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, HOOD_POSSIBLE_MIN, 1));
+            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
         }
 
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
+        telemetry.addData("Turret angle", shooter.getTurretPosition());
+        //telemetry.addData("Turret Target", shooterCalc.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Intake RPM", intake.getRPM());
         telemetry.addData("PodX ticks", follower.getPoseTracker().getLocalizer().getLateralMultiplier());
@@ -111,7 +113,7 @@ public class TeleOpApp extends ComplexOpMode {
         double inchesToMeters = 39.37;
         Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
         Logger.recordOutput("Robot Pose", robotPose);
-        Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
+        //Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
     }
 
