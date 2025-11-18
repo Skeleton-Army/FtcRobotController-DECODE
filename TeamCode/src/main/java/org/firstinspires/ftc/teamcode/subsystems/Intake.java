@@ -11,6 +11,11 @@ public class Intake extends SubsystemBase {
         intake = new MotorEx(hardwareMap, "intake");
     }
 
+    public double getRPM() {
+        double motorTPS = intake.getCorrectedVelocity();
+        return (motorTPS * 60.0) / intake.getCPR();
+    }
+
     public void collect() {
         intake.set(-1);
     }

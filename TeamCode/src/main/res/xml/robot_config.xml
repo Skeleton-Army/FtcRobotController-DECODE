@@ -11,6 +11,7 @@
             <goBILDA5202SeriesMotor name="turret" port="2" />
 
             <Servo name="hood" port="0" />
+            <Servo name="kicker" port="1" />
         </LynxModule>
 
         <LynxModule name="Control Hub" port="173">
@@ -21,6 +22,8 @@
 
             <ControlHubImuBHI260AP name="imu" port="0" bus="0" />
             <goBILDAPinpoint name="pinpoint" port="0" bus="1" />
+
+            <ContinuousRotationServo name="transfer" port="0" />
         </LynxModule>
     </LynxUsbDevice>
 </Robot>

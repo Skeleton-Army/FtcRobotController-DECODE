@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
@@ -18,13 +20,7 @@ public class FlywheelTest extends OpMode {
     private MotorEx motor;
 
     private boolean isPID = true;
-    public static double targetRPM = 5000;
     public static double targetPower = 1;
-    public static double kP = 0.5;
-    public static double kI = 0;
-    public static double kD = 0;
-    public static double kS = 275.00198;
-    public static double kV = 1.5;
 
     @Override
     public void init() {
@@ -43,20 +39,19 @@ public class FlywheelTest extends OpMode {
         }
 
         if (gamepad1.dpadUpWasPressed()) {
-            if (isPID) targetRPM = MathUtils.clamp(targetRPM + 100, 0, 6000);
+            if (isPID) FLYWHEEL_TARGET = MathUtils.clamp(FLYWHEEL_TARGET + 100, 0, 6000);
             else targetPower = MathUtils.clamp(targetPower + 0.1, 0, 1);
         }
 
         if (gamepad1.dpadDownWasPressed()) {
-            if (isPID) targetRPM = MathUtils.clamp(targetRPM - 100, 0, 6000);
+            if (isPID) FLYWHEEL_TARGET = MathUtils.clamp(FLYWHEEL_TARGET - 100, 0, 6000);
             else targetPower = MathUtils.clamp(targetPower - 0.1, 0, 1);
         }
 
         if (isPID) {
-            double targetTPS = (targetRPM * motor.getCPR()) / 60.0;
+            double targetTPS = (FLYWHEEL_TARGET * motor.getCPR()) / 60.0;
             motor.setVelocity(targetTPS);
-
-            telemetry.addData("Target", targetRPM);
+            telemetry.addData("Target", FLYWHEEL_TARGET);
         }
         else {
             motor.set(targetPower);
@@ -68,7 +63,7 @@ public class FlywheelTest extends OpMode {
         double motorTPS = motor.getCorrectedVelocity();
 
         // Convert to RPM
-        double motorRPM = -(motorTPS * 60.0) / motor.getCPR();
+        double motorRPM = (motorTPS * 60.0) / motor.getCPR();
 
         telemetry.addData("Velocity (ticks/sec)", motorTPS);
         telemetry.addData("Motor RPM", motorRPM);
@@ -81,8 +76,8 @@ public class FlywheelTest extends OpMode {
     private void handlePID() {
         if (isPID) {
             motor.setRunMode(Motor.RunMode.VelocityControl);
-            motor.setVeloCoefficients(kP, kI, kD);
-            motor.setFeedforwardCoefficients(kS, kV);
+            motor.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+            motor.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
         }
         else {
             motor.setRunMode(Motor.RunMode.RawPower);

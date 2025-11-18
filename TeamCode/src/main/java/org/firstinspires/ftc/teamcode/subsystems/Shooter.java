@@ -8,7 +8,12 @@ import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.hardware.motors.CRServoEx;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
@@ -30,6 +35,8 @@ public class Shooter extends SubsystemBase {
     private final MotorEx flywheel;
     private final Motor turret;
     private final ServoEx hood;
+    private final CRServoEx transfer;
+    private final ServoEx kicker;
 
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
@@ -46,14 +53,25 @@ public class Shooter extends SubsystemBase {
         flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
+        flywheel.setInverted(FLYWHEEL_INVERTED);
 
         turret = new Motor(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
         turret.setPositionCoefficient(TURRET_KP);
         turret.setRunMode(Motor.RunMode.PositionControl);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
+        setHorizontalAngle(0);
 
-        hood = new ServoEx(hardwareMap, HOOD_NAME, HOOD_MIN, HOOD_MAX);
+        hood = new ServoEx(hardwareMap, HOOD_NAME);
+        setVerticalAngle(0);
+
+        transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
+        toggleTransfer(false);
+
+        kicker = new ServoEx(hardwareMap, KICKER_NAME);
+        kicker.set(0);
+
+        setRPM(FLYWHEEL_TARGET);
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
@@ -67,8 +85,23 @@ public class Shooter extends SubsystemBase {
         setVerticalAngle(solution.getVerticalAngle());
         setVelocity(solution.getVelocity());
 
-        flywheel.setVelocity(velocity, AngleUnit.RADIANS);
+        //flywheel.setVelocity(velocity, AngleUnit.RADIANS);
+        flywheel.setVelocity(velocity);
         turret.set(1);
+    }
+
+    public void toggleTransfer(boolean isOn) {
+        transfer.set(isOn ? TRANSFER_POWER : 0);
+    }
+
+    public void kick() {
+        CommandScheduler.getInstance().schedule(
+                new SequentialCommandGroup(
+                        new InstantCommand(() -> kicker.set(KICKER_MAX)),
+                        new WaitCommand(KICK_TIME),
+                        new InstantCommand(() -> kicker.set(KICKER_MIN))
+                )
+        );
     }
 
     public void updateVerticalAngle() {
@@ -79,8 +112,30 @@ public class Shooter extends SubsystemBase {
         this.velocity = velocity;
     }
 
-    private void setVerticalAngle(double angleRad) {
-        hood.set(angleRad);
+    public double getRPM() {
+        double motorTPS = flywheel.getCorrectedVelocity();
+        return (motorTPS * 60.0) / flywheel.getCPR();
+    }
+
+    public double getRawHoodPosition() {
+        return hood.getRawPosition();
+    }
+
+    public double getTurretPosition() {
+        return turret.getCurrentPosition();
+    }
+
+    private void setRPM(double rpm) {
+        this.velocity = (rpm * flywheel.getCPR()) / 60.0;
+    }
+
+    public void setRawHoodPosition(double angle) {
+        hood.set(angle + HOOD_POSSIBLE_MIN);
+    }
+
+    public void setVerticalAngle(double angle) {
+        double normalized = (angle - HOOD_MIN) / (HOOD_MAX - HOOD_MIN);
+        setRawHoodPosition(normalized);
     }
 
     private void setHorizontalAngle(double targetAngleRad) {

@@ -2,12 +2,14 @@ package org.firstinspires.ftc.teamcode.opModes;
 
 import android.annotation.SuppressLint;
 
+import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.Robot;
 import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
+import com.skeletonarmy.marrow.LynxUtil;
 
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
@@ -45,6 +47,8 @@ public abstract class ComplexOpMode extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
+        LynxUtil.setBulkCachingMode(hardwareMap, LynxModule.BulkCachingMode.AUTO);
+
         initialize();
         startLogger();
 

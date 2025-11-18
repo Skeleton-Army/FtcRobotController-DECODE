@@ -7,11 +7,13 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor.GoBILDA;
 public class ShooterConfig {
     public static String FLYWHEEL_NAME = "flywheel";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
-    public static double FLYWHEEL_KP = 1;
+    public static boolean FLYWHEEL_INVERTED = true;
+    public static double FLYWHEEL_TARGET = 4000;
+    public static double FLYWHEEL_KP = 2.321;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
     public static double FLYWHEEL_KS = 0;
-    public static double FLYWHEEL_KV = 0;
+    public static double FLYWHEEL_KV = 1.756;
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;
@@ -23,8 +25,17 @@ public class ShooterConfig {
     public static double TURRET_OFFSET_Y = 0;
 
     public static String HOOD_NAME = "hood";
+    public static double HOOD_POSSIBLE_MIN = 0.03;
     public static double HOOD_MIN = 0;
     public static double HOOD_MAX = Math.PI / 2;
+
+    public static String TRANSFER_NAME = "transfer";
+    public static double TRANSFER_POWER = 1;
+
+    public static String KICKER_NAME = "kicker";
+    public static double KICKER_MIN = 0;
+    public static double KICKER_MAX = 0.4;
+    public static long KICK_TIME = 400;
 
     public static double GOAL_X = 0;
     public static double GOAL_Y = 144;
