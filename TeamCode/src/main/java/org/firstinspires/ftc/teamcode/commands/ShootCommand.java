@@ -1,21 +1,39 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.KICK_TIME;
+
+import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
 public class ShootCommand extends SequentialCommandGroup {
-    public ShootCommand(Shooter subsystem) {
-        addRequirements(subsystem);
+    public ShootCommand(Shooter shooter, Intake intake) {
+        addRequirements(shooter, intake);
 
         addCommands(
-                new WaitCommand(1500)
-                // TODO: Add commands here
-                // 1) Set shooter velocity
-                // 2) Wait for shooter to reach velocity
-                // 3) Put bol in
-                // 4) Pew pew
+                cycle(shooter, intake),
+                cycle(shooter, intake),
+                cycle(shooter, intake),
+                new InstantCommand(intake::stop)
+        );
+    }
+
+    private Command cycle(Shooter shooter, Intake intake) {
+        return new SequentialCommandGroup(
+                new InstantCommand(shooter::spinUp),
+                new WaitUntilCommand(shooter::reachedRPM),
+                new InstantCommand(intake::collect),
+                new InstantCommand(() -> shooter.toggleTransfer(true)),
+                new WaitCommand(500),
+                new InstantCommand(() -> shooter.toggleTransfer(false)),
+                new InstantCommand(shooter::kick),
+                new WaitCommand(KICK_TIME)
         );
     }
 }
