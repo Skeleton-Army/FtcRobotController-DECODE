@@ -64,15 +64,33 @@ public class ShooterCalculator implements IShooterCalculator {
      * @return ShootingSolution at field coordinates (e.g. horizontal angle at relative to the field and not the robot)
      */
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector vel) {
-        Vector3D velocity = new Vector3D(vel.getXComponent(), vel.getYComponent(), 0);
-        double distanceFromGoal = robotPose.distanceFrom(goalPose);
-        double staticVerticalAngle = calculateVerticalAngle(distanceFromGoal / 39.37);
-        double horizontalAngle = calculateTurretAngle(goalPose, robotPose.getX(), robotPose.getY(), robotPose.getHeading());
-        Vector3D targetVelocityBase = new Vector3D(staticVerticalAngle, horizontalAngle);
-        Vector3D targetVelocity = new Vector3D(shooterVelocity(distanceFromGoal), targetVelocityBase);
-        Vector3D v0 = targetVelocity.add(velocity.negate());
+        Vector3D robotVel = new Vector3D(vel.getXComponent(), vel.getYComponent(), 0);
 
-        //return new ShootingSolution(v0.getDelta(), v0.getAlpha(), velocityToRPM(v0.getNorm())); //might be mistake from wrong placement of alpha and delta
-        return new ShootingSolution(horizontalAngle, staticVerticalAngle, shooterMaxVelocity);
+        double distance = robotPose.distanceFrom(goalPose);
+        double verticalAngle = calculateVerticalAngle(distance / 39.37);
+        double horizontalAngle = calculateTurretAngle(goalPose, robotPose.getX(), robotPose.getY(), robotPose.getHeading());
+
+        double speed = shooterVelocity(distance);
+
+        // Stationary launch vector
+        double vx = speed * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
+        double vy = speed * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
+        double vz = speed * Math.sin(verticalAngle);
+
+        Vector3D vLaunch = new Vector3D(vx, vy, vz);
+
+        // Relative to field (robot motion subtraction)
+        Vector3D v0 = vLaunch.subtract(robotVel);
+
+        // Extract new angles
+        double newSpeed = v0.getNorm();
+        double newHorizontalAngle = Math.atan2(v0.getY(), v0.getX());
+        double newVerticalAngle = Math.asin(v0.getZ() / newSpeed);
+
+        return new ShootingSolution(
+                newHorizontalAngle,
+                newVerticalAngle,
+                velocityToRPM(newSpeed)
+        );
     }
 }
