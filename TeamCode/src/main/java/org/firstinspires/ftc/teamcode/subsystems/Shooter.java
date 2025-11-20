@@ -84,8 +84,9 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
 
+        //setHorizontalAngle(solution.getHorizontalAngle());
         setVerticalAngle(solution.getVerticalAngle());
-        setVelocity(solution.getVelocity());
+//        setVelocity(solution.getVelocity());
 
         //flywheel.setVelocity(velocity, AngleUnit.RADIANS);
         flywheel.setVelocity(velocity);

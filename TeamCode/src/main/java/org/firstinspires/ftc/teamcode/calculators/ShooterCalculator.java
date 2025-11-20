@@ -11,7 +11,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class ShooterCalculator implements IShooterCalculator {
     private final double shooterMinVelocity = 11;
-    private final double shooterMaxVelocity = 11;
+    private final double shooterMaxVelocity = 7;
     private final double minDistance = 0.7;
     private final double maxDistance = 3.5;
     private double[] hoodCoeffs;

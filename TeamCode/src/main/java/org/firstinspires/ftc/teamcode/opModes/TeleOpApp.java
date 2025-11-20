@@ -45,8 +45,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(true);
         follower.setPose(new Pose(72, 72));
 
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.hoodCoeffs,
-                ShooterCoefficients.velCoeffs);
+        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs);
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, Alliance.BLUE);
         intake = new Intake(hardwareMap);
 
