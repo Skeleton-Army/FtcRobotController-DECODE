@@ -19,13 +19,12 @@ public class ShooterConfig {
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;
     public static double TURRET_KP = 2;
-    public static double TURRET_MIN = -Math.PI;
-    public static double TURRET_MAX = Math.PI;
-    public static double TURRET_MIN_CLAMP = -3 * Math.PI / 4;
-    public static double TURRET_MAX_CLAMP = Math.PI / 4;
+    public static double TURRET_MIN = -3 * Math.PI / 4;
+    public static double TURRET_MAX = Math.PI / 4;
     public static double GEAR_RATIO = (double) 200 / 30;
     public static double TURRET_OFFSET_X = 0;
     public static double TURRET_OFFSET_Y = 0;
+    public static boolean TURRET_WRAP = false;
 
     public static String HOOD_NAME = "hood";
     public static double HOOD_POSSIBLE_MIN = 0.03;

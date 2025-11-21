@@ -101,6 +101,8 @@ public class TeleOpApp extends ComplexOpMode {
             shooter.setVerticalAngle(30);
         }
 
+        double inchesToMeters = 39.37;
+
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
@@ -120,7 +122,6 @@ public class TeleOpApp extends ComplexOpMode {
         //telemetry.addData("PodY ticks", follower.getPoseTracker().getLocalizer().getForwardMultiplier());
         telemetry.update();
 
-        double inchesToMeters = 39.37;
         Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
         Logger.recordOutput("Robot Pose", robotPose);
         //Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));

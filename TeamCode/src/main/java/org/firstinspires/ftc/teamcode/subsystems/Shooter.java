@@ -21,6 +21,7 @@ import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
@@ -161,8 +162,8 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
-        double wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX);
-        turret.setTargetDistance(MathUtils.clamp(wrapped, TURRET_MIN_CLAMP, TURRET_MAX_CLAMP));
+        double wrapped = ShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
+        turret.setTargetDistance(wrapped);
     }
 
     private void calculateRecovery() {
