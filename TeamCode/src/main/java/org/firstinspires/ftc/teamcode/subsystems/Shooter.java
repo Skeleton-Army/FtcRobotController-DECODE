@@ -2,11 +2,12 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 
+import androidx.core.math.MathUtils;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
-import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -17,19 +18,21 @@ import com.seattlesolvers.solverslib.hardware.motors.CRServoEx;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
-import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 
-import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 @Config
 public class Shooter extends SubsystemBase {
+    public ShootingSolution solution;
+
     private final PoseTracker poseTracker;
 
     private final MotorEx flywheel;
@@ -47,7 +50,10 @@ public class Shooter extends SubsystemBase {
      */
     private double velocity;
 
-    public ShootingSolution solution;
+    private final TimerEx timerEx;
+    private boolean calculatedRecovery = false;
+    private double recoveryTime;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
@@ -78,22 +84,21 @@ public class Shooter extends SubsystemBase {
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
+
+        timerEx = new TimerEx(TimeUnit.MILLISECONDS);
     }
 
     @Override
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
 
-        //setHorizontalAngle(solution.getHorizontalAngle());
+        //setHorizontalAngle(Math.PI + solution.getHorizontalAngle());
         setVerticalAngle(solution.getVerticalAngle());
 //        setVelocity(solution.getVelocity());
 
-        //flywheel.setVelocity(velocity, AngleUnit.RADIANS);
         flywheel.setVelocity(velocity);
 
-        //flywheel.setRunMode(Motor.RunMode.VelocityControl);
-        //flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        //flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
+        calculateRecovery();
 
         turret.set(1);
     }
@@ -110,10 +115,6 @@ public class Shooter extends SubsystemBase {
                         new InstantCommand(() -> kicker.set(KICKER_MIN))
                 )
         );
-    }
-
-    public void updateVerticalAngle() {
-        // TODO: Do calculations and set vertical angle to GOAL
     }
 
     private void setVelocity(double velocity) {
@@ -133,6 +134,10 @@ public class Shooter extends SubsystemBase {
         return turret.getCurrentPosition();
     }
 
+    public double getTurretAngle(AngleUnit angleUnit) {
+        return angleUnit == AngleUnit.DEGREES ? Math.toDegrees(turret.getDistance()) : turret.getDistance();
+    }
+
     private void setRPM(double rpm) {
         this.velocity = (rpm * flywheel.getCPR()) / 60.0;
     }
@@ -141,8 +146,12 @@ public class Shooter extends SubsystemBase {
         hood.set(angle + HOOD_POSSIBLE_MIN);
     }
 
+    public double getRecoveryTime() {
+        return recoveryTime;
+    }
+
     /**
-        set the hood angle relative to the ground
+        Sets the hood angle relative to the ground
 
        * @param angle the hood angle given by the calculations (deg)
      **/
@@ -151,8 +160,22 @@ public class Shooter extends SubsystemBase {
         setRawHoodPosition(MathFunctions.clamp(normalized, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
     }
 
-    private void setHorizontalAngle(double targetAngleRad) {
+    public void setHorizontalAngle(double targetAngleRad) {
         double wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX);
-        turret.setTargetDistance(wrapped);
+        turret.setTargetDistance(MathUtils.clamp(wrapped, TURRET_MIN_CLAMP, TURRET_MAX_CLAMP));
+    }
+
+    private void calculateRecovery() {
+        if (FLYWHEEL_TARGET - getRPM() > SHOOT_THRESHOLD) {
+            if (!calculatedRecovery) {
+                timerEx.restart();
+                timerEx.start();
+                calculatedRecovery = true;
+            }
+        } else if (FLYWHEEL_TARGET - getRPM() <= SHOOT_THRESHOLD && calculatedRecovery) {
+            recoveryTime = timerEx.getElapsed();
+            timerEx.pause();
+            calculatedRecovery = false;
+        }
     }
 }
