@@ -9,6 +9,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
@@ -56,8 +57,12 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(new InstantCommand(() -> intake.release()))
                 .whenReleased(new InstantCommand(() -> intake.stop()));
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
-                .whenPressed(drive.goToBase());
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
+//                .whenPressed(new InstantCommand(() -> {
+//                    Command cmd = drive.goToBase();
+//                    drive.setCurrentCommand(cmd);
+//                    CommandScheduler.getInstance().schedule(cmd);
+//                }));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new InstantCommand(() -> shooter.toggleTransfer(true)))
@@ -74,9 +79,9 @@ public class TeleOpApp extends ComplexOpMode {
 //        shooter.updateHorizontalAngle();
 //        shooter.updateVerticalAngle();
 
+        // Immediately cancel drive command if joysticks are moved
         if (gamepadEx1.getLeftX() != 0 || gamepadEx1.getLeftY() != 0 || gamepadEx1.getRightX() != 0 || gamepadEx1.getRightY() != 0) {
-//            CommandScheduler.getInstance().cancel(drive.getCurrentCommand());
-            //CommandScheduler.getInstance().cancelAll();
+            CommandScheduler.getInstance().cancel(drive.getCurrentCommand());
         }
 
         if (gamepad1.dpad_up) {

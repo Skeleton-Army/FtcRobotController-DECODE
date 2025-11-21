@@ -18,47 +18,50 @@ public class Drive extends SubsystemBase {
         this.follower = follower;
     }
 
+    @Override
+    public void periodic() {
+        follower.update();
+    }
+
     public Command getCurrentCommand() {
         return currentCommand;
     }
 
+    public void setCurrentCommand(Command cmd) {
+        this.currentCommand = cmd;
+    }
+
     public Command goToBase() {
         PathChain parking = follower
-                            .pathBuilder()
-                            .addPath(
-                                    new BezierLine(
-                                            follower.getPose(),
-                                            new Pose(38.5,33.5)
-                                    )
-                            )
-                            .setLinearHeadingInterpolation(follower.getHeading(), Math.toRadians(getClosestRightAngle(follower)))
-                            .build();
+                .pathBuilder()
+                .addPath(new BezierLine(follower.getPose(), new Pose(38.5, 33.5)))
+                .setLinearHeadingInterpolation(
+                        follower.getHeading(),
+                        getClosestRightAngle(follower.getHeading())
+                )
+                .build();
 
-        currentCommand = new FollowPathCommand(follower, parking);
-
-        return currentCommand;
+        return new FollowPathCommand(follower, parking);
     }
 
     public void joystickDrive(Gamepad gamepad) {
         follower.setTeleOpDrive(-gamepad.left_stick_y, -gamepad.left_stick_x, -gamepad.right_stick_x, true);
     }
 
-    @Override
-    public void periodic() {
-        follower.update();
-    }
+    /**
+     * Returns the closest right angle to the given heading in radians.
+     */
+    private double getClosestRightAngle(double heading) {
+        heading = ((heading % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI); // Normalize to [0, 2π]
 
-    private int getClosestRightAngle(Follower follower) {
-        double heading = follower.getHeading();
-        heading = ((heading % 360) + 360) % 360; // normalize to 0–360
+        double[] rightAngles = { 0, Math.PI / 2, Math.PI, 3 * Math.PI / 2 };
+        double closest = 0;
+        double minDiff = Double.MAX_VALUE;
 
-        int closest = 0;
-        double minDiff = 360;
-
-        int[] rightAngles = {0, 90, 180, 270};
-        for (int angle : rightAngles) {
+        for (double angle : rightAngles) {
             double diff = Math.abs(heading - angle);
-            diff = Math.min(diff, 360 - diff); // handle wrap-around (e.g. 359° to 0°)
+            diff = Math.min(diff, 2 * Math.PI - diff); // account for wraparound (e.g. near 2π)
+
             if (diff < minDiff) {
                 minDiff = diff;
                 closest = angle;
