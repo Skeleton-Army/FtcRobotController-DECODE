@@ -8,6 +8,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
+import com.skeletonarmy.marrow.internal.FileHandler;
+import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
@@ -17,6 +19,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.Pose2d;
 import org.psilynx.psikit.core.wpi.Rotation2d;
+
+import java.util.ArrayList;
 
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
@@ -35,6 +39,8 @@ public class TeleOpApp extends ComplexOpMode {
 
     @Override
     public void initialize() {
+//        FileHandler.deleteFile("FIRST/marrow", "settings.json");
+
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
 //        follower = Constants.createFollower(hardwareMap);
@@ -90,9 +96,9 @@ public class TeleOpApp extends ComplexOpMode {
 //        telemetry.addData("Robot x", follower.getPose().getX());
 //        telemetry.addData("Robot y", follower.getPose().getY());
 //        telemetry.addData("Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Debug Mode", TestSettings.get("debug"));
-//        Buh buh = TestSettings.get("buh");
-//        telemetry.addData("Buh", buh);
+        telemetry.addData("Debug Mode", Settings.get("debug", false));
+        telemetry.addData("Buh", Settings.get("buh", Buh.a));
+        telemetry.addData("a", Settings.get("na", new ArrayList<>()));
         telemetry.update();
 
 //        double inchesToMeters = 39.37;

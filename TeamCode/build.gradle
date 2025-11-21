@@ -37,11 +37,12 @@ android {
 }
 
 repositories {
+    mavenLocal()
     maven { url = "https://mymaven.bylazar.com/releases" }
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://repo.dairy.foundation/snapshots" }
     maven { url = 'https://maven.brott.dev/' }
-    maven { url = "https://central.sonatype.com/repository/maven-snapshots/" }
+//    maven { url = "https://central.sonatype.com/repository/maven-snapshots/" }
 }
 
 dependencies {
@@ -54,7 +55,7 @@ dependencies {
     implementation "org.solverslib:core:SNAPSHOT-7cdcc66"
     implementation "org.solverslib:pedroPathing:SNAPSHOT-7cdcc66"
 
-    implementation "com.skeletonarmyftc.marrow:core:0.2.0-SNAPSHOT"
+    implementation("com.skeletonarmyftc.marrow:core:1.0.0-SNAPSHOT")
 
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
     implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.4.17")
