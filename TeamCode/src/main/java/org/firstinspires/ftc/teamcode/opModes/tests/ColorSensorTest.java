@@ -1,44 +1,43 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
-import android.graphics.Color;
-
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.NormalizedColorSensor;
-import com.qualcomm.robotcore.hardware.NormalizedRGBA;
+import com.seattlesolvers.solverslib.hardware.SensorRevColorV3;
+
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 @TeleOp
 public class ColorSensorTest extends OpMode {
-    private NormalizedColorSensor colorSensor;
+    private SensorRevColorV3 sensor;
 
     @Override
     public void init() {
-        colorSensor = hardwareMap.get(NormalizedColorSensor.class, "colorSensor");
+        sensor = new SensorRevColorV3(hardwareMap, "colorSensor", DistanceUnit.CM);
     }
 
     @Override
     public void loop() {
-        NormalizedRGBA colors = colorSensor.getNormalizedColors();
+        int r = sensor.red();
+        int g = sensor.green();
+        int b = sensor.blue();
+
         float[] hsv = new float[3];
-
-        int r = (int) (colors.red * 255);
-        int g = (int) (colors.green * 255);
-        int b = (int) (colors.blue * 255);
-
-        Color.RGBToHSV(
-                r,
-                g,
-                b,
-                hsv
-        );
+        sensor.RGBtoHSV(r, g, b, hsv);
 
         float hue = hsv[0];
+        double distance = sensor.distance();
 
         telemetry.addData("Red", r);
         telemetry.addData("Green", g);
         telemetry.addData("Blue", b);
+
+        telemetry.addData("Hue", hue);
+
         telemetry.addData("Is Green", hue >= 79 && hue <= 155);
         telemetry.addData("Is Purple", hue >= 273 && hue <= 321);
+
+        telemetry.addData("Distance (" + DistanceUnit.CM + ")", "%.1f", distance);
+
         telemetry.update();
     }
 }
