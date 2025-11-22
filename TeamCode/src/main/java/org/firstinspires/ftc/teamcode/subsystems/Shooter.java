@@ -18,14 +18,13 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
+import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
-import org.opencv.core.Mat;
 
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +40,7 @@ public class Shooter extends SubsystemBase {
     private final CRServoEx transfer;
     private final ServoEx kicker;
 
-    private final ShooterCalculator shooterCalculator;
+    private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
     private final Pose goalPose;
 
@@ -55,7 +54,7 @@ public class Shooter extends SubsystemBase {
     private double recoveryTime;
     public double wrapped;
 
-    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, ShooterCalculator shooterCalculator, Alliance alliance) {
+    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
         flywheel = new MotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
@@ -94,8 +93,8 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
 
-        setHorizontalAngle(solution.getHorizontalAngle() + Math.PI);
-        setVerticalAngle(-solution.getVerticalAngle());
+        setHorizontalAngle(solution.getHorizontalAngle());
+        setVerticalAngle(solution.getVerticalAngle());
 //        setVelocity(solution.getVelocity());
 
         flywheel.setVelocity(velocity);
