@@ -7,11 +7,11 @@ import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.settings.SettingsOpMode;
 
 @TeleOp
-public class TestSettings extends SettingsOpMode {
+public class MySettings extends SettingsOpMode {
     @Override
     public void defineSettings() {
-        add("debug", "Debug Mode", new BooleanPrompt("Debug Mode", true));
-        add("buh", "buh buh", new OptionPrompt<>("bug", Buh.a, Buh.b));
-        add("na", "nana buh", new MultiOptionPrompt<>("bug", false, Buh.a, Buh.b));
+        add("debug", "Debug Mode", new BooleanPrompt("Enable debug mode", false));
+        add("tabletop", "Tabletop Mode", new BooleanPrompt("Enable tabletop mode (disables movement)", false));
+        add("alliance", "Select Alliance", new OptionPrompt<>("Select alliance", Alliance.RED, Alliance.BLUE));
     }
 }
