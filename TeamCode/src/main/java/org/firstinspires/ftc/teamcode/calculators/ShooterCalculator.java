@@ -9,13 +9,14 @@ import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-public class ShooterCalculator implements IShooterCalculator {
-    private final double shooterMinVelocity = 11;
-    private final double shooterMaxVelocity = 7;
-    private final double minDistance = 0.7;
-    private final double maxDistance = 3.5;
-    private double[] hoodCoeffs;
-    private double[] velCoeffs;
+public class ShooterCalculator {
+    private final double SHOOTER_MIN_VELOCITY = 11;
+    private final double SHOOTER_MAX_VELOCITY = 7;
+    private final double MIN_DISTANCE = 0.7;
+    private final double MAX_DISTANCE = 3.5;
+
+    private final double[] hoodCoeffs;
+    private final double[] velCoeffs;
 
     public ShooterCalculator(double[] hoodCoeffs, double[] velCoeffs) {
         this.hoodCoeffs = hoodCoeffs.clone();
@@ -43,7 +44,7 @@ public class ShooterCalculator implements IShooterCalculator {
     }
 
     private double shooterVelocity(double distance) {
-        return shooterMinVelocity + (distance - minDistance) * (shooterMaxVelocity - shooterMinVelocity) / (maxDistance - minDistance);
+        return SHOOTER_MIN_VELOCITY + (distance - MIN_DISTANCE) * (SHOOTER_MAX_VELOCITY - SHOOTER_MIN_VELOCITY) / (MAX_DISTANCE - MIN_DISTANCE);
     }
 
     public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
@@ -65,9 +66,10 @@ public class ShooterCalculator implements IShooterCalculator {
      */
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector vel) {
         Vector3D robotVel = new Vector3D(vel.getXComponent(), vel.getYComponent(), 0);
-
         double distance = robotPose.distanceFrom(goalPose);
-        double verticalAngle = calculateVerticalAngle(distance / 39.37);
+
+        double inchesToMeters = 39.37;
+        double verticalAngle = calculateVerticalAngle(distance / inchesToMeters);
         double horizontalAngle = calculateTurretAngle(goalPose, robotPose.getX(), robotPose.getY(), robotPose.getHeading());
 
         double speed = shooterVelocity(distance);

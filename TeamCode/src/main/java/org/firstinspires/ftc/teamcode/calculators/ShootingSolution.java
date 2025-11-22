@@ -1,9 +1,10 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
 public class ShootingSolution {
-    private double horizontalAngle;
-    private double verticalAngle;
-    private double flywheelRPM;
+    private final double horizontalAngle;
+    private final double verticalAngle;
+    private final double flywheelRPM;
+
     public ShootingSolution(double horizontalAngle, double verticalAngle, double flywheelRPM) {
         this.horizontalAngle = horizontalAngle;
         this.verticalAngle = verticalAngle;
@@ -13,9 +14,11 @@ public class ShootingSolution {
     public double getHorizontalAngle() {
         return horizontalAngle;
     }
+
     public double getVerticalAngle() {
         return verticalAngle;
     }
+
     public double getVelocity() {
         return flywheelRPM;
     }
