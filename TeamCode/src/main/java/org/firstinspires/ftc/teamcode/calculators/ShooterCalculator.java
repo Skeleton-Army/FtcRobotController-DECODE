@@ -7,6 +7,8 @@ import com.pedropathing.geometry.Pose;
 
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
+import com.seattlesolvers.solverslib.util.MathUtils;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class ShooterCalculator {
@@ -111,20 +113,19 @@ public class ShooterCalculator {
         target = target % (2 * Math.PI);
         if (target < 0) target += 2 * Math.PI;
 
-        if (!wrap) {
-            // No wrapping – just clamp
-            if (target < min) return min;
-            if (target > max) return max;
-            return target;
+        double closestEquiv = target + 2 * Math.PI * Math.round((current - target) / (2 * Math.PI));
+
+        if (wrap) {
+            if (closestEquiv < min) {
+                return closestEquiv + 2 * Math.PI;
+            }
+            if (closestEquiv > max) {
+                return closestEquiv - 2 * Math.PI;
+            }
+            return closestEquiv;
+        } else {
+            return MathUtils.clamp(closestEquiv, min, max);
         }
 
-        double closestEquiv = target + 2 * Math.PI * Math.round((current - target) / (2 * Math.PI));
-        if (closestEquiv < min) {
-            return closestEquiv + 2 * Math.PI;
-        }
-        if (closestEquiv > max) {
-            return closestEquiv - 2 * Math.PI;
-        }
-        return closestEquiv;
     }
 }

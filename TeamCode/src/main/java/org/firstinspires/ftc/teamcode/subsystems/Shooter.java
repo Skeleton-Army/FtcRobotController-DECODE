@@ -18,12 +18,14 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.opencv.core.Mat;
 
 import java.util.concurrent.TimeUnit;
 
@@ -51,6 +53,7 @@ public class Shooter extends SubsystemBase {
     private final TimerEx timerEx;
     private boolean calculatedRecovery = false;
     private double recoveryTime;
+    public double wrapped;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, ShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -69,7 +72,7 @@ public class Shooter extends SubsystemBase {
         setHorizontalAngle(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
-        setVerticalAngle(1);
+        setVerticalAngle(0);
 
         transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
         toggleTransfer(false);
@@ -78,20 +81,21 @@ public class Shooter extends SubsystemBase {
         kicker.set(0);
 
         setRPM(FLYWHEEL_TARGET);
+//        setRPM(0);
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
 
-        timerEx = new TimerEx(TimeUnit.MILLISECONDS);
+        timerEx = new TimerEx(TimeUnit.SECONDS);
     }
 
     @Override
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
 
-        setHorizontalAngle(solution.getHorizontalAngle());
-        setVerticalAngle(solution.getVerticalAngle());
+        setHorizontalAngle(solution.getHorizontalAngle() + Math.PI);
+        setVerticalAngle(-solution.getVerticalAngle());
 //        setVelocity(solution.getVelocity());
 
         flywheel.setVelocity(velocity);
@@ -159,7 +163,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
-        double wrapped = ShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
+        wrapped = ShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
         turret.setTargetDistance(wrapped);
     }
 

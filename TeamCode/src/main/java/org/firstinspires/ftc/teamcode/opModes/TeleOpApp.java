@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import android.util.Log;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
@@ -33,10 +35,11 @@ public class TeleOpApp extends ComplexOpMode {
     private GamepadEx gamepadEx2;
 
     private PathChain parking;
+    MultipleTelemetry telemetry2;
 
     @Override
     public void initialize() {
-        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        telemetry2 = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
@@ -85,33 +88,18 @@ public class TeleOpApp extends ComplexOpMode {
         follower.update();
         follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
-        if (gamepadEx1.isDown(GamepadKeys.Button.DPAD_UP)) {
-            //shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() + 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
-            shooter.setVerticalAngle(50);
-        }
-
-        if (gamepadEx1.isDown(GamepadKeys.Button.DPAD_DOWN)) {
-            //shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
-            shooter.setVerticalAngle(60);
-        }
-
-        if (gamepadEx1.isDown(GamepadKeys.Button.DPAD_RIGHT)) {
-            //shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
-            shooter.setVerticalAngle(30);
-        }
-
         double inchesToMeters = 39.37;
 
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("Turret position", shooter.getTurretPosition());
-        telemetry.addData("Turret angle (rad)", shooter.getTurretAngle(AngleUnit.RADIANS));
+        //telemetry.addData("Turret position", shooter.getTurretPosition());
+        //telemetry.addData("Turret angle (rad)", shooter.getTurretAngle(AngleUnit.RADIANS));
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", (-34.7) * shooter.getRawHoodPosition() + 62.5);
-        telemetry.addData("solution angle(rad)", shooter.solution.getVerticalAngle());
+        //telemetry.addData("solution angle(rad)", shooter.solution.getVerticalAngle());
         telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
         telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
