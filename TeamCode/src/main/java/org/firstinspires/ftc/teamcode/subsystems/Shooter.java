@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 
+import androidx.core.math.MathUtils;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
@@ -21,6 +23,7 @@ import com.skeletonarmy.marrow.TimerEx;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
+import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
@@ -39,7 +42,7 @@ public class Shooter extends SubsystemBase {
     private final CRServoEx transfer;
     private final ServoEx kicker;
 
-    private final ShooterCalculator shooterCalculator;
+    private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
     private final Pose goalPose;
 
@@ -52,7 +55,7 @@ public class Shooter extends SubsystemBase {
     private boolean calculatedRecovery = false;
     private double recoveryTime;
 
-    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, ShooterCalculator shooterCalculator, Alliance alliance) {
+    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
         flywheel = new MotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
@@ -90,7 +93,7 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
 
-        setHorizontalAngle(solution.getHorizontalAngle());
+//        setHorizontalAngle(solution.getHorizontalAngle());
         setVerticalAngle(solution.getVerticalAngle());
 //        setVelocity(solution.getVelocity());
 
