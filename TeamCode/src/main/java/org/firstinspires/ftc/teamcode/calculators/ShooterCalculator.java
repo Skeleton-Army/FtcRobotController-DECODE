@@ -99,7 +99,7 @@ public class ShooterCalculator implements IShooterCalculator {
      * but force the result into the physical turret limits [min, max].
      *
      * <p><b>Assumption:</b> {@code current} is inside [min, max]. {@code target} is assumed
-     * to be in [0, 2π).
+     * to be in [0, 2π].
      *
      * @param current current angle in radians (must satisfy min <= current <= max)
      * @param target  desired target angle in radians (0 <= target < 2π)
@@ -115,7 +115,6 @@ public class ShooterCalculator implements IShooterCalculator {
             return target;
         }
 
-        // Wrapping enabled (original behavior)
         double closestEquiv = target + 2 * Math.PI * Math.round((current - target) / (2 * Math.PI));
         if (closestEquiv < min) {
             return closestEquiv + 2 * Math.PI;
