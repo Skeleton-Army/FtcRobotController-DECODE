@@ -25,6 +25,7 @@ import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 
 import java.util.concurrent.TimeUnit;
 
@@ -35,7 +36,7 @@ public class Shooter extends SubsystemBase {
     private final PoseTracker poseTracker;
 
     private final MotorEx flywheel;
-    private final Motor turret;
+    private final ModifiedMotorEx turret;
     private final ServoEx hood;
     private final CRServoEx transfer;
     private final ServoEx kicker;
@@ -63,8 +64,8 @@ public class Shooter extends SubsystemBase {
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
         flywheel.setInverted(FLYWHEEL_INVERTED);
 
-        turret = new Motor(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
-        turret.setPositionCoefficient(TURRET_KP);
+        turret = new ModifiedMotorEx(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
+        turret.setPositionCoefficients(TURRET_KP, TURRET_KI, TURRET_KD, TURRET_KF);
         turret.setRunMode(Motor.RunMode.PositionControl);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));

@@ -19,6 +19,9 @@ public class ShooterConfig {
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;
     public static double TURRET_KP = 2;
+    public static double TURRET_KI = 0;
+    public static double TURRET_KD = 0;
+    public static double TURRET_KF = 0;
     public static double TURRET_MIN = -Math.PI;
     public static double TURRET_MAX = Math.PI / 4;
     public static double GEAR_RATIO = (double) 200 / 30;
