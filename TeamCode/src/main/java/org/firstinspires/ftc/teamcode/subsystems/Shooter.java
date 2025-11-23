@@ -51,9 +51,14 @@ public class Shooter extends SubsystemBase {
     private double velocity;
 
     private final TimerEx timerEx;
-    private boolean calculatedRecovery = false;
-    private double recoveryTime;
+    public boolean calculatedRecovery = false;
+    private double recoveryTime; // in seconds
     public double wrapped;
+    public double shotHoodAngle; // in degrees
+    public double shotTurretAngle; // in degrees
+    public double shotFlywheelRPM;
+    public double shotGoalDistance; // in meters
+    final double inchesToMeters = 39.37;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -165,6 +170,7 @@ public class Shooter extends SubsystemBase {
     public void setHorizontalAngle(double targetAngleRad) {
         wrapped = ShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
         turret.setTargetDistance(wrapped);
+
     }
 
     private void calculateRecovery() {
@@ -173,6 +179,10 @@ public class Shooter extends SubsystemBase {
                 timerEx.restart();
                 timerEx.start();
                 calculatedRecovery = true;
+                shotHoodAngle = Math.toDegrees(solution.getVerticalAngle());
+                shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
+                shotFlywheelRPM = getRPM();
+                shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) * inchesToMeters;
             }
         } else if (FLYWHEEL_TARGET - getRPM() <= SHOOT_THRESHOLD && calculatedRecovery) {
             recoveryTime = timerEx.getElapsed();

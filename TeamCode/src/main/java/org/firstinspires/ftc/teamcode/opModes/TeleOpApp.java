@@ -98,6 +98,9 @@ public class TeleOpApp extends ComplexOpMode {
         //telemetry.addData("Turret position", shooter.getTurretPosition());
         //telemetry.addData("Turret angle (rad)", shooter.getTurretAngle(AngleUnit.RADIANS));
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret solution error (deg)", shooter.solution.getHorizontalAngle() - shooter.getTurretAngle(AngleUnit.DEGREES));
+
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", (-34.7) * shooter.getRawHoodPosition() + 62.5);
         //telemetry.addData("solution angle(rad)", shooter.solution.getVerticalAngle());
@@ -105,6 +108,12 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
+        telemetry.addData("calculating recovery", shooter.calculatedRecovery);
+
+        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
+        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
+        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
+        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
         //telemetry.addData("Intake RPM", intake.getRPM());
         //telemetry.addData("PodX ticks", follower.getPoseTracker().getLocalizer().getLateralMultiplier());
         //telemetry.addData("PodY ticks", follower.getPoseTracker().getLocalizer().getForwardMultiplier());
