@@ -115,12 +115,12 @@ public class AutonomousApp extends ComplexOpMode {
     public void onStart() {
         schedule(
                 new SequentialCommandGroup(
-                        new ShootCommand(shooter),
+                        new ShootCommand(shooter, intake),
                         new InstantCommand(() -> intake.collect()),
                         new FollowPathCommand(follower, batata),
                         new InstantCommand(() -> intake.stop()),
                         new FollowPathCommand(follower, potato),
-                        new ShootCommand(shooter),
+                        new ShootCommand(shooter, intake),
                         new InstantCommand(() -> intake.collect()),
                         new FollowPathCommand(follower, avocado),
                         new InstantCommand(() -> intake.stop()),
