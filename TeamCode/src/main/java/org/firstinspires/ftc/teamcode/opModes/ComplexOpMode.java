@@ -17,6 +17,7 @@ import org.psilynx.psikit.core.rlog.RLOGWriter;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.List;
 
 /**
  * An OpMode that extends SolversLib's {@link CommandOpMode}
@@ -47,7 +48,11 @@ public abstract class ComplexOpMode extends LinearOpMode {
 
     @Override
     public void runOpMode() throws InterruptedException {
-        LynxUtil.setBulkCachingMode(hardwareMap, LynxModule.BulkCachingMode.AUTO);
+        List<LynxModule> allHubs = hardwareMap.getAll(LynxModule.class);
+
+        for (LynxModule hub : allHubs) {
+            hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
+        }
 
         initialize();
         startLogger();
@@ -55,12 +60,20 @@ public abstract class ComplexOpMode extends LinearOpMode {
         // run the scheduler
         try {
             while (opModeInInit()) {
+                for (LynxModule hub : allHubs) {
+                    hub.clearBulkCache();
+                }
+
                 initialize_loop();
             }
 
             onStart();
 
             while (!isStopRequested() && opModeIsActive()) {
+                for (LynxModule hub : allHubs) {
+                    hub.clearBulkCache();
+                }
+
                 double beforeUserStart = Logger.getTimestamp();
                 Logger.periodicBeforeUser();
                 double beforeUserEnd = Logger.getTimestamp();

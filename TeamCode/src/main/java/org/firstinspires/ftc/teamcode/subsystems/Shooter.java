@@ -85,8 +85,7 @@ public class Shooter extends SubsystemBase {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
         kicker.set(0);
 
-        setRPM(FLYWHEEL_TARGET);
-//        setRPM(0);
+        spinUp();
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
@@ -110,6 +109,14 @@ public class Shooter extends SubsystemBase {
         turret.set(1);
     }
 
+    public void spinUp() {
+        setRPM(FLYWHEEL_TARGET);
+    }
+
+    public void spinDown() {
+        setRPM(0);
+    }
+
     public void toggleTransfer(boolean isOn) {
         transfer.set(isOn ? TRANSFER_POWER : 0);
     }
@@ -131,6 +138,10 @@ public class Shooter extends SubsystemBase {
     public double getRPM() {
         double motorTPS = flywheel.getCorrectedVelocity();
         return (motorTPS * 60.0) / flywheel.getCPR();
+    }
+
+    public boolean reachedRPM() {
+        return getRPM() >= FLYWHEEL_TARGET;
     }
 
     public double getRawHoodPosition() {
