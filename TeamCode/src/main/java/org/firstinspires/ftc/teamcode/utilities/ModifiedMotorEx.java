@@ -24,6 +24,8 @@ public class ModifiedMotorEx extends Motor {
     // The minimum difference between the current and requested motor power between motor writes
     private double cachingTolerance = 0.0001;
 
+    private boolean targetIsSet = false;
+
     /**
      * Constructs the instance motor for the wrapper
      *
@@ -76,6 +78,67 @@ public class ModifiedMotorEx extends Motor {
 
     public void setPositionCoefficients(double kp, double ki, double kd, double kf) {
         positionController.setPIDF(kp, ki, kd, kf);
+    }
+
+    /**
+     * Set the proportional gain for the position controller.
+     *
+     * @param kp the proportional gain
+     */
+    @Override
+    public void setPositionCoefficient(double kp) {
+        positionController.setP(kp);
+    }
+
+    /**
+     * @return if the motor is at the target position or distance
+     */
+    @Override
+    public boolean atTargetPosition() {
+        return positionController.atSetPoint();
+    }
+
+    public double[] getPositionCoefficients() {
+        return positionController.getCoefficients();
+    }
+
+    /**
+     * Sets the {@link RunMode} of the motor
+     *
+     * @param runmode the desired runmode
+     */
+    @Override
+    public void setRunMode(RunMode runmode) {
+        this.runmode = runmode;
+        veloController.reset();
+        positionController.reset();
+        if (runmode == RunMode.PositionControl && !targetIsSet) {
+            setTargetPosition(getCurrentPosition());
+            targetIsSet = false;
+        }
+    }
+
+    /**
+     * Sets the target distance for the motor to the desired target.
+     * Once {@link #set(double)} is called, the motor will attempt to move in the direction
+     * of said target.
+     *
+     * @param target the target position in units of distance
+     */
+    @Override
+    public void setTargetDistance(double target) {
+        targetIsSet = true;
+        positionController.setSetPoint(target);
+    }
+
+    /**
+     * Sets the target tolerance
+     *
+     * @param tolerance the specified tolerance
+     */
+    @Override
+    public void setPositionTolerance(double tolerance) {
+        positionController.setTolerance(tolerance);
     }
 
     /**
