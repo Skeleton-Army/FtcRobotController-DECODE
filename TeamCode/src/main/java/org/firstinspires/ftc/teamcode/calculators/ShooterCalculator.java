@@ -12,7 +12,7 @@ import com.seattlesolvers.solverslib.util.MathUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class ShooterCalculator implements IShooterCalculator {
-    private static final double METER_OVER_INCH = 39.37;
+    private static final double INCH_TO_METERS = 0.0254;
     private static final double SHOT_LATENCY = 0.1;
     private final double shooterMinVelocity = 5;
     private final double shooterMaxVelocity = 8;
@@ -66,14 +66,16 @@ public class ShooterCalculator implements IShooterCalculator {
      */
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel) {
         // predict where robot will be at firing time
-        double predX = robotPose.getX() + robotVel.getXComponent() * SHOT_LATENCY;
-        double predY = robotPose.getY() + robotVel.getYComponent() * SHOT_LATENCY;
-        double predHeading = robotPose.getHeading() + angularVel * SHOT_LATENCY;
+        Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
+        Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
+        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
+        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
+        double predHeading = robotPoseMeters.getHeading() + angularVel * SHOT_LATENCY;
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
         // compute distance/angles from predicted pose
         double distance = predictedPose.distanceFrom(goalPose);
-        double verticalAngle = calculateVerticalAngle(distance / METER_OVER_INCH);
+        double verticalAngle = calculateVerticalAngle(distance);
         double horizontalAngle = calculateTurretAngle(goalPose, predictedPose.getX(), predictedPose.getY(), predictedPose.getHeading());
 
         // compute stationary launch vector in field coords (as before)
@@ -84,7 +86,7 @@ public class ShooterCalculator implements IShooterCalculator {
         Vector3D vLaunch = new Vector3D(vx, vy, vz);
 
         // robot velocity at firing instant (we assume constant)
-        Vector3D velocity = new Vector3D(robotVel.getXComponent(), robotVel.getYComponent(), 0);
+        Vector3D velocity = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
 
         // relative launch vector (what the shooter must produce)
         Vector3D v0 = vLaunch.subtract(velocity);
