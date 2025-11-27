@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.calculators;
 
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.*;
 
 import com.pedropathing.geometry.Pose;
 
@@ -13,11 +14,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class ShooterCalculator implements IShooterCalculator {
     private static final double INCH_TO_METERS = 0.0254;
-    private static final double SHOT_LATENCY = 0.1;
-    private final double shooterMinVelocity = 5;
-    private final double shooterMaxVelocity = 8;
-    private final double minDistance = 0.7;
-    private final double maxDistance = 3.5;
+
     private double[] hoodCoeffs;
     private double[] velCoeffs;
 
@@ -47,7 +44,7 @@ public class ShooterCalculator implements IShooterCalculator {
     }
 
     private double shooterVelocity(double distance) {
-        return shooterMinVelocity + (distance - minDistance) * (shooterMaxVelocity - shooterMinVelocity) / (maxDistance - minDistance);
+        return SHOOTER_MIN_VELOCITY + (distance - MIN_DISTANCE) * (SHOOTER_MAX_VELOCITY - SHOOTER_MIN_VELOCITY) / (MAX_DISTANCE - MIN_DISTANCE);
     }
 
     public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
