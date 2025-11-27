@@ -38,7 +38,7 @@ public class ShooterCalculator implements IShooterCalculator {
     public int velocityToRPM(double velocity) {
         double result = 0.0;
         for (int exponent = 0; exponent < velCoeffs.length; exponent++) {
-            result += velCoeffs[exponent] * Math.pow(velocity, exponent);
+            result += velCoeffs[exponent] * Math.pow(velocity, velCoeffs.length - exponent - 1);
         }
         return (int)result;
     }

@@ -116,6 +116,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
         telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
+        telemetry.addData("Target RPM", shooter.solution.getVelocity());
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
 

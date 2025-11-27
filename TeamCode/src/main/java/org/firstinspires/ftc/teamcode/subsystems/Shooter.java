@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 
+import androidx.core.math.MathUtils;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
@@ -26,6 +28,7 @@ import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
+import org.psilynx.psikit.core.wpi.MathUtil;
 
 import java.util.concurrent.TimeUnit;
 
@@ -85,7 +88,8 @@ public class Shooter extends SubsystemBase {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
         kicker.set(0);
 
-        spinUp();
+        //setRPM(0);
+        //spinUp();
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
@@ -102,6 +106,8 @@ public class Shooter extends SubsystemBase {
         setVerticalAngle(solution.getVerticalAngle());
 //        setVelocity(solution.getVelocity());
 
+        //flywheel.setVelocity(MathUtils.clamp(solution.getVelocity(), 0,5000));
+        setRPM(MathUtils.clamp(solution.getVelocity(), 0,5000));
         flywheel.setVelocity(velocity);
 
         calculateRecovery();

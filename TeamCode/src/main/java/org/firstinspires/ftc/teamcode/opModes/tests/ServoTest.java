@@ -10,7 +10,7 @@ public class ServoTest extends OpMode {
 
     @Override
     public void init() {
-        servo = hardwareMap.get(Servo.class, "test");
+        servo = hardwareMap.get(Servo.class, "hood");
     }
 
     @Override
@@ -22,5 +22,6 @@ public class ServoTest extends OpMode {
         if (gamepad1.squareWasPressed()) {
             servo.setPosition(0);
         }
+        telemetry.addData("Servo pos", servo.getPosition());
     }
 }
