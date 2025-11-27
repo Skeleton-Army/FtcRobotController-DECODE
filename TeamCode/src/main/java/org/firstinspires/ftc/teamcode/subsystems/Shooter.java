@@ -96,7 +96,7 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity());
+        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity());
 
         setHorizontalAngle(solution.getHorizontalAngle());
         setVerticalAngle(solution.getVerticalAngle());

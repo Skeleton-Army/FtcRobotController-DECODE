@@ -4,5 +4,5 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.Vector;
 
 public interface IShooterCalculator {
-    ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector goalVelocity);
+    ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel);
 }

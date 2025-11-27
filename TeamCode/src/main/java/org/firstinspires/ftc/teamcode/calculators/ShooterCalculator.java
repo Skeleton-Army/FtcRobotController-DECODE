@@ -12,8 +12,10 @@ import com.seattlesolvers.solverslib.util.MathUtils;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class ShooterCalculator implements IShooterCalculator {
-    private final double shooterMinVelocity = 11;
-    private final double shooterMaxVelocity = 7;
+    private static final double METER_OVER_INCH = 39.37;
+    private static final double SHOT_LATENCY = 0.1;
+    private final double shooterMinVelocity = 5;
+    private final double shooterMaxVelocity = 8;
     private final double minDistance = 0.7;
     private final double maxDistance = 3.5;
     private double[] hoodCoeffs;
@@ -52,48 +54,45 @@ public class ShooterCalculator implements IShooterCalculator {
         double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
         double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 
-        double angle = Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
-        double target = angle - heading;
-
-        return MathFunctions.normalizeAngle(target);
+        return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
 
 
     /**
      * @param robotPose Robot position (pedro field coordinates)
      * @param goalPose Goal position (pedro field coordinates)
-     * @param vel Robot velocity vector in meters per second
+     * @param robotVel Robot velocity vector in meters per second
      * @return ShootingSolution at field coordinates (e.g. horizontal angle at relative to the field and not the robot)
      */
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector vel) {
-        Vector3D robotVel = new Vector3D(vel.getXComponent(), vel.getYComponent(), 0);
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel) {
+        // predict where robot will be at firing time
+        double predX = robotPose.getX() + robotVel.getXComponent() * SHOT_LATENCY;
+        double predY = robotPose.getY() + robotVel.getYComponent() * SHOT_LATENCY;
+        double predHeading = robotPose.getHeading() + angularVel * SHOT_LATENCY;
+        Pose predictedPose = new Pose(predX, predY, predHeading);
 
-        double distance = robotPose.distanceFrom(goalPose);
-        double verticalAngle = calculateVerticalAngle(distance / 39.37);
-        double horizontalAngle = calculateTurretAngle(goalPose, robotPose.getX(), robotPose.getY(), robotPose.getHeading());
+        // compute distance/angles from predicted pose
+        double distance = predictedPose.distanceFrom(goalPose);
+        double verticalAngle = calculateVerticalAngle(distance / METER_OVER_INCH);
+        double horizontalAngle = calculateTurretAngle(goalPose, predictedPose.getX(), predictedPose.getY(), predictedPose.getHeading());
 
+        // compute stationary launch vector in field coords (as before)
         double speed = shooterVelocity(distance);
-
-        // Stationary launch vector
         double vx = speed * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
         double vy = speed * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
         double vz = speed * Math.sin(verticalAngle);
-
         Vector3D vLaunch = new Vector3D(vx, vy, vz);
 
-        // Relative to field (robot motion subtraction)
-        Vector3D v0 = vLaunch.subtract(robotVel);
+        // robot velocity at firing instant (we assume constant)
+        Vector3D velocity = new Vector3D(robotVel.getXComponent(), robotVel.getYComponent(), 0);
 
-        // Extract new angles
+        // relative launch vector (what the shooter must produce)
+        Vector3D v0 = vLaunch.subtract(velocity);
+
         double newSpeed = v0.getNorm();
-        double newHorizontalAngle = Math.atan2(v0.getY(), v0.getX());
-        double newVerticalAngle = Math.asin(v0.getZ() / newSpeed);
-
-        return new ShootingSolution(
-                newHorizontalAngle,
-                newVerticalAngle,
-                velocityToRPM(newSpeed)
-        );
+        double newHorizontalAngle = v0.getAlpha() - predHeading;
+        double newVerticalAngle = v0.getDelta();
+        return new ShootingSolution(MathFunctions.normalizeAngle(newHorizontalAngle), newVerticalAngle, velocityToRPM(newSpeed));
     }
 
     /**
