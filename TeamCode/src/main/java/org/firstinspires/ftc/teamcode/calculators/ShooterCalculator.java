@@ -76,7 +76,7 @@ public class ShooterCalculator implements IShooterCalculator {
         // compute distance/angles from predicted pose
         double distance = predictedPose.distanceFrom(goalPose.scale(INCH_TO_METERS));
         double verticalAngle = calculateVerticalAngle(distance);
-        double horizontalAngle = calculateTurretAngle(goalPose, robotPose.getX(), robotPose.getY(), predictedPose.getHeading());
+        double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
 
         // compute stationary launch vector in field coords (as before)
         double speed = shooterVelocity(distance);
