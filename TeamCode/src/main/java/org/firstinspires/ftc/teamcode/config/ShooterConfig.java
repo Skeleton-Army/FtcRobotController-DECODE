@@ -8,7 +8,8 @@ public class ShooterConfig {
     public static String FLYWHEEL_NAME = "flywheel";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL_INVERTED = true;
-    public static double FLYWHEEL_TARGET = 4000;
+    public static int FLYWHEEL_TARGET = 4000;
+    public static int RPM_REACHED_THRESHOLD = 100;
     public static double FLYWHEEL_KP = 1.5;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;

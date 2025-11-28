@@ -6,7 +6,6 @@ import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -17,7 +16,6 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 
 @Config
@@ -30,7 +28,7 @@ public class Shooter extends SubsystemBase {
     private final CRServoEx transfer;
     private final ServoEx kicker;
 
-    private double velocity;
+    private double targetTPS;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker) {
         this.poseTracker = poseTracker;
@@ -62,7 +60,7 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        flywheel.setVelocity(velocity);
+        flywheel.setVelocity(targetTPS);
         turret.set(1);
     }
 
@@ -105,8 +103,12 @@ public class Shooter extends SubsystemBase {
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
+    public double getTargetRPM() {
+        return (targetTPS * 60.0) / flywheel.getCPR();
+    }
+
     public boolean reachedRPM() {
-        return getRPM() >= FLYWHEEL_TARGET;
+        return Math.abs(getTargetRPM() - getRPM()) <= RPM_REACHED_THRESHOLD;
     }
 
     public double getRawHoodPosition() {
@@ -118,7 +120,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setRPM(double rpm) {
-        this.velocity = (rpm * flywheel.getCPR()) / 60.0;
+        this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
 
     public void setRawHoodPosition(double angle) {
