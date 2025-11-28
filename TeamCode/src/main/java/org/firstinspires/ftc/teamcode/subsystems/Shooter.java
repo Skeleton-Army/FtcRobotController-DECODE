@@ -99,14 +99,11 @@ public class Shooter extends SubsystemBase {
 
         setHorizontalAngle(solution.getHorizontalAngle());
         setVerticalAngle(solution.getVerticalAngle());
-//        setVelocity(solution.getVelocity());
-
-        //flywheel.setVelocity(MathUtils.clamp(solution.getVelocity(), 0,5000));
-        setRPM(MathUtils.clamp(solution.getVelocity(), 0,5000));
-        flywheel.setVelocity(targetTPS);
+        setRPM(solution.getVelocity());
 
         calculateRecovery();
 
+        flywheel.setVelocity(targetTPS);
         turret.set(1);
     }
 
@@ -182,6 +179,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void setRPM(double rpm) {
+        rpm = MathUtils.clamp(rpm, 0, flywheel.getMaxRPM());
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
 
