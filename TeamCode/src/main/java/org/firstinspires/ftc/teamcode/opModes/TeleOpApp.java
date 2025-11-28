@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opModes;
 import android.util.Log;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_TARGET;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_POSSIBLE_MIN;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.KICK_TIME;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -14,6 +15,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
@@ -79,6 +82,9 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(new ShootCommand(shooter, intake));
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
+                .whenPressed(new SequentialCommandGroup(new InstantCommand(() -> shooter.kick())));
     }
 
     @Override
