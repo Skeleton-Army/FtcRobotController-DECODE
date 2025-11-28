@@ -18,15 +18,12 @@ import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 
-@Config
 public class Shooter extends SubsystemBase {
     private final PoseTracker poseTracker;
 
     private final MotorEx flywheel;
     private final Motor turret;
     private final ServoEx hood;
-    private final CRServoEx transfer;
-    private final ServoEx kicker;
 
     private double targetTPS;
 
@@ -49,12 +46,6 @@ public class Shooter extends SubsystemBase {
         hood = new ServoEx(hardwareMap, HOOD_NAME);
         setVerticalAngle(0);
 
-        transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
-        toggleTransfer(false);
-
-        kicker = new ServoEx(hardwareMap, KICKER_NAME);
-        kicker.set(0);
-
         spinUp();
     }
 
@@ -70,20 +61,6 @@ public class Shooter extends SubsystemBase {
 
     public void spinDown() {
         setRPM(0);
-    }
-
-    public void toggleTransfer(boolean isOn) {
-        transfer.set(isOn ? TRANSFER_POWER : 0);
-    }
-
-    public void kick() {
-        CommandScheduler.getInstance().schedule(
-                new SequentialCommandGroup(
-                        new InstantCommand(() -> kicker.set(KICKER_MAX)),
-                        new WaitCommand(KICK_TIME),
-                        new InstantCommand(() -> kicker.set(KICKER_MIN))
-                )
-        );
     }
 
     public void updateHorizontalAngle() {

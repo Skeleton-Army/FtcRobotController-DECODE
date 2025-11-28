@@ -30,14 +30,6 @@ public class ShooterConfig {
     public static double HOOD_MIN = 0;
     public static double HOOD_MAX = Math.PI / 2;
 
-    public static String TRANSFER_NAME = "transfer";
-    public static double TRANSFER_POWER = 1;
-
-    public static String KICKER_NAME = "kicker";
-    public static double KICKER_MIN = 0;
-    public static double KICKER_MAX = 0.4;
-    public static long KICK_TIME = 400;
-
     public static double GOAL_X = 0;
     public static double GOAL_Y = 144;
     public static double DISTANCE_TO_BOT_CENTER = 0;

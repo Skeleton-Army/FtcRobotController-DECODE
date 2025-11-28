@@ -17,6 +17,7 @@ import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 
 @Autonomous
 public class AutonomousApp extends ComplexOpMode {
@@ -25,11 +26,13 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Follower follower;
     private Intake intake;
+    private Shooter shooter;
+    private Transfer transfer;
+
     private PathChain batata;
     private PathChain potato;
     private PathChain avocado;
     private PathChain tomato;
-    private Shooter shooter;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
@@ -104,6 +107,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         intake = new Intake(hardwareMap);
         shooter = new Shooter(hardwareMap, follower.poseTracker);
+        transfer = new Transfer(hardwareMap);
 
         setupPaths();
         setupPrompts();

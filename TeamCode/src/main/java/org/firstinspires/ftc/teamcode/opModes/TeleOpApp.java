@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.FLYWHEEL_TARGET;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_POSSIBLE_MIN;
 
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -9,7 +8,6 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
@@ -20,6 +18,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.Pose2d;
 import org.psilynx.psikit.core.wpi.Rotation2d;
@@ -29,6 +28,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Follower follower;
     private Intake intake;
     private Shooter shooter;
+    private Transfer transfer;
     private Drive drive;
 
     private GamepadEx gamepadEx1;
@@ -44,6 +44,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         intake = new Intake(hardwareMap);
         shooter = new Shooter(hardwareMap, follower.poseTracker);
+        transfer = new Transfer(hardwareMap);
         drive = new Drive(follower);
 
         gamepadEx1 = new GamepadEx(gamepad1);
@@ -65,11 +66,11 @@ public class TeleOpApp extends ComplexOpMode {
 //                }));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenPressed(new InstantCommand(() -> shooter.toggleTransfer(true)))
-                .whenReleased(new InstantCommand(() -> shooter.toggleTransfer(false)));
+                .whenPressed(new InstantCommand(() -> transfer.toggleTransfer(true)))
+                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
-                .whenPressed(new ShootCommand(shooter, intake));
+                .whenPressed(new ShootCommand(3, shooter, intake, transfer));
     }
 
     @Override
