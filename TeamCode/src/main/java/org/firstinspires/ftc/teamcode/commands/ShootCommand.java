@@ -32,7 +32,7 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(intake::collect),
                 new InstantCommand(() -> transfer.toggleTransfer(true)),
 
-                new WaitUntilCommand(transfer::isArtifactDetected),
+                new WaitUntilCommand(transfer::isArtifactDetected).withTimeout(3000),
                 new WaitUntilCommand(shooter::reachedRPM),
 
                 new InstantCommand(intake::stop),
