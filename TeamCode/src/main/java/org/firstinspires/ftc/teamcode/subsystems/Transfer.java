@@ -36,13 +36,21 @@ public class Transfer extends SubsystemBase {
 
     public Command kick() {
         return new SequentialCommandGroup(
-                new InstantCommand(() -> kicker.set(KICKER_MAX)),
+                new InstantCommand(() -> setKickerPosition(true)),
                 new WaitCommand(KICK_TIME),
-                new InstantCommand(() -> kicker.set(KICKER_MIN))
+                new InstantCommand(() -> setKickerPosition(false))
         );
     }
 
+    public void setKickerPosition(boolean isUp) {
+        kicker.set(isUp ? KICKER_MAX : KICKER_MIN);
+    }
+
     public boolean isArtifactDetected() {
-        return colorSensor.distance(DistanceUnit.CM) <= DISTANCE_THRESHOLD_CM;
+        return getDistance() <= DISTANCE_THRESHOLD_CM;
+    }
+
+    public double getDistance() {
+        return colorSensor.distance(DistanceUnit.CM);
     }
 }

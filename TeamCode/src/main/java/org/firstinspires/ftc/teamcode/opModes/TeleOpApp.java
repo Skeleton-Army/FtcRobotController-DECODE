@@ -64,12 +64,12 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx2 = new GamepadEx(gamepad2);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(new InstantCommand(() -> intake.collect()))
-                .whenReleased(new InstantCommand(() -> intake.stop()));
+                .whenPressed(new InstantCommand(() -> intake.collect(), intake))
+                .whenReleased(new InstantCommand(() -> intake.stop(), intake));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whenPressed(new InstantCommand(() -> intake.release()))
-                .whenReleased(new InstantCommand(() -> intake.stop()));
+                .whenPressed(new InstantCommand(() -> intake.release(), intake))
+                .whenReleased(new InstantCommand(() -> intake.stop(), intake));
 
 //        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
 //                .whenPressed(new InstantCommand(() -> {
@@ -109,6 +109,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+        telemetry.addData("Sensor distance", transfer.getDistance());
         //telemetry.addData("Turret position", shooter.getTurretPosition());
         //telemetry.addData("Turret angle (rad)", shooter.getTurretAngle(AngleUnit.RADIANS));
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));

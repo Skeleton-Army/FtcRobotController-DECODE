@@ -27,10 +27,18 @@ public class ShootCommand extends SequentialCommandGroup {
         for (int i = 0; i < numberOfArtifacts; i++) {
             addCommands(cycle());
         }
+
+        addCommands(transfer.kick());
     }
 
     private Command cycle() {
         return new SequentialCommandGroup(
+                new InstantCommand(() -> transfer.toggleTransfer(true)),
+                transfer.kick(),
+                new InstantCommand(() -> transfer.toggleTransfer(false)),
+
+                new WaitCommand(300), // Wait a bit for the sensor to update its values
+
                 new InstantCommand(() -> {
                     if (!transfer.isArtifactDetected()) {
                         intake.collect();
@@ -40,7 +48,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 // Either artifact gets detected OR the timeout elapses
                 new WaitUntilCommand(transfer::isArtifactDetected)
-                        .withTimeout(1000),
+                        .withTimeout(1500),
 
                 // If we got here but artifact is still NOT detected, it timed out -> cancel the whole ShootCommand
                 new InstantCommand(() -> {
@@ -54,9 +62,18 @@ public class ShootCommand extends SequentialCommandGroup {
                 new WaitUntilCommand(shooter::reachedRPM),
 
                 new InstantCommand(intake::stop),
-                new InstantCommand(() -> transfer.toggleTransfer(false)),
-
-                transfer.kick()
+                new InstantCommand(() -> transfer.toggleTransfer(false))
         );
+    }
+
+    @Override
+    public void end(boolean interrupted) {
+        super.end(interrupted);
+
+        // Ensure everything is off and in its place when the command gets interrupted
+        if (interrupted) {
+            transfer.setKickerPosition(false);
+            transfer.toggleTransfer(false);
+        }
     }
 }

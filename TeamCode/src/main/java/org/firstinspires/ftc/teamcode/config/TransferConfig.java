@@ -13,5 +13,5 @@ public class TransferConfig {
     public static long KICK_TIME = 400;
 
     public static String SENSOR_NAME = "transferSensor";
-    public static double DISTANCE_THRESHOLD_CM = 5;
+    public static double DISTANCE_THRESHOLD_CM = 4;
 }
