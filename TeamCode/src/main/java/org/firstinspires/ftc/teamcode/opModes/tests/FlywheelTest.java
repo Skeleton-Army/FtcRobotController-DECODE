@@ -107,7 +107,7 @@ public class FlywheelTest extends OpMode {
         // Convert to RPM
         double motorRPM = (motorTPS * 60.0) / motor.getCPR();
 
-        if (FLYWHEEL_TARGET - motorRPM <= SHOOT_THRESHOLD) {
+        if (FLYWHEEL_TARGET - motorRPM <= RPM_REACHED_THRESHOLD) {
             recoveryTime = timerEx.getElapsed();
             timerEx.pause();
         }
