@@ -43,11 +43,11 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
-//        follower = Constants.createFollower(hardwareMap);
-//        follower.startTeleopDrive(true);
-//        follower.setStartingPose(new Pose(72, 72));
+        follower = Constants.createFollower(hardwareMap);
+        follower.startTeleopDrive(true);
+        follower.setStartingPose(new Pose(72, 72));
 
-//        intake = new Intake(hardwareMap);
+        intake = new Intake(hardwareMap);
         //shooter = new Shooter(hardwareMap, follower.poseTracker);
 
         gamepadEx1 = new GamepadEx(gamepad1);
@@ -56,9 +56,9 @@ public class TeleOpApp extends ComplexOpMode {
 //        new Trigger(() -> gamepad1.right_trigger > 0.1)
 //                .whenActive(new ShootCommand(shooter));
 
-//        gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-//                .whenPressed(new InstantCommand(() -> intake.set(-1)))
-//                .whenReleased(new InstantCommand(() -> intake.set(0)));
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
+                .whenPressed(new InstantCommand(() -> intake.set(-1)))
+                .whenReleased(new InstantCommand(() -> intake.set(0)));
 //
 //        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
 //                .whenPressed(new InstantCommand(() -> intake.set(1)))
@@ -71,8 +71,8 @@ public class TeleOpApp extends ComplexOpMode {
 
     @Override
     public void run() {
-//        follower.update();
-//        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
+        follower.update();
+        follower.setTeleOpDrive(-gamepad1.left_stick_y, -gamepad1.left_stick_x, -gamepad1.right_stick_x, true);
 
 //        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
 //        robotZone.setRotation(follower.getPose().getHeading());
@@ -99,6 +99,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Debug Mode", Settings.get("debug", false));
         telemetry.addData("Buh", Settings.get("buh", Buh.a));
         telemetry.addData("a", Settings.get("na", new ArrayList<>()));
+        telemetry.addData("neea", Settings.get("neea", new ArrayList<>()));
         telemetry.update();
 
 //        double inchesToMeters = 39.37;

@@ -42,7 +42,7 @@ repositories {
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://repo.dairy.foundation/snapshots" }
     maven { url = 'https://maven.brott.dev/' }
-//    maven { url = "https://central.sonatype.com/repository/maven-snapshots/" }
+    maven { url = "https://central.sonatype.com/repository/maven-snapshots/" }
 }
 
 dependencies {
