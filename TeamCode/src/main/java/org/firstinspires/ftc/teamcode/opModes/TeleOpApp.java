@@ -124,6 +124,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Target RPM", shooter.solution.getVelocity());
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
+        telemetry.addData("Reached RPM", shooter.reachedRPM());
 
         telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
         telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
