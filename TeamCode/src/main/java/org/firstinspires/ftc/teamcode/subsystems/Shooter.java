@@ -28,11 +28,9 @@ import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
-import org.psilynx.psikit.core.wpi.MathUtil;
 
 import java.util.concurrent.TimeUnit;
 
-@Config
 public class Shooter extends SubsystemBase {
     public ShootingSolution solution;
 
@@ -48,10 +46,7 @@ public class Shooter extends SubsystemBase {
     private final Alliance alliance;
     private final Pose goalPose;
 
-    /**
-     * Flywheel velocity [ticks/second]
-     */
-    private double velocity;
+    private double targetTPS;
 
     private final TimerEx timerEx;
     public boolean calculatedRecovery = false;
@@ -104,14 +99,11 @@ public class Shooter extends SubsystemBase {
 
         setHorizontalAngle(solution.getHorizontalAngle());
         setVerticalAngle(solution.getVerticalAngle());
-//        setVelocity(solution.getVelocity());
-
-        //flywheel.setVelocity(MathUtils.clamp(solution.getVelocity(), 0,5000));
-        setRPM(MathUtils.clamp(solution.getVelocity(), 0,5000));
-        flywheel.setVelocity(velocity);
+        setRPM(solution.getVelocity());
 
         calculateRecovery();
 
+        flywheel.setVelocity(targetTPS);
         turret.set(1);
     }
 
@@ -137,17 +129,17 @@ public class Shooter extends SubsystemBase {
         );
     }
 
-    private void setVelocity(double velocity) {
-        this.velocity = velocity;
-    }
-
     public double getRPM() {
         double motorTPS = flywheel.getCorrectedVelocity();
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
+    public double getTargetRPM() {
+        return (targetTPS * 60.0) / flywheel.getCPR();
+    }
+
     public boolean reachedRPM() {
-        return getRPM() >= FLYWHEEL_TARGET;
+        return Math.abs(getTargetRPM() - getRPM()) <= RPM_REACHED_THRESHOLD;
     }
 
     public double getRawHoodPosition() {
@@ -160,10 +152,6 @@ public class Shooter extends SubsystemBase {
 
     public double getTurretAngle(AngleUnit angleUnit) {
         return angleUnit == AngleUnit.DEGREES ? Math.toDegrees(turret.getDistance()) : turret.getDistance();
-    }
-
-    private void setRPM(double rpm) {
-        this.velocity = (rpm * flywheel.getCPR()) / 60.0;
     }
 
     public void setRawHoodPosition(double angle) {
@@ -190,8 +178,13 @@ public class Shooter extends SubsystemBase {
 
     }
 
+    private void setRPM(double rpm) {
+        rpm = MathUtils.clamp(rpm, 0, flywheel.getMaxRPM());
+        this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
+    }
+
     private void calculateRecovery() {
-        if (FLYWHEEL_TARGET - getRPM() > SHOOT_THRESHOLD) {
+        if (FLYWHEEL_TARGET - getRPM() > RPM_REACHED_THRESHOLD) {
             if (!calculatedRecovery) {
                 timerEx.restart();
                 timerEx.start();
@@ -201,7 +194,7 @@ public class Shooter extends SubsystemBase {
                 shotFlywheelRPM = getRPM();
                 shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) * inchesToMeters;
             }
-        } else if (FLYWHEEL_TARGET - getRPM() <= SHOOT_THRESHOLD && calculatedRecovery) {
+        } else if (FLYWHEEL_TARGET - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
             recoveryTime = timerEx.getElapsed();
             timerEx.pause();
             calculatedRecovery = false;
