@@ -65,11 +65,11 @@ public class TeleOpApp extends ComplexOpMode {
 //                    CommandScheduler.getInstance().schedule(cmd);
 //                }));
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenPressed(new InstantCommand(() -> transfer.toggleTransfer(true)))
-                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
+//                .whenPressed(new InstantCommand(() -> transfer.toggleTransfer(true)))
+//                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new ShootCommand(3, shooter, intake, transfer));
     }
 
