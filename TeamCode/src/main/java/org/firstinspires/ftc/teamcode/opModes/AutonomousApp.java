@@ -19,6 +19,7 @@ import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
+import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 
 @Autonomous
 public class AutonomousApp extends ComplexOpMode {
@@ -27,11 +28,13 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Follower follower;
     private Intake intake;
+    private Shooter shooter;
+    private Transfer transfer;
+
     private PathChain batata;
     private PathChain potato;
     private PathChain avocado;
     private PathChain tomato;
-    private Shooter shooter;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
@@ -106,6 +109,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         intake = new Intake(hardwareMap);
         shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs), Alliance.BLUE);
+        transfer = new Transfer(hardwareMap);
 
         setupPaths();
         setupPrompts();
@@ -115,12 +119,12 @@ public class AutonomousApp extends ComplexOpMode {
     public void onStart() {
         schedule(
                 new SequentialCommandGroup(
-                        new ShootCommand(shooter, intake),
+                        new ShootCommand(3, shooter, intake, transfer),
                         new InstantCommand(() -> intake.collect()),
                         new FollowPathCommand(follower, batata),
                         new InstantCommand(() -> intake.stop()),
                         new FollowPathCommand(follower, potato),
-                        new ShootCommand(shooter, intake),
+                        new ShootCommand(3, shooter, intake, transfer),
                         new InstantCommand(() -> intake.collect()),
                         new FollowPathCommand(follower, avocado),
                         new InstantCommand(() -> intake.stop()),

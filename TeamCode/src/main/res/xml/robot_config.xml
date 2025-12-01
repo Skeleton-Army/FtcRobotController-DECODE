@@ -12,6 +12,8 @@
 
             <Servo name="hood" port="0" />
             <Servo name="kicker" port="1" />
+
+            <RevColorSensorV3 name="transferSensor" port="0" bus="0"/>
         </LynxModule>
 
         <LynxModule name="Control Hub" port="173">
