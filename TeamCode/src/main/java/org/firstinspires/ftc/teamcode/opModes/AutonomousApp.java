@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import com.pedropathing.geometry.BezierCurve;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -8,6 +9,7 @@ import com.pedropathing.follower.Follower;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
 
@@ -21,9 +23,10 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 
+import java.util.List;
+
 @Autonomous
 public class AutonomousApp extends ComplexOpMode {
-    private final int[] ARTIFACTS_COUNT = {3, 6, 9, 12, 15, 30000};
     private final Prompter prompter = new Prompter(this);
 
     private Follower follower;
@@ -31,60 +34,135 @@ public class AutonomousApp extends ComplexOpMode {
     private Shooter shooter;
     private Transfer transfer;
 
-    private PathChain batata;
-    private PathChain potato;
-    private PathChain avocado;
-    private PathChain tomato;
+    private PathChain[] farPaths = new PathChain[4];
+    private PathChain[] nearPaths = new PathChain[4];
+    private PathChain farDriveBack;
+    private PathChain nearDriveBack;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
-    private int artifacts;
+    private List<Integer> pickupOrder;
 
     public void setupPaths() {
-        batata = follower
+        farPaths[0] = follower
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(56.294, 10.263),
-                                new Pose(57.538, 36.078),
-                                new Pose(17.417, 36.078)
+                                follower::getPose,
+                                new Pose(8.086, 48.518),
+                                new Pose(7.775, 8.086)
                         )
                 )
                 .setTangentHeadingInterpolation()
                 .build();
 
-        potato = follower
+        farPaths[1] = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierCurve(
+                                    follower::getPose,
+                                    new Pose(57.538, 36.078),
+                                    new Pose(17.417, 36.078)
+                            )
+                    )
+                    .setTangentHeadingInterpolation()
+                    .build();
+
+        farPaths[2] = follower
+                    .pathBuilder()
+                    .addPath(
+                            new BezierCurve(
+                                    follower::getPose,
+                                    new Pose(64.069, 57.227),
+                                    new Pose(8.708, 55.495)
+                            )
+                    )
+                    .setTangentHeadingInterpolation()
+                    .build();
+
+
+        farPaths[3] = follower
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(17.417, 36.078),
-                                new Pose(60.959, 29.235),
-                                new Pose(56.294, 14.307)
-
-                        )
-                )
-                .setLinearHeadingInterpolation(Math.toRadians(180), Math.toRadians(90))
-                .build();
-
-        avocado = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                new Pose(56.294, 14.307),
-                                new Pose(64.069, 57.227),
-                                new Pose(8.708, 53.495)
+                                follower::getPose,
+                                new Pose(68.423, 91.749),
+                                new Pose(15.551, 84.596)
                         )
                 )
                 .setTangentHeadingInterpolation()
                 .build();
 
-        tomato = follower
+        farDriveBack = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                new Pose(53.495, 13)
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        Math.toRadians(180),
+                        Math.toRadians(90)
+                )
+                .build();
+
+        nearDriveBack = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                new Pose(42.920, 104.190)                        )
+                )
+                .setLinearHeadingInterpolation(
+                        Math.toRadians(180),
+                        Math.toRadians(90)
+                )
+                .build();
+
+        nearPaths[3] = follower
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                new Pose(8.708, 53.495),
-                                new Pose(53.184, 55.983),
-                                new Pose(53.495, 9.952)
+                                follower::getPose,
+                                new Pose(43.231, 82.419),
+                                new Pose(17.106, 83.352)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .build();
+
+        nearPaths[2] = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                new Pose(43.231, 52.873),
+                                new Pose(12.130, 59.093)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .build();
+
+        nearPaths[1] = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                new Pose(45.097, 22.082),
+                                new Pose(16.795, 37.011)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .build();
+
+        nearPaths[0] = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                new Pose(9.019, 47.896),
+                                new Pose(8.086, 8.708)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -94,21 +172,22 @@ public class AutonomousApp extends ComplexOpMode {
     public void setupPrompts() {
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("startPos", new OptionPrompt<>("SELECT STARTING POSITIONS", StartingPosition.FAR, StartingPosition.CLOSE))
-                .prompt("artifacts", new OptionPrompt<>("SELECT AMOUNT OF ARTIFACTS", ARTIFACTS_COUNT))
+                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 1, 2, 3, 4))
                 .onComplete(() -> {
                     alliance = prompter.get("alliance");
                     startingPosition = prompter.get("startPos");
-                    artifacts = prompter.get("artifacts");
+                    pickupOrder = prompter.get("pickup_order");
+
+                    shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs), alliance);
                 });
     }
 
     @Override
     public void initialize() {
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(56.604751619870406,7.464362850971918, Math.toRadians(90)));
+        follower.setStartingPose(new Pose(56.604751619870406,8.708423326133913, Math.toRadians(90)));
 
         intake = new Intake(hardwareMap);
-        shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs), Alliance.BLUE);
         transfer = new Transfer(hardwareMap);
 
         setupPaths();
@@ -117,20 +196,30 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void onStart() {
-        schedule(
-                new SequentialCommandGroup(
-                        new ShootCommand(3, shooter, intake, transfer),
-                        new InstantCommand(() -> intake.collect()),
-                        new FollowPathCommand(follower, batata),
-                        new InstantCommand(() -> intake.stop()),
-                        new FollowPathCommand(follower, potato),
-                        new ShootCommand(3, shooter, intake, transfer),
-                        new InstantCommand(() -> intake.collect()),
-                        new FollowPathCommand(follower, avocado),
-                        new InstantCommand(() -> intake.stop()),
-                        new FollowPathCommand(follower, tomato)
-                )
+        SequentialCommandGroup seq = new SequentialCommandGroup(
+                new ShootCommand(3, shooter, intake, transfer)
         );
+
+        for (Integer index : pickupOrder) {
+            int i = index - 1;
+
+            PathChain[] sourcePaths = startingPosition == StartingPosition.FAR
+                    ? farPaths
+                    : nearPaths;
+
+            PathChain selectedPath = sourcePaths[i];
+
+            seq.addCommands(new InstantCommand(() -> intake.collect()));
+            seq.addCommands(new FollowPathCommand(follower, selectedPath));
+            seq.addCommands(new InstantCommand(() -> intake.stop()));
+            seq.addCommands(new FollowPathCommand(
+                    follower,
+                    startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
+            ));
+            seq.addCommands(new ShootCommand(3, shooter, intake, transfer));
+        }
+
+        schedule(seq);
     }
 
     @Override

@@ -33,6 +33,8 @@ public class ShootCommand extends SequentialCommandGroup {
 
     private Command cycle() {
         return new SequentialCommandGroup(
+                new WaitUntilCommand(shooter::reachedRPM),
+
                 new InstantCommand(() -> transfer.toggleTransfer(true)),
                 transfer.kick(),
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
@@ -58,8 +60,6 @@ public class ShootCommand extends SequentialCommandGroup {
                         cancel();
                     }
                 }),
-
-                new WaitUntilCommand(shooter::reachedRPM),
 
                 new InstantCommand(intake::stop),
                 new InstantCommand(() -> transfer.toggleTransfer(false))
