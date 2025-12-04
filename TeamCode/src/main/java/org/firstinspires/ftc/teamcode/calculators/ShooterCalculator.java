@@ -60,15 +60,18 @@ public class ShooterCalculator implements IShooterCalculator {
      * @param robotVel Robot velocity vector in inches per second
      * @return ShootingSolution at field coordinates (e.g. horizontal angle at relative to the field and not the robot)
      */
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel) {
-        // Predict where robot will be at firing time
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel) { // Predict where robot will be at firing time
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
 
-        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
-        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
-        double predHeading = robotPoseMeters.getHeading() + angularVel * SHOT_LATENCY;
+        double dx = goalPoseMeters.getX() - robotPoseMeters.getX();
+        double dy = goalPoseMeters.getY() - robotPoseMeters.getY();
+        double r  = Math.hypot(dx, dy);
+
+        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY * r;
+        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY * r;
+        double predHeading = robotPoseMeters.getHeading();
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
         // Compute distance/angles from predicted pose
