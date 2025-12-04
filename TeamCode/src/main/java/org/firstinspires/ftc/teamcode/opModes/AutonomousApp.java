@@ -49,8 +49,11 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                new Pose(8.086, 48.518),
-                                new Pose(7.775, 8.086)
+                                new Pose(65.935, 33.901),
+                                new Pose(63.447, 62.825),
+                                new Pose(2.177, 74.022),
+                                new Pose(10.575, 40.432),
+                                new Pose(9.330, 9.952)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -61,8 +64,8 @@ public class AutonomousApp extends ComplexOpMode {
                     .addPath(
                             new BezierCurve(
                                     follower::getPose,
-                                    new Pose(57.538, 36.078),
-                                    new Pose(17.417, 36.078)
+                                    new Pose(63.758, 36.700),
+                                    new Pose(19.594, 36.078)
                             )
                     )
                     .setTangentHeadingInterpolation()
@@ -73,8 +76,8 @@ public class AutonomousApp extends ComplexOpMode {
                     .addPath(
                             new BezierCurve(
                                     follower::getPose,
-                                    new Pose(64.069, 57.227),
-                                    new Pose(8.708, 55.495)
+                                    new Pose(69.045, 65.313),
+                                    new Pose(15.551, 59.404)
                             )
                     )
                     .setTangentHeadingInterpolation()
@@ -86,8 +89,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                new Pose(68.423, 91.749),
-                                new Pose(15.551, 84.596)
+                                new Pose(78.376, 88.639),
+                                new Pose(18.972, 83.974)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -98,7 +101,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower::getPose,
-                                new Pose(53.495, 13)
+                                new Pose(61.270, 15.862)
                         )
                 )
                 .setLinearHeadingInterpolation(
