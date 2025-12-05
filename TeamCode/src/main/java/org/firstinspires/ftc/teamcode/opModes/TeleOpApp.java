@@ -7,6 +7,9 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
+import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.skeletonarmy.marrow.settings.Settings;
@@ -49,6 +52,8 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean tabletopMode;
     private Alliance alliance;
 
+    private boolean insideZone;
+
     @Override
     public void initialize() {
         debugMode = Settings.get("debug_mode", false);
@@ -84,6 +89,10 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new ShootCommand(3, shooter, intake, transfer));
+
+        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
+                .whenActive(new ShootCommand(3, shooter, intake, transfer))
+                .whenInactive(() -> CommandScheduler.getInstance().cancel(shooter.getCurrentCommand()));
 
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
