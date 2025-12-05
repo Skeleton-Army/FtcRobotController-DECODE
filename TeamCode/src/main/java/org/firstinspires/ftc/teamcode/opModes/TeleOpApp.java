@@ -1,18 +1,17 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_POSSIBLE_MIN;
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.skeletonarmy.marrow.settings.Settings;
+import com.skeletonarmy.marrow.zones.Point;
+import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -33,6 +32,10 @@ import org.psilynx.psikit.core.wpi.Rotation2d;
 
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
+    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
+    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
+    private final PolygonZone robotZone = new PolygonZone(17, 17);
+
     private Follower follower;
     private Intake intake;
     private Shooter shooter;
@@ -42,11 +45,13 @@ public class TeleOpApp extends ComplexOpMode {
     private GamepadEx gamepadEx1;
     private GamepadEx gamepadEx2;
 
+    private boolean debugMode;
     private boolean tabletopMode;
     private Alliance alliance;
 
     @Override
     public void initialize() {
+        debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
 
@@ -88,6 +93,9 @@ public class TeleOpApp extends ComplexOpMode {
 
     @Override
     public void run() {
+        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
+        robotZone.setRotation(follower.getPose().getHeading());
+
         if (!tabletopMode) {
             drive.joystickDrive(gamepad1);
         }
@@ -95,6 +103,14 @@ public class TeleOpApp extends ComplexOpMode {
         // Immediately cancel drive command if joysticks are moved
         if (gamepadEx1.getLeftX() != 0 || gamepadEx1.getLeftY() != 0 || gamepadEx1.getRightX() != 0 || gamepadEx1.getRightY() != 0) {
             CommandScheduler.getInstance().cancel(drive.getCurrentCommand());
+        }
+
+        // Cancel shooting if not in a launch zone
+        boolean insideClose = robotZone.isInside(closeLaunchZone);
+        boolean insideFar = robotZone.isInside(farLaunchZone);
+
+        if (!insideClose && !insideFar && !debugMode) {
+            CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
         double inchesToMeters = 39.37;
