@@ -12,6 +12,7 @@ import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
+import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
@@ -181,6 +182,8 @@ public class AutonomousApp extends ComplexOpMode {
                     alliance = prompter.get("alliance");
                     startingPosition = prompter.get("startPos");
                     pickupOrder = prompter.get("pickup_order");
+
+                    Settings.set("alliance", alliance);
 
                     shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs), alliance);
                 });

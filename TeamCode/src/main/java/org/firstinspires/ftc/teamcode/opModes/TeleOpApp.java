@@ -12,6 +12,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
+import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -41,8 +42,14 @@ public class TeleOpApp extends ComplexOpMode {
     private GamepadEx gamepadEx1;
     private GamepadEx gamepadEx2;
 
+    private boolean tabletopMode;
+    private Alliance alliance;
+
     @Override
     public void initialize() {
+        tabletopMode = Settings.get("tabletop_mode", false);
+        alliance = Settings.get("alliance", Alliance.RED);
+
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         follower = Constants.createFollower(hardwareMap);
@@ -50,7 +57,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setPose(new Pose(72, 72));
 
         IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs);
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, Alliance.RED);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower);
@@ -66,34 +73,30 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(new InstantCommand(() -> intake.release(), intake))
                 .whenReleased(new InstantCommand(() -> intake.stop(), intake));
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
-                .whenPressed(new InstantCommand(() -> {
-                    CommandScheduler.getInstance().schedule(drive.goToBase());
-                }, drive));
-
 //        gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
 //                .whenPressed(new InstantCommand(() -> transfer.toggleTransfer(true)))
 //                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new ShootCommand(3, shooter, intake, transfer));
+
+        if (!tabletopMode) {
+            gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
+                    .whenPressed(new InstantCommand(() -> {
+                        CommandScheduler.getInstance().schedule(drive.goToBase());
+                    }, drive));
+        }
     }
 
     @Override
     public void run() {
-        drive.joystickDrive(gamepad1);
+        if (!tabletopMode) {
+            drive.joystickDrive(gamepad1);
+        }
 
         // Immediately cancel drive command if joysticks are moved
         if (gamepadEx1.getLeftX() != 0 || gamepadEx1.getLeftY() != 0 || gamepadEx1.getRightX() != 0 || gamepadEx1.getRightY() != 0) {
             CommandScheduler.getInstance().cancel(drive.getCurrentCommand());
-        }
-
-        if (gamepad1.dpad_up) {
-            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() + 0.05, HOOD_POSSIBLE_MIN, 1));
-        }
-
-        if (gamepad1.dpad_down) {
-            shooter.setRawHoodPosition(MathFunctions.clamp(shooter.getRawHoodPosition() - 0.05, HOOD_POSSIBLE_MIN, 1));
         }
 
         double inchesToMeters = 39.37;
