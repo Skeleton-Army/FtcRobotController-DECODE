@@ -82,9 +82,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
-                    .whenPressed(new InstantCommand(() -> {
-                        CommandScheduler.getInstance().schedule(drive.goToBase());
-                    }, drive));
+                    .whenPressed(drive.goToBase());
         }
     }
 

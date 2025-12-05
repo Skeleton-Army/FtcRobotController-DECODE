@@ -6,8 +6,12 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+
+import java.util.Arrays;
+import java.util.Collections;
 
 public class Drive extends SubsystemBase {
     private final Follower follower;
@@ -22,16 +26,27 @@ public class Drive extends SubsystemBase {
     }
 
     public Command goToBase() {
-        PathChain parking = follower
-                .pathBuilder()
-                .addPath(new BezierLine(follower.getPose(), new Pose(38.5, 33.5)))
-                .setLinearHeadingInterpolation(
-                        follower.getHeading(),
-                        getClosestRightAngle(follower.getHeading())
-                )
-                .build();
+        // Use DeferredCommand to create the path and command on schedule
+        return new DeferredCommand(
+                () -> {
+                    PathChain parking = follower
+                            .pathBuilder()
+                            .addPath(
+                                    new BezierLine(
+                                            follower.getPose(),
+                                            new Pose(38.5, 33.5)
+                                    )
+                            )
+                            .setLinearHeadingInterpolation(
+                                    follower.getHeading(),
+                                    getClosestRightAngle(follower.getHeading())
+                            )
+                            .build();
 
-        return new FollowPathCommand(follower, parking);
+                    return new FollowPathCommand(follower, parking);
+                },
+                Collections.singletonList(this)
+        );
     }
 
     public void joystickDrive(Gamepad gamepad) {
