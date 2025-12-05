@@ -12,8 +12,6 @@ import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 public class Drive extends SubsystemBase {
     private final Follower follower;
 
-    private Command currentCommand;
-
     public Drive(Follower follower) {
         this.follower = follower;
     }
@@ -21,14 +19,6 @@ public class Drive extends SubsystemBase {
     @Override
     public void periodic() {
         follower.update();
-    }
-
-    public Command getCurrentCommand() {
-        return currentCommand;
-    }
-
-    public void setCurrentCommand(Command cmd) {
-        this.currentCommand = cmd;
     }
 
     public Command goToBase() {

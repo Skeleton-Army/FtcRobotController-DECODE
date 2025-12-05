@@ -71,12 +71,10 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(new InstantCommand(() -> intake.release(), intake))
                 .whenReleased(new InstantCommand(() -> intake.stop(), intake));
 
-//        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
-//                .whenPressed(new InstantCommand(() -> {
-//                    Command cmd = drive.goToBase();
-//                    drive.setCurrentCommand(cmd);
-//                    CommandScheduler.getInstance().schedule(cmd);
-//                }));
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
+                .whenPressed(new InstantCommand(() -> {
+                    CommandScheduler.getInstance().schedule(drive.goToBase());
+                }, drive));
 
 //        gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
 //                .whenPressed(new InstantCommand(() -> transfer.toggleTransfer(true)))
