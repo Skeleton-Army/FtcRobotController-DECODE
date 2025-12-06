@@ -49,6 +49,30 @@ public class Drive extends SubsystemBase {
         );
     }
 
+    public Command goToCenter() {
+        // Use DeferredCommand to create the path and command on schedule
+        return new DeferredCommand(
+                () -> {
+                    PathChain parking = follower
+                            .pathBuilder()
+                            .addPath(
+                                    new BezierLine(
+                                            follower.getPose(),
+                                            new Pose(72, 72)
+                                    )
+                            )
+                            .setLinearHeadingInterpolation(
+                                    follower.getHeading(),
+                                    0
+                            )
+                            .build();
+
+                    return new FollowPathCommand(follower, parking);
+                },
+                Collections.singletonList(this)
+        );
+    }
+
     public void joystickDrive(Gamepad gamepad) {
         follower.setTeleOpDrive(-gamepad.left_stick_y, -gamepad.left_stick_x, -gamepad.right_stick_x, true);
     }

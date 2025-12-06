@@ -98,6 +98,11 @@ public class TeleOpApp extends ComplexOpMode {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                     .whenPressed(drive.goToBase());
         }
+
+        if (!tabletopMode && debugMode) {
+            gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
+                    .whenPressed(drive.goToCenter());
+        }
     }
 
     @Override
