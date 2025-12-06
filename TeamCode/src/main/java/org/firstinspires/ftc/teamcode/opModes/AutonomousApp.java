@@ -112,38 +112,13 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .build();
 
-        nearDriveBack = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                new Pose(42.920, 104.190)                        )
-                )
-                .setLinearHeadingInterpolation(
-                        Math.toRadians(180),
-                        Math.toRadians(90)
-                )
-                .build();
-
-        nearPaths[3] = follower
+        nearPaths[0] = follower
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                new Pose(43.231, 82.419),
-                                new Pose(17.106, 83.352)
-                        )
-                )
-                .setTangentHeadingInterpolation()
-                .build();
-
-        nearPaths[2] = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower::getPose,
-                                new Pose(43.231, 52.873),
-                                new Pose(12.130, 59.093)
+                                new Pose(9.019, 47.896),
+                                new Pose(8.086, 8.708)
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -161,16 +136,42 @@ public class AutonomousApp extends ComplexOpMode {
                 .setTangentHeadingInterpolation()
                 .build();
 
-        nearPaths[0] = follower
+        nearPaths[2] = follower
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                new Pose(9.019, 47.896),
-                                new Pose(8.086, 8.708)
+                                new Pose(43.231, 52.873),
+                                new Pose(12.130, 59.093)
                         )
                 )
                 .setTangentHeadingInterpolation()
+                .build();
+
+        nearPaths[3] = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                new Pose(43.231, 82.419),
+                                new Pose(17.106, 83.352)
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .build();
+
+        nearDriveBack = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                new Pose(42.920, 104.190)
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        Math.toRadians(180),
+                        Math.toRadians(90)
+                )
                 .build();
     }
 
