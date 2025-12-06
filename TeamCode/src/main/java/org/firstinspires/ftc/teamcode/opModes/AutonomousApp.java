@@ -204,6 +204,10 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void onStart() {
         SequentialCommandGroup seq = new SequentialCommandGroup(
+                new FollowPathCommand(
+                        follower,
+                        startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
+                ),
                 new ShootCommand(3, shooter, intake, transfer)
         );
 
