@@ -36,8 +36,8 @@ public class AutonomousApp extends ComplexOpMode {
     private Shooter shooter;
     private Transfer transfer;
 
-    private PathChain[] farPaths = new PathChain[4];
-    private PathChain[] nearPaths = new PathChain[4];
+    private final PathChain[] farPaths = new PathChain[4];
+    private final PathChain[] nearPaths = new PathChain[4];
     private PathChain farDriveBack;
     private PathChain nearDriveBack;
 
