@@ -31,17 +31,9 @@ public class ShooterConfig {
 
     public static String HOOD_NAME = "hood";
     public static double HOOD_POSSIBLE_MIN = 0.03;
-    public static double HOOD_MIN = 0;
-    public static double HOOD_MAX = 260;
-    public static double HOOD_START_ANGLE = 180 - 62.5; // according to hardware team
-
-    public static String TRANSFER_NAME = "transfer";
-    public static double TRANSFER_POWER = 1;
 
     public static String KICKER_NAME = "kicker";
     public static double KICKER_MIN = 0;
     public static double KICKER_MAX = 0.4;
     public static long KICK_TIME = 400;
-
-    public static double DISTANCE_TO_BOT_CENTER = 0;
 }
