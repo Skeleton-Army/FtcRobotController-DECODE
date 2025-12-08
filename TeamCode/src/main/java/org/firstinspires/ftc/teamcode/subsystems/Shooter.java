@@ -125,7 +125,7 @@ public class Shooter extends SubsystemBase {
         return angleUnit == AngleUnit.DEGREES ? Math.toDegrees(turret.getDistance()) : turret.getDistance();
     }
 
-    public void setRawHoodPosition(double angle) {
+    public void setHoodPosition(double angle) {
         hood.set(MathFunctions.clamp(angle, HOOD_POSSIBLE_MIN, HOOD_POSSIBLE_MAX));
     }
 
@@ -142,13 +142,12 @@ public class Shooter extends SubsystemBase {
         double normalized = (angleRad - HOOD_MIN) / (HOOD_MAX - HOOD_MIN); // Normalized/converted to servo position
         double invertedNormalized = 1 - normalized;
 
-        setRawHoodPosition(invertedNormalized);
+        setHoodPosition(invertedNormalized);
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
         wrapped = ShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
         turret.setTargetDistance(wrapped);
-
     }
 
     private void setRPM(double rpm) {
