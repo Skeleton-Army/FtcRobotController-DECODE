@@ -31,6 +31,9 @@ public class ShooterConfig {
 
     public static String HOOD_NAME = "hood";
     public static double HOOD_POSSIBLE_MIN = 0.03;
+    public static double HOOD_POSSIBLE_MAX = 1;
+    public static double HOOD_MIN = Math.toRadians(27.8);
+    public static double HOOD_MAX = Math.toRadians(62.5);
 
     public static String KICKER_NAME = "kicker";
     public static double KICKER_MIN = 0;

@@ -126,7 +126,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setRawHoodPosition(double angle) {
-        hood.set(angle + HOOD_POSSIBLE_MIN);
+        hood.set(MathFunctions.clamp(angle, HOOD_POSSIBLE_MIN, HOOD_POSSIBLE_MAX));
     }
 
     public double getRecoveryTime() {
@@ -136,11 +136,13 @@ public class Shooter extends SubsystemBase {
     /**
         Sets the hood angle relative to the ground
 
-       * @param angle the hood angle given by the calculations (deg)
+       * @param angleRad the hood angle given by the calculations (radians)
      **/
-    public void setVerticalAngle(double angle) {
-        double normalized = (angle - 62.5 * Math.PI / 180) / (-34.7 * Math.PI / 180); // normalized/converted to servo position
-        setRawHoodPosition(MathFunctions.clamp(normalized, ShooterConfig.HOOD_POSSIBLE_MIN, 1));
+    public void setVerticalAngle(double angleRad) {
+        double normalized = (angleRad - HOOD_MIN) / (HOOD_MAX - HOOD_MIN); // Normalized/converted to servo position
+        double invertedNormalized = 1 - normalized;
+
+        setRawHoodPosition(invertedNormalized);
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
