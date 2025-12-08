@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.*;
+
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
@@ -8,7 +10,7 @@ public class Intake extends SubsystemBase {
     private final MotorEx intake;
 
     public Intake(final HardwareMap hardwareMap) {
-        intake = new MotorEx(hardwareMap, "intake");
+        intake = new MotorEx(hardwareMap, INTAKE_NAME);
     }
 
     public double getRPM() {
@@ -17,11 +19,11 @@ public class Intake extends SubsystemBase {
     }
 
     public void collect() {
-        intake.set(-0.6);
+        intake.set(-INTAKE_POWER);
     }
 
     public void release() {
-        intake.set(1);
+        intake.set(INTAKE_POWER);
     }
 
     public void stop() {
