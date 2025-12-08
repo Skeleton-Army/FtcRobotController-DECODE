@@ -15,8 +15,8 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 public class ShooterCalculator implements IShooterCalculator {
     private static final double INCH_TO_METERS = 0.0254;
 
-    private double[] hoodCoeffs;
-    private double[] velCoeffs;
+    private final double[] hoodCoeffs;
+    private final double[] velCoeffs;
 
     public ShooterCalculator(double[] hoodCoeffs, double[] velCoeffs) {
         this.hoodCoeffs = hoodCoeffs.clone();

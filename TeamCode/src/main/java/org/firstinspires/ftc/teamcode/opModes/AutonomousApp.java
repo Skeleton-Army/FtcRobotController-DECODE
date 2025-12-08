@@ -191,7 +191,7 @@ public class AutonomousApp extends ComplexOpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose);
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs), alliance);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
 

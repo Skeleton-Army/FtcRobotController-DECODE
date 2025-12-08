@@ -7,8 +7,6 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -66,7 +64,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(true);
         follower.setPose(new Pose(72, 72));
 
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.hoodCoeffs, ShooterCoefficients.velCoeffs);
+        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
