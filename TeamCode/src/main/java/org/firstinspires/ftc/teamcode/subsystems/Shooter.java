@@ -71,7 +71,6 @@ public class Shooter extends SubsystemBase {
         setHorizontalAngle(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
-        setVerticalAngle(0);
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
