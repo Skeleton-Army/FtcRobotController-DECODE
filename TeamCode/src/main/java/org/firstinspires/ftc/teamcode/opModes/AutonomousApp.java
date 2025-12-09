@@ -50,7 +50,7 @@ public class AutonomousApp extends ComplexOpMode {
     private List<Integer> pickupOrder;
 
     public void setupPaths() {
-        farStartingPose = getRelative(new Pose(56.6,8.7, Math.toRadians(90)));
+        farStartingPose = getRelative(new Pose(56.6,8.7, Math.toRadians(180)));
         nearStartingPose = getRelative(new Pose(17.8, 121, Math.toRadians(144)));
 
         farPaths[0] = follower
@@ -58,11 +58,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(65.935, 33.901)),
-                                getRelative(new Pose(63.447, 62.825)),
-                                getRelative(new Pose(2.177, 74.022)),
-                                getRelative(new Pose(10.575, 40.432)),
-                                getRelative(new Pose(9.330, 9.952))
+                                getRelative(new Pose(8.708, 102.013)),
+                                getRelative(new Pose(9.330, 7.464))
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -73,24 +70,28 @@ public class AutonomousApp extends ComplexOpMode {
                     .addPath(
                             new BezierCurve(
                                     follower::getPose,
-                                    getRelative(new Pose(63.758, 36.700)),
-                                    getRelative(new Pose(19.594, 36.078))
+                                    getRelative(new Pose(70.600, 40.121)),
+                                    getRelative(new Pose(19.283, 35.456))
                             )
                     )
-                    .setTangentHeadingInterpolation()
-                    .build();
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
 
         farPaths[2] = follower
                     .pathBuilder()
                     .addPath(
                             new BezierCurve(
                                     follower::getPose,
-                                    getRelative(new Pose(69.045, 65.313)),
-                                    getRelative(new Pose(15.551, 59.404))
+                                    getRelative(new Pose(80.864, 65.313)),
+                                    getRelative(new Pose(8.086, 57.227))
                             )
                     )
-                    .setTangentHeadingInterpolation()
-                    .build();
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
 
 
         farPaths[3] = follower
@@ -98,11 +99,13 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(78.376, 88.639)),
-                                getRelative(new Pose(18.972, 83.974))
+                                getRelative(new Pose(80.864, 92.060)),
+                                getRelative(new Pose(20.216, 83.663))
                         )
                 )
-                .setTangentHeadingInterpolation()
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         farDriveBack = follower
@@ -113,9 +116,8 @@ public class AutonomousApp extends ComplexOpMode {
                                 getRelative(new Pose(61.270, 15.862))
                         )
                 )
-                .setLinearHeadingInterpolation(
-                        getRelative(Math.toRadians(180)),
-                        getRelative(Math.toRadians(90))
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
                 )
                 .build();
 
@@ -124,8 +126,9 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(9.019, 47.896)),
-                                getRelative(new Pose(8.086, 8.708))
+                                getRelative(new Pose(9.952, 45.408)),
+                                getRelative(new Pose(9.952, 11.197))
+
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -136,11 +139,13 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(45.097, 22.082)),
-                                getRelative(new Pose(16.795, 37.011))
+                                getRelative(new Pose(69.045, 32.968)),
+                                getRelative(new Pose(21.149, 35.145))
                         )
                 )
-                .setTangentHeadingInterpolation()
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         nearPaths[2] = follower
@@ -148,11 +153,13 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(43.231, 52.873)),
-                                getRelative(new Pose(12.130, 59.093))
+                                getRelative(new Pose(77.132, 57.538)),
+                                getRelative(new Pose(21.149, 59.715))
                         )
                 )
-                .setTangentHeadingInterpolation()
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         nearPaths[3] = follower
@@ -160,8 +167,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(43.231, 82.419)),
-                                getRelative(new Pose(17.106, 83.352))
+                                getRelative(new Pose(84.907, 79.931)),
+                                getRelative(new Pose(21.149, 83.974))
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -175,9 +182,8 @@ public class AutonomousApp extends ComplexOpMode {
                                 getRelative(new Pose(42.920, 104.190))
                         )
                 )
-                .setLinearHeadingInterpolation(
-                        getRelative(Math.toRadians(180)),
-                        getRelative(Math.toRadians(90))
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
                 )
                 .build();
     }
@@ -189,20 +195,21 @@ public class AutonomousApp extends ComplexOpMode {
         Settings.set("alliance", alliance);
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
 
         setupPaths();
+
+        follower.setStartingPose(startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose);
     }
 
     @Override
     public void initialize() {
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
-                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 1, 2, 3, 4))
+                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
                 .onComplete(this::afterPrompts);
     }
 
@@ -226,8 +233,10 @@ public class AutonomousApp extends ComplexOpMode {
             PathChain selectedPath = sourcePaths[i];
 
             seq.addCommands(new InstantCommand(() -> intake.collect()));
+            seq.addCommands(new InstantCommand(() -> telemetry.addData("Current", i)));
             seq.addCommands(new FollowPathCommand(follower, selectedPath));
             seq.addCommands(new InstantCommand(() -> intake.stop()));
+            seq.addCommands(new InstantCommand(() -> telemetry.addData("Current", "Driving back")));
             seq.addCommands(new FollowPathCommand(
                     follower,
                     startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
@@ -241,6 +250,7 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void run() {
         follower.update();
+        telemetry.update();
     }
 
     @Override
