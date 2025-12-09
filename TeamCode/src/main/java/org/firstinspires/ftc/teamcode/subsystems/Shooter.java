@@ -8,10 +8,12 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -30,9 +32,11 @@ public class Shooter extends SubsystemBase {
 
     private final PoseTracker poseTracker;
 
-    private final MotorEx flywheel;
+    private final ModifiedMotorEx flywheel;
     private final ModifiedMotorEx turret;
     private final ServoEx hood;
+
+    private VoltageSensor voltageSensor;
 
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
@@ -53,7 +57,7 @@ public class Shooter extends SubsystemBase {
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
-        flywheel = new MotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
+        flywheel = new ModifiedMotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
         flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
@@ -75,6 +79,8 @@ public class Shooter extends SubsystemBase {
 
         timerEx = new TimerEx(TimeUnit.SECONDS);
 
+        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+
         spinUp();
     }
 
@@ -88,7 +94,8 @@ public class Shooter extends SubsystemBase {
 
         calculateRecovery();
 
-        flywheel.setVelocity(targetTPS);
+        double voltage = voltageSensor.getVoltage();
+        flywheel.setVelocity(targetTPS, voltage);
         turret.set(1);
     }
 

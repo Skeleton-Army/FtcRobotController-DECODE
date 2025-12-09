@@ -76,6 +76,19 @@ public class ModifiedMotorEx extends Motor {
         }
     }
 
+    public void set(double output, double voltage) {
+        if (runmode == RunMode.VelocityControl) {
+            double speed = bufferFraction * output * ACHIEVABLE_MAX_TICKS_PER_SECOND;
+            double velocity = veloController.calculate(getCorrectedVelocity(), speed) + feedforward.calculate(speed, getAcceleration());
+            setPower(velocity / ACHIEVABLE_MAX_TICKS_PER_SECOND * (12.0 / voltage));
+        } else if (runmode == RunMode.PositionControl) {
+            double error = positionController.calculate(getDistance());
+            setPower(output * error * (12.0 / voltage));
+        } else {
+            setPower(output * (12.0 / voltage));
+        }
+    }
+
     public void setPositionCoefficients(double kp, double ki, double kd, double kf) {
         positionController.setPIDF(kp, ki, kd, kf);
     }
@@ -146,6 +159,14 @@ public class ModifiedMotorEx extends Motor {
      */
     public void setVelocity(double velocity) {
         set(velocity / ACHIEVABLE_MAX_TICKS_PER_SECOND);
+    }
+
+    /**
+     * @param velocity the velocity in ticks per second
+     * @param voltage the current battery voltage
+     */
+    public void setVelocity(double velocity, double voltage) {
+        set(velocity / ACHIEVABLE_MAX_TICKS_PER_SECOND, voltage);
     }
 
     /**

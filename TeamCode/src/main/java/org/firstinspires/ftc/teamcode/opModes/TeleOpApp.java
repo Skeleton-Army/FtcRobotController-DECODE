@@ -5,11 +5,13 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
@@ -43,6 +45,8 @@ public class TeleOpApp extends ComplexOpMode {
     private Transfer transfer;
     private Drive drive;
 
+    private VoltageSensor voltageSensor;
+
     private GamepadEx gamepadEx1;
     private GamepadEx gamepadEx2;
 
@@ -69,6 +73,8 @@ public class TeleOpApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower);
+
+        voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
@@ -131,6 +137,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+        telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         //telemetry.addData("Sensor distance", transfer.getDistance());
         //telemetry.addData("Turret position", shooter.getTurretPosition());
         //telemetry.addData("Turret angle (rad)", shooter.getTurretAngle(AngleUnit.RADIANS));
@@ -145,6 +152,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Target RPM", shooter.solution.getVelocity());
+        telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getVelocity()));
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
         telemetry.addData("Reached RPM", shooter.reachedRPM());

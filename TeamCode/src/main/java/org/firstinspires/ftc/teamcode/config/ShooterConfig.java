@@ -9,7 +9,7 @@ public class ShooterConfig {
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL_INVERTED = true;
     public static int FLYWHEEL_TARGET = 3400;
-    public static int RPM_REACHED_THRESHOLD = 100;
+    public static int RPM_REACHED_THRESHOLD = 50;
     public static double FLYWHEEL_KP = 1.5;
     public static double FLYWHEEL_KI = 0.001;
     public static double FLYWHEEL_KD = 0;

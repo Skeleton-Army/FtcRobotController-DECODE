@@ -35,11 +35,12 @@ public class ShootCommand extends SequentialCommandGroup {
         return new SequentialCommandGroup(
                 new WaitUntilCommand(shooter::reachedRPM),
 
-                new InstantCommand(() -> transfer.toggleTransfer(true)),
+//                new InstantCommand(() -> transfer.toggleTransfer(true)),
                 transfer.kick(),
-                new InstantCommand(() -> transfer.toggleTransfer(false)),
+//                new InstantCommand(() -> transfer.toggleTransfer(false)),
 
-                new WaitCommand(300), // Wait a bit for the sensor to update its values
+                //new WaitUntilCommand(shooter::reachedRPM),
+//                new WaitCommand(300), // Wait a bit for the sensor to update its values
 
                 new InstantCommand(() -> {
                     if (!transfer.isArtifactDetected()) {
