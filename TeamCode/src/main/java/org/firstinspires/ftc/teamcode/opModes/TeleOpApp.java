@@ -92,10 +92,10 @@ public class TeleOpApp extends ComplexOpMode {
 //                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenPressed(new ShootCommand(3, shooter, intake, transfer));
+                .whenPressed(new ShootCommand(3, shooter, intake, transfer, drive));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
-                .whenActive(new ShootCommand(3, shooter, intake, transfer))
+                .whenActive(new ShootCommand(3, shooter, intake, transfer, drive))
                 .whenInactive(() -> CommandScheduler.getInstance().cancel(shooter.getCurrentCommand()));
 
         if (!tabletopMode) {

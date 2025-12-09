@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import static org.firstinspires.ftc.teamcode.config.DriveConfig.*;
+
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
@@ -8,6 +10,7 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
+import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
@@ -16,19 +19,26 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Shooter shooter;
     private final Intake intake;
     private final Transfer transfer;
+    private final Drive drive;
 
-    public ShootCommand(int numberOfArtifacts, Shooter shooter, Intake intake, Transfer transfer) {
+    public ShootCommand(int numberOfArtifacts, Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
         addRequirements(shooter, intake, transfer);
 
         this.shooter = shooter;
         this.intake = intake;
         this.transfer = transfer;
+        this.drive = drive;
+
+        addCommands(new InstantCommand(() -> drive.setMovementSpeed(SHOOTING_MOVEMENT_SPEED)));
 
         for (int i = 0; i < numberOfArtifacts; i++) {
             addCommands(cycle());
         }
 
-        addCommands(transfer.kick());
+        addCommands(
+                transfer.kick(),
+                new InstantCommand(() -> drive.setMovementSpeed(MOVEMENT_SPEED))
+        );
     }
 
     private Command cycle() {
@@ -75,6 +85,7 @@ public class ShootCommand extends SequentialCommandGroup {
         if (interrupted) {
             transfer.setKickerPosition(false);
             transfer.toggleTransfer(false);
+            drive.setMovementSpeed(MOVEMENT_SPEED);
         }
     }
 }

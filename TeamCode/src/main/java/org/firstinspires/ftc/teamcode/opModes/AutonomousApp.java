@@ -21,6 +21,7 @@ import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
@@ -36,6 +37,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Intake intake;
     private Shooter shooter;
     private Transfer transfer;
+    private Drive drive;
 
     private Pose farStartingPose;
     private Pose nearStartingPose;
@@ -199,6 +201,7 @@ public class AutonomousApp extends ComplexOpMode {
         shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
+        drive = new Drive(follower);
 
         setupPaths();
 
@@ -220,7 +223,7 @@ public class AutonomousApp extends ComplexOpMode {
                         follower,
                         startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
                 ),
-                new ShootCommand(3, shooter, intake, transfer)
+                new ShootCommand(3, shooter, intake, transfer, drive)
         );
 
         for (Integer index : pickupOrder) {
@@ -241,7 +244,7 @@ public class AutonomousApp extends ComplexOpMode {
                     follower,
                     startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
             ));
-            seq.addCommands(new ShootCommand(3, shooter, intake, transfer));
+            seq.addCommands(new ShootCommand(3, shooter, intake, transfer, drive));
         }
 
         schedule(seq);

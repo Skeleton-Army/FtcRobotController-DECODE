@@ -16,6 +16,8 @@ import java.util.Collections;
 public class Drive extends SubsystemBase {
     private final Follower follower;
 
+    private double movementSpeed = 1;
+
     public Drive(Follower follower) {
         this.follower = follower;
     }
@@ -74,7 +76,20 @@ public class Drive extends SubsystemBase {
     }
 
     public void joystickDrive(Gamepad gamepad) {
-        follower.setTeleOpDrive(-gamepad.left_stick_y, -gamepad.left_stick_x, -gamepad.right_stick_x, true);
+        follower.setTeleOpDrive(
+                -gamepad.left_stick_y * movementSpeed,
+                -gamepad.left_stick_x * movementSpeed,
+                -gamepad.right_stick_x * movementSpeed,
+                true
+        );
+    }
+
+    public double getMovementSpeed() {
+        return movementSpeed;
+    }
+
+    public void setMovementSpeed(double speed) {
+        movementSpeed = speed;
     }
 
     /**
