@@ -43,6 +43,7 @@ android {
 }
 
 repositories {
+    mavenLocal()
     maven { url = "https://mymaven.bylazar.com/releases" }
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://repo.dairy.foundation/snapshots" }
@@ -68,7 +69,6 @@ dependencies {
     implementation "org.solverslib:pedroPathing:0.3.3"
 
     implementation "com.skeletonarmyftc.marrow:core:1.0.0-SNAPSHOT"
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.20.0")
     implementation 'com.pedropathing:ftc:2.0.4'
     implementation 'com.pedropathing:telemetry:1.0.0'
     implementation 'com.bylazar:fullpanels:1.0.9'
