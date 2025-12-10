@@ -67,7 +67,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         follower = Constants.createFollower(hardwareMap);
-        follower.startTeleopDrive(true);
+        follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setPose(new Pose(72, 72));
 
         IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
@@ -102,10 +102,10 @@ public class TeleOpApp extends ComplexOpMode {
 //                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenPressed(new ShootCommand(3, shooter, intake, transfer, drive));
+                .whenPressed(new ShootCommand(4, shooter, intake, transfer, drive));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
-                .whenActive(new ShootCommand(3, shooter, intake, transfer, drive))
+                .whenActive(new ShootCommand(4, shooter, intake, transfer, drive))
                 .whenInactive(() -> CommandScheduler.getInstance().cancel(shooter.getCurrentCommand()));
 
         if (!tabletopMode) {
@@ -149,7 +149,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("Inside LAUNCH ZONE", insideZone);
+        telemetry.addData("!Inside LAUNCH ZONE", insideZone);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         //telemetry.addData("Sensor distance", transfer.getDistance());
         //telemetry.addData("Turret position", shooter.getTurretPosition());
@@ -168,7 +168,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getVelocity()));
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
-        telemetry.addData("Reached RPM", shooter.reachedRPM());
+        telemetry.addData("!Reached RPM", shooter.reachedRPM());
+        telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
 
         telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
         telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);

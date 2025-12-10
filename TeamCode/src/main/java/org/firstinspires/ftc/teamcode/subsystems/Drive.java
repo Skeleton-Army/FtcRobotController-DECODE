@@ -1,6 +1,6 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
-import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+import static org.firstinspires.ftc.teamcode.config.DriveConfig.*;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
@@ -21,7 +21,7 @@ import java.util.Collections;
 public class Drive extends SubsystemBase {
     private final Follower follower;
 
-    private double movementSpeed = 1;
+    private boolean shootingMode;
 
     public Drive(Follower follower) {
         this.follower = follower;
@@ -94,19 +94,19 @@ public class Drive extends SubsystemBase {
 
     public void joystickDrive(Gamepad gamepad) {
         follower.setTeleOpDrive(
-                -gamepad.left_stick_y * movementSpeed,
-                -gamepad.left_stick_x * movementSpeed,
-                -gamepad.right_stick_x * movementSpeed,
+                -gamepad.left_stick_y * (shootingMode ? SHOOTING_FORWARD_SPEED : FORWARD_SPEED),
+                -gamepad.left_stick_x * (shootingMode ? SHOOTING_STRAFE_SPEED : STRAFE_SPEED),
+                -gamepad.right_stick_x * (shootingMode ? SHOOTING_TURN_SPEED : TURN_SPEED),
                 true
         );
     }
 
-    public double getMovementSpeed() {
-        return movementSpeed;
+    public boolean getShootingMode() {
+        return shootingMode;
     }
 
-    public void setMovementSpeed(double speed) {
-        movementSpeed = speed;
+    public void setShootingMode(boolean enabled) {
+        shootingMode = enabled;
     }
 
     /**

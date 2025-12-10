@@ -8,7 +8,7 @@ public class ShooterConfig {
     public static String FLYWHEEL_NAME = "flywheel";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL_INVERTED = true;
-    public static int RPM_REACHED_THRESHOLD = 100;
+    public static int RPM_REACHED_THRESHOLD = 50;
     public static double FLYWHEEL_KP = 2.4;
     public static double FLYWHEEL_KI = 0.002;
     public static double FLYWHEEL_KD = 0.1;
@@ -17,12 +17,12 @@ public class ShooterConfig {
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;
-    public static double TURRET_KP = 4;
+    public static double TURRET_KP = 3.5;
     public static double TURRET_KI = 0;
     public static double TURRET_KD = 0.1;
-    public static double TURRET_KF = 0.05;
-    public static double TURRET_MIN = Math.toRadians(-180);
-    public static double TURRET_MAX = Math.toRadians(200);
+    public static double TURRET_KF = 0;
+    public static double TURRET_MIN = Math.toRadians(-200); // Clockwise
+    public static double TURRET_MAX = Math.toRadians(180); // Counter-clockwise
     public static double GEAR_RATIO = (double) 200 / 30;
     public static double TURRET_OFFSET_X = 0;
     public static double TURRET_OFFSET_Y = 0;

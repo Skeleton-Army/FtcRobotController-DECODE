@@ -29,13 +29,13 @@ public class ShootCommand extends SequentialCommandGroup {
         this.transfer = transfer;
         this.drive = drive;
 
-        addCommands(new InstantCommand(() -> drive.setMovementSpeed(SHOOTING_MOVEMENT_SPEED)));
+        addCommands(new InstantCommand(() -> drive.setShootingMode(true)));
 
         for (int i = 0; i < numberOfArtifacts; i++) {
             addCommands(cycle());
         }
 
-        addCommands(new InstantCommand(() -> drive.setMovementSpeed(MOVEMENT_SPEED)));
+        addCommands(new InstantCommand(() -> drive.setShootingMode(false)));
     }
 
     private Command cycle() {
@@ -63,10 +63,11 @@ public class ShootCommand extends SequentialCommandGroup {
                 }),
 
                 new InstantCommand(intake::stop),
+                new InstantCommand(() -> transfer.toggleTransfer(true, true)), // Reverse so it moves the next artifact out of the kicker's way
+
+                new WaitCommand(20),
+
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
-
-                new WaitCommand(300),
-
                 transfer.kick()
         );
     }
@@ -79,7 +80,7 @@ public class ShootCommand extends SequentialCommandGroup {
         if (interrupted) {
             transfer.setKickerPosition(false);
             transfer.toggleTransfer(false);
-            drive.setMovementSpeed(MOVEMENT_SPEED);
+            drive.setShootingMode(false);
         }
     }
 }
