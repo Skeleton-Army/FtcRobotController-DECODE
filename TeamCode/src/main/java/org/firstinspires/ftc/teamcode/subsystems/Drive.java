@@ -12,6 +12,7 @@ import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import java.util.Arrays;
@@ -47,11 +48,13 @@ public class Drive extends SubsystemBase {
                                     follower.getHeading(),
                                     getClosestRightAngle(follower.getHeading())
                             )
-                            .setBrakingStrength(0.5)
+                            .setTranslationalConstraint(1)
+                            .setBrakingStrength(1)
                             .build();
 
                     return new SequentialCommandGroup(
                             new FollowPathCommand(follower, parking),
+                            new WaitCommand(1000),
                             new InstantCommand(() -> follower.startTeleopDrive(USE_BRAKE_MODE))
                     );
                 },
@@ -75,11 +78,13 @@ public class Drive extends SubsystemBase {
                                     follower.getHeading(),
                                     Math.toRadians(0)
                             )
-                            .setBrakingStrength(0.5)
+                            .setTranslationalConstraint(1)
+                            .setBrakingStrength(1)
                             .build();
 
                     return new SequentialCommandGroup(
                             new FollowPathCommand(follower, parking),
+                            new WaitCommand(1000),
                             new InstantCommand(() -> follower.startTeleopDrive(USE_BRAKE_MODE))
                     );
                 },
