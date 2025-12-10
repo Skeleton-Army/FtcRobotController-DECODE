@@ -7,6 +7,8 @@ import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
@@ -43,9 +45,13 @@ public class Drive extends SubsystemBase {
                                     follower.getHeading(),
                                     getClosestRightAngle(follower.getHeading())
                             )
+                            .setBrakingStrength(0.5)
                             .build();
 
-                    return new FollowPathCommand(follower, parking);
+                    return new SequentialCommandGroup(
+                            new FollowPathCommand(follower, parking),
+                            new InstantCommand(follower::startTeleopDrive)
+                    );
                 },
                 Collections.singletonList(this)
         );
@@ -65,11 +71,15 @@ public class Drive extends SubsystemBase {
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    0
+                                    Math.toRadians(0)
                             )
+                            .setBrakingStrength(0.5)
                             .build();
 
-                    return new FollowPathCommand(follower, parking);
+                    return new SequentialCommandGroup(
+                            new FollowPathCommand(follower, parking),
+                            new InstantCommand(follower::startTeleopDrive)
+                    );
                 },
                 Collections.singletonList(this)
         );

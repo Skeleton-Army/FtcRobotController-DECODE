@@ -119,15 +119,17 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         // Immediately cancel drive command if joysticks are moved
-        if (gamepadEx1.getLeftX() != 0 || gamepadEx1.getLeftY() != 0 || gamepadEx1.getRightX() != 0 || gamepadEx1.getRightY() != 0) {
+        if (drive.getCurrentCommand() != null && (gamepadEx1.getLeftX() != 0 || gamepadEx1.getLeftY() != 0 || gamepadEx1.getRightX() != 0 || gamepadEx1.getRightY() != 0)) {
             CommandScheduler.getInstance().cancel(drive.getCurrentCommand());
+            follower.startTeleopDrive();
         }
 
         // Cancel shooting if not in a launch zone
         boolean insideClose = robotZone.isInside(closeLaunchZone);
         boolean insideFar = robotZone.isInside(farLaunchZone);
+        boolean insideZone = insideClose || insideFar;
 
-        if (!insideClose && !insideFar && !debugMode) {
+        if (!insideZone && !debugMode) {
             CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
@@ -137,6 +139,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", follower.getPose().getY());
         telemetry.addData("Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+        telemetry.addData("Inside LAUNCH ZONE", insideZone);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         //telemetry.addData("Sensor distance", transfer.getDistance());
         //telemetry.addData("Turret position", shooter.getTurretPosition());
