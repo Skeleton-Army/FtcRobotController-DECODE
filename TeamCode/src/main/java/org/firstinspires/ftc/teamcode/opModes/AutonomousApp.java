@@ -237,6 +237,7 @@ public class AutonomousApp extends ComplexOpMode {
 
             seq.addCommands(
                     new InstantCommand(() -> intake.collect()),
+                    new InstantCommand(() -> telemetry.addData("Current", i)),
                     new FollowPathCommand(follower, selectedPath),
                     new InstantCommand(() -> intake.stop()),
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
