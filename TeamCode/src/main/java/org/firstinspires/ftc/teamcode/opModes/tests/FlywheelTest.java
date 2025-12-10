@@ -27,6 +27,8 @@ import java.util.concurrent.TimeUnit;
 @Config
 @TeleOp(name = "Flywheel Test", group = "Tests")
 public class FlywheelTest extends OpMode {
+    public static int FLYWHEEL_TARGET = 3400;
+
     private MotorEx motor;
 
     private boolean isPID = true;

@@ -21,8 +21,6 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Transfer transfer;
     private final Drive drive;
 
-    private boolean timedOut;
-
     public ShootCommand(int numberOfArtifacts, Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
         addRequirements(shooter, intake, transfer);
 
@@ -37,22 +35,12 @@ public class ShootCommand extends SequentialCommandGroup {
             addCommands(cycle());
         }
 
-        addCommands(
-                transfer.kick(),
-                new InstantCommand(() -> drive.setMovementSpeed(MOVEMENT_SPEED))
-        );
+        addCommands(new InstantCommand(() -> drive.setMovementSpeed(MOVEMENT_SPEED)));
     }
 
     private Command cycle() {
         return new SequentialCommandGroup(
                 new WaitUntilCommand(shooter::reachedRPM),
-
-//                new InstantCommand(() -> transfer.toggleTransfer(true)),
-                transfer.kick(),
-//                new InstantCommand(() -> transfer.toggleTransfer(false)),
-
-                //new WaitUntilCommand(shooter::reachedRPM),
-//                new WaitCommand(300), // Wait a bit for the sensor to update its values
 
                 new InstantCommand(() -> {
                     if (!transfer.isArtifactDetected()) {
@@ -67,20 +55,20 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 // If we got here but artifact is still NOT detected, it timed out -> cancel the whole ShootCommand
                 new InstantCommand(() -> {
-                    if (!transfer.isArtifactDetected())
-                        timedOut = true;
+                    if (!transfer.isArtifactDetected()) {
+                        intake.stop();
+                        transfer.toggleTransfer(false);
+                        cancel();
+                    }
                 }),
 
                 new InstantCommand(intake::stop),
-                new InstantCommand(() -> transfer.toggleTransfer(false))
-        );
-    }
+                new InstantCommand(() -> transfer.toggleTransfer(false)),
 
-    @Override
-    public boolean isFinished() {
-        // Check if the base SequentialCommandGroup is finished (all sub-commands ran)
-        // OR if we hit a timeout during a cycle.
-        return super.isFinished() || this.timedOut;
+                new WaitCommand(300),
+
+                transfer.kick()
+        );
     }
 
     @Override
@@ -88,8 +76,10 @@ public class ShootCommand extends SequentialCommandGroup {
         super.end(interrupted);
 
         // Ensure everything is off and in its place when the command gets interrupted
-        transfer.setKickerPosition(false);
-        transfer.toggleTransfer(false);
-        drive.setMovementSpeed(MOVEMENT_SPEED);
+        if (interrupted) {
+            transfer.setKickerPosition(false);
+            transfer.toggleTransfer(false);
+            drive.setMovementSpeed(MOVEMENT_SPEED);
+        }
     }
 }

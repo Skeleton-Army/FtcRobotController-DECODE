@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
@@ -121,7 +123,7 @@ public class TeleOpApp extends ComplexOpMode {
         // Immediately cancel drive command if joysticks are moved
         if (drive.getCurrentCommand() != null && (gamepadEx1.getLeftX() != 0 || gamepadEx1.getLeftY() != 0 || gamepadEx1.getRightX() != 0 || gamepadEx1.getRightY() != 0)) {
             CommandScheduler.getInstance().cancel(drive.getCurrentCommand());
-            follower.startTeleopDrive();
+            follower.startTeleopDrive(USE_BRAKE_MODE);
         }
 
         // Cancel shooting if not in a launch zone

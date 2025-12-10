@@ -82,8 +82,6 @@ public class Shooter extends SubsystemBase {
         startTimer = new TimerEx(1, TimeUnit.SECONDS);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
-
-        spinUp();
     }
 
     @Override
@@ -101,14 +99,6 @@ public class Shooter extends SubsystemBase {
 
         startTimer.start();
         turret.set(startTimer.isDone() ? 1 : 0.5); // Run turret at half the speed when the OpMode just starts
-    }
-
-    public void spinUp() {
-        setRPM(FLYWHEEL_TARGET);
-    }
-
-    public void spinDown() {
-        setRPM(0);
     }
 
     public double getRPM() {
@@ -167,7 +157,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void calculateRecovery() {
-        if (FLYWHEEL_TARGET - getRPM() > RPM_REACHED_THRESHOLD) {
+        if (getTargetRPM() - getRPM() > RPM_REACHED_THRESHOLD) {
             if (!calculatedRecovery) {
                 timerEx.restart();
                 timerEx.start();
@@ -177,7 +167,7 @@ public class Shooter extends SubsystemBase {
                 shotFlywheelRPM = getRPM();
                 shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) * inchesToMeters;
             }
-        } else if (FLYWHEEL_TARGET - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
+        } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
             recoveryTime = timerEx.getElapsed();
             timerEx.pause();
             calculatedRecovery = false;

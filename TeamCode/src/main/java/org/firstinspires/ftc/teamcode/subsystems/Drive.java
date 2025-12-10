@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -50,7 +52,7 @@ public class Drive extends SubsystemBase {
 
                     return new SequentialCommandGroup(
                             new FollowPathCommand(follower, parking),
-                            new InstantCommand(follower::startTeleopDrive)
+                            new InstantCommand(() -> follower.startTeleopDrive(USE_BRAKE_MODE))
                     );
                 },
                 Collections.singletonList(this)
@@ -78,7 +80,7 @@ public class Drive extends SubsystemBase {
 
                     return new SequentialCommandGroup(
                             new FollowPathCommand(follower, parking),
-                            new InstantCommand(follower::startTeleopDrive)
+                            new InstantCommand(() -> follower.startTeleopDrive(USE_BRAKE_MODE))
                     );
                 },
                 Collections.singletonList(this)
