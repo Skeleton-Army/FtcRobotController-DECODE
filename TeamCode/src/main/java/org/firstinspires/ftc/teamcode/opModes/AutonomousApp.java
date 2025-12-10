@@ -235,16 +235,17 @@ public class AutonomousApp extends ComplexOpMode {
 
             PathChain selectedPath = sourcePaths[i];
 
-            seq.addCommands(new InstantCommand(() -> intake.collect()));
-            seq.addCommands(new InstantCommand(() -> telemetry.addData("Current", i)));
-            seq.addCommands(new FollowPathCommand(follower, selectedPath));
-            seq.addCommands(new InstantCommand(() -> intake.stop()));
-            seq.addCommands(new InstantCommand(() -> telemetry.addData("Current", "Driving back")));
-            seq.addCommands(new FollowPathCommand(
-                    follower,
-                    startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
-            ));
-            seq.addCommands(new ShootCommand(3, shooter, intake, transfer, drive));
+            seq.addCommands(
+                    new InstantCommand(() -> intake.collect()),
+                    new FollowPathCommand(follower, selectedPath),
+                    new InstantCommand(() -> intake.stop()),
+                    new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
+                    new FollowPathCommand(
+                            follower,
+                            startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
+                    ),
+                    new ShootCommand(3, shooter, intake, transfer, drive)
+            );
         }
 
         schedule(seq);
