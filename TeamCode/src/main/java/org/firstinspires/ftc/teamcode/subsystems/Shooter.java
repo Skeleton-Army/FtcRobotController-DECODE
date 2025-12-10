@@ -45,6 +45,8 @@ public class Shooter extends SubsystemBase {
     private double targetTPS;
 
     private final TimerEx timerEx;
+    private final TimerEx startTimer;
+
     public boolean calculatedRecovery = false;
     private double recoveryTime; // in seconds
     public double wrapped;
@@ -77,6 +79,7 @@ public class Shooter extends SubsystemBase {
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
 
         timerEx = new TimerEx(TimeUnit.SECONDS);
+        startTimer = new TimerEx(1, TimeUnit.SECONDS);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -95,7 +98,9 @@ public class Shooter extends SubsystemBase {
 
         double voltage = voltageSensor.getVoltage();
         flywheel.setVelocity(targetTPS, voltage);
-        turret.set(1);
+
+        startTimer.start();
+        turret.set(startTimer.isDone() ? 1 : 0.5); // Run turret at half the speed when the OpMode just starts
     }
 
     public void spinUp() {
