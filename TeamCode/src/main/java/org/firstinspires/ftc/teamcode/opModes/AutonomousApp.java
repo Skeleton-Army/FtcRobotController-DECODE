@@ -49,12 +49,40 @@ public class AutonomousApp extends ComplexOpMode {
 
     private final PathChain[] farPaths = new PathChain[4];
     private final PathChain[] nearPaths = new PathChain[4];
-    private PathChain farDriveBack;
-    private PathChain nearDriveBack;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
+
+    public PathChain farDriveBack() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(61.270, 15.862))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+    }
+
+    public PathChain nearDriveBack() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(42.920, 104.190))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+    }
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(56.6,8.7, Math.toRadians(180)));
@@ -108,19 +136,6 @@ public class AutonomousApp extends ComplexOpMode {
                                 follower::getPose,
                                 getRelative(new Pose(80.864, 92.060)),
                                 getRelative(new Pose(23.216, 83.663))
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .build();
-
-        farDriveBack = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(61.270, 15.862))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -182,19 +197,6 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .build();
-
-        nearDriveBack = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(42.920, 104.190))
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .build();
     }
 
     public void afterPrompts() {
@@ -228,7 +230,7 @@ public class AutonomousApp extends ComplexOpMode {
         SequentialCommandGroup seq = new SequentialCommandGroup(
                 new FollowPathCommand(
                         follower,
-                        startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
+                        startingPosition == StartingPosition.FAR ? farDriveBack() : nearDriveBack()
                 ),
                 new ShootCommand(3, shooter, intake, transfer, drive)
         );
@@ -249,23 +251,8 @@ public class AutonomousApp extends ComplexOpMode {
                     new InstantCommand(() -> intake.stop()),
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
                     new DeferredCommand(
-                            () -> {
-                                PathChain parking = follower
-                                        .pathBuilder()
-                                        .addPath(
-                                                new BezierLine(
-                                                        follower.getPose(),
-                                                        getRelative(new Pose(61.270, 15.862))
-                                                )
-                                        )
-                                        .setConstantHeadingInterpolation(
-                                                getRelative(Math.toRadians(180))
-                                        )
-                                        .build();
-
-                                return new FollowPathCommand(follower, parking);
-                            },
-                            Collections.EMPTY_LIST
+                            () -> new FollowPathCommand(follower, startingPosition == StartingPosition.FAR ? farDriveBack() : nearDriveBack()),
+                            null
                     ),
                     new ShootCommand(3, shooter, intake, transfer, drive)
             );
