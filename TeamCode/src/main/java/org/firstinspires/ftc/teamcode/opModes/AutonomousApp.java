@@ -205,6 +205,10 @@ public class AutonomousApp extends ComplexOpMode {
         pickupOrder = prompter.get("pickup_order");
         Settings.set("alliance", alliance);
 
+        telemetry.addData("Alliance", alliance);
+        telemetry.addData("Starting Position", startingPosition);
+        telemetry.addData("Pickup Order", pickupOrder);
+
         follower = Constants.createFollower(hardwareMap);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
