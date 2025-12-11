@@ -62,6 +62,8 @@ public class ShootCommand extends SequentialCommandGroup {
                     }
                 }),
 
+                new WaitUntilCommand(shooter::reachedAngle),
+
                 new InstantCommand(intake::stop),
                 new InstantCommand(() -> transfer.toggleTransfer(true, true)), // Reverse so it moves the next artifact out of the kicker's way
 

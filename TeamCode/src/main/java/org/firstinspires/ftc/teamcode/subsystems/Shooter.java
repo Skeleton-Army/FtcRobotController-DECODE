@@ -75,6 +75,8 @@ public class Shooter extends SubsystemBase {
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
 
         turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
+        turretPID.setTolerance(ANGLE_REACHED_THRESHOLD);
+
         turretFeedforward = new SimpleMotorFeedforward(TURRET_KS, TURRET_KV);
 
         setHorizontalAngle(0);
@@ -126,6 +128,10 @@ public class Shooter extends SubsystemBase {
 
     public boolean reachedRPM() {
         return Math.abs(getTargetRPM() - getRPM()) <= RPM_REACHED_THRESHOLD;
+    }
+
+    public boolean reachedAngle() {
+        return turretPID.atSetPoint();
     }
 
     public double getRawHoodPosition() {
