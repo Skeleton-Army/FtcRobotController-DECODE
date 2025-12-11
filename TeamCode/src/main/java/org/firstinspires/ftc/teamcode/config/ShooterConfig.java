@@ -13,6 +13,7 @@ public class ShooterConfig {
     public static double FLYWHEEL_KI = 0.002;
     public static double FLYWHEEL_KD = 0.1;
     public static double FLYWHEEL_KS = 0;
+    public static double FLYWHEEL_KA = 0;
     public static double FLYWHEEL_KV = 1.66;
 
     public static String TURRET_NAME = "turret";
