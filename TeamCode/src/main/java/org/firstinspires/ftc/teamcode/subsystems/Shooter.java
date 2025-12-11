@@ -10,10 +10,11 @@ import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.controller.PIDController;
+import com.seattlesolvers.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
-import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -36,7 +37,10 @@ public class Shooter extends SubsystemBase {
     private final ModifiedMotorEx turret;
     private final ServoEx hood;
 
-    private VoltageSensor voltageSensor;
+    private final PIDController turretPID;
+    private final SimpleMotorFeedforward turretFeedforward;
+
+    private final VoltageSensor voltageSensor;
 
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
@@ -66,10 +70,13 @@ public class Shooter extends SubsystemBase {
         flywheel.setInverted(FLYWHEEL_INVERTED);
 
         turret = new ModifiedMotorEx(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
-        turret.setPositionCoefficients(TURRET_KP, TURRET_KI, TURRET_KD, TURRET_KF);
-        turret.setRunMode(Motor.RunMode.PositionControl);
+        turret.setRunMode(Motor.RunMode.RawPower);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
+
+        turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
+        turretFeedforward = new SimpleMotorFeedforward(TURRET_KS, TURRET_KV);
+
         setHorizontalAngle(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
@@ -98,7 +105,14 @@ public class Shooter extends SubsystemBase {
         flywheel.setVelocity(targetTPS, voltage);
 
         startTimer.start();
-        turret.set(startTimer.isDone() ? 1 : 0.5); // Run turret at half the speed when the OpMode just starts
+
+        // Turret PIDF
+        double pid = turretPID.calculate(turret.getDistance());
+        double feedforward = turretFeedforward.calculate(-poseTracker.getAngularVelocity());
+        double multiplier = startTimer.isDone() ? 1 : 0.5; // Run turret at half the speed when the OpMode just starts
+        double result = (pid + feedforward) * multiplier;
+
+        turret.set(result, voltage);
     }
 
     public double getRPM() {
@@ -148,6 +162,7 @@ public class Shooter extends SubsystemBase {
 
     public void setHorizontalAngle(double targetAngleRad) {
         wrapped = ShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
+        turretPID.setSetPoint(wrapped);
         turret.setTargetDistance(wrapped);
     }
 

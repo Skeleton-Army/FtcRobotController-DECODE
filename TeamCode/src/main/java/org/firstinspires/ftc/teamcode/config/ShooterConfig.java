@@ -20,7 +20,8 @@ public class ShooterConfig {
     public static double TURRET_KP = 3.5;
     public static double TURRET_KI = 0;
     public static double TURRET_KD = 0.1;
-    public static double TURRET_KF = 0;
+    public static double TURRET_KS = 0;
+    public static double TURRET_KV = 0;
     public static double TURRET_MIN = Math.toRadians(-200); // Clockwise
     public static double TURRET_MAX = Math.toRadians(180); // Counter-clockwise
     public static double GEAR_RATIO = (double) 200 / 30;
