@@ -116,6 +116,7 @@ public class FlywheelTest extends OpMode {
 
         telemetry.addData("Velocity (ticks/sec)", motorTPS);
         telemetry.addData("Motor RPM", motorRPM);
+        telemetry.addData("error: ", FLYWHEEL_TARGET - motorRPM);
         telemetry.addData("recovery time (sec)",recoveryTime);
         telemetry.addData("Current (Amps)", motor.motorEx.getCurrent(CurrentUnit.AMPS));
         telemetry.addData("PID On?", isPID);
@@ -127,7 +128,7 @@ public class FlywheelTest extends OpMode {
         if (isPID) {
             motor.setRunMode(Motor.RunMode.VelocityControl);
             motor.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-            motor.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
+            motor.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
         }
         else {
             motor.setRunMode(Motor.RunMode.RawPower);

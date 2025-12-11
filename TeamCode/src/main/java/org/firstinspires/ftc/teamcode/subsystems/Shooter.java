@@ -65,7 +65,7 @@ public class Shooter extends SubsystemBase {
 
         flywheel = new ModifiedMotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
         flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV);
+        flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
         flywheel.setInverted(FLYWHEEL_INVERTED);
 
