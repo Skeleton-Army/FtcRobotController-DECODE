@@ -263,8 +263,6 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void run() {
-        follower.update();
-        telemetry.addData("Current path: ", follower.getCurrentPathChain());
         telemetry.update();
     }
 
