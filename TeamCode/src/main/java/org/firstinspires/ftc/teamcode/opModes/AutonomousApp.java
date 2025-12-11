@@ -173,7 +173,9 @@ public class AutonomousApp extends ComplexOpMode {
                                 getRelative(new Pose(21.149, 83.974))
                         )
                 )
-                .setTangentHeadingInterpolation()
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         nearDriveBack = follower
