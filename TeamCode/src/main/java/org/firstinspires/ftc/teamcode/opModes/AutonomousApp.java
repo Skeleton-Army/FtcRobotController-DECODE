@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -7,8 +9,10 @@ import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.pedropathing.follower.Follower;
+import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
@@ -27,6 +31,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
+import java.util.Collections;
 import java.util.List;
 
 @Autonomous
@@ -61,7 +66,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(8.708, 102.013)),
-                                getRelative(new Pose(9.330, 7.464))
+                                getRelative(new Pose(12.330, 7.464))
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -73,7 +78,7 @@ public class AutonomousApp extends ComplexOpMode {
                             new BezierCurve(
                                     follower::getPose,
                                     getRelative(new Pose(70.600, 40.121)),
-                                    getRelative(new Pose(19.283, 35.456))
+                                    getRelative(new Pose(22.283, 35.456))
                             )
                     )
                 .setConstantHeadingInterpolation(
@@ -87,7 +92,7 @@ public class AutonomousApp extends ComplexOpMode {
                             new BezierCurve(
                                     follower::getPose,
                                     getRelative(new Pose(80.864, 65.313)),
-                                    getRelative(new Pose(8.086, 57.227))
+                                    getRelative(new Pose(12.086, 57.227))
                             )
                     )
                 .setConstantHeadingInterpolation(
@@ -102,7 +107,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(80.864, 92.060)),
-                                getRelative(new Pose(20.216, 83.663))
+                                getRelative(new Pose(23.216, 83.663))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -243,9 +248,24 @@ public class AutonomousApp extends ComplexOpMode {
                     new FollowPathCommand(follower, selectedPath),
                     new InstantCommand(() -> intake.stop()),
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
-                    new FollowPathCommand(
-                            follower,
-                            startingPosition == StartingPosition.FAR ? farDriveBack : nearDriveBack
+                    new DeferredCommand(
+                            () -> {
+                                PathChain parking = follower
+                                        .pathBuilder()
+                                        .addPath(
+                                                new BezierLine(
+                                                        follower.getPose(),
+                                                        getRelative(new Pose(61.270, 15.862))
+                                                )
+                                        )
+                                        .setConstantHeadingInterpolation(
+                                                getRelative(Math.toRadians(180))
+                                        )
+                                        .build();
+
+                                return new FollowPathCommand(follower, parking);
+                            },
+                            Collections.EMPTY_LIST
                     ),
                     new ShootCommand(3, shooter, intake, transfer, drive)
             );
@@ -257,6 +277,7 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void run() {
         follower.update();
+        telemetry.addData("Current path: ", follower.getCurrentPathChain());
         telemetry.update();
     }
 
