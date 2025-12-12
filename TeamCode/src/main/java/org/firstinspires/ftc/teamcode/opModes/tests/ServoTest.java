@@ -4,6 +4,8 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.config.ShooterConfig;
+
 @TeleOp
 public class ServoTest extends OpMode {
     private Servo servo;
@@ -16,11 +18,11 @@ public class ServoTest extends OpMode {
     @Override
     public void loop() {
         if (gamepad1.crossWasPressed()) {
-            servo.setPosition(1);
+            servo.setPosition(ShooterConfig.HOOD_POSSIBLE_MAX);
         }
 
         if (gamepad1.squareWasPressed()) {
-            servo.setPosition(0);
+            servo.setPosition(ShooterConfig.HOOD_POSSIBLE_MIN);
         }
         telemetry.addData("Servo pos", servo.getPosition());
     }

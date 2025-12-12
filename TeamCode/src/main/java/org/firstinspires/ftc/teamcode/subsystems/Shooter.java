@@ -111,8 +111,7 @@ public class Shooter extends SubsystemBase {
         // Turret PIDF
         double pid = turretPID.calculate(turret.getDistance());
         double feedforward = turretFeedforward.calculate(-poseTracker.getAngularVelocity());
-        double multiplier = startTimer.isDone() ? 1 : 0.5; // Run turret at half the speed when the OpMode just starts
-        double result = (pid + feedforward) * multiplier;
+        double result = pid + feedforward;
 
         turret.set(result, voltage);
     }
