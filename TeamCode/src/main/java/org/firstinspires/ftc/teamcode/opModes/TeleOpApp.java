@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -102,11 +103,10 @@ public class TeleOpApp extends ComplexOpMode {
 //                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenPressed(new ShootCommand(4, shooter, intake, transfer, drive));
+                .whenPressed(new ShootCommand(3, shooter, intake, transfer, drive));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
-                .whenActive(new ShootCommand(4, shooter, intake, transfer, drive))
-                .whenInactive(() -> CommandScheduler.getInstance().cancel(shooter.getCurrentCommand()));
+                .whileActiveContinuous(new ShootCommand(1, shooter, intake, transfer, drive));
 
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
