@@ -103,9 +103,11 @@ public class TeleOpApp extends ComplexOpMode {
 //                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenPressed(new ShootCommand(3, shooter, intake, transfer, drive));
+                .and(new Trigger(this::isInsideLaunchZone))
+                .whenActive(new ShootCommand(3, shooter, intake, transfer, drive));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
+                .and(new Trigger(this::isInsideLaunchZone))
                 .whileActiveContinuous(new ShootCommand(1, shooter, intake, transfer, drive));
 
         if (!tabletopMode) {
@@ -135,11 +137,7 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         // Cancel shooting if not in a launch zone
-        boolean insideClose = robotZone.isInside(closeLaunchZone);
-        boolean insideFar = robotZone.isInside(farLaunchZone);
-        boolean insideZone = insideClose || insideFar;
-
-        if (!insideZone && !debugMode) {
+        if (!isInsideLaunchZone()) {
             CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
@@ -184,5 +182,11 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Robot Pose", robotPose);
         //Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
+    }
+
+    public boolean isInsideLaunchZone() {
+        boolean insideClose = robotZone.isInside(closeLaunchZone);
+        boolean insideFar = robotZone.isInside(farLaunchZone);
+        return insideClose || insideFar || debugMode;
     }
 }
