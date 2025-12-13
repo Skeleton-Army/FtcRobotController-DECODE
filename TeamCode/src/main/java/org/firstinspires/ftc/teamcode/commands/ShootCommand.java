@@ -21,6 +21,8 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Transfer transfer;
     private final Drive drive;
 
+    private boolean finished;
+
     public ShootCommand(int numberOfArtifacts, Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
         addRequirements(shooter, intake, transfer);
 
@@ -58,6 +60,7 @@ public class ShootCommand extends SequentialCommandGroup {
                     if (!transfer.isArtifactDetected()) {
                         intake.stop();
                         transfer.toggleTransfer(false);
+                        finished = true;
                         cancel();
                     }
                 }),
@@ -75,8 +78,15 @@ public class ShootCommand extends SequentialCommandGroup {
     }
 
     @Override
+    public boolean isFinished() {
+        return super.isFinished() || finished;
+    }
+
+    @Override
     public void end(boolean interrupted) {
         super.end(interrupted);
+
+        finished = false;
 
         // Ensure everything is off and in its place when the command ends
         transfer.setKickerPosition(false);
