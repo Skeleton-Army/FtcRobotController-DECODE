@@ -14,6 +14,7 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
@@ -53,10 +54,13 @@ public class AutonomousApp extends ComplexOpMode {
     private final PathChain[] nearPaths = new PathChain[4];
     private PathChain farDriveBackEnd;
     private PathChain nearDriveBackEnd;
+    private PathChain spike3Open;
+    private PathChain spike4Open;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
+    private int gateSpike;
 
     public PathChain farDriveBack() {
         return follower
@@ -226,12 +230,41 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .build();
+
+        spike3Open = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(34.818, 57.39)),
+                                getRelative(new Pose(16.272, 69.287))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+
+        spike4Open = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(33.594, 76.111)),
+                                getRelative(new Pose(15.572, 72.787))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
     }
 
     public void afterPrompts() {
         alliance = prompter.get("alliance");
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.get("pickup_order");
+        gateSpike = prompter.getOrDefault("gate_spike", -1);
         Settings.set("alliance", alliance);
 
         telemetry.addData("Alliance", alliance);
@@ -255,6 +288,15 @@ public class AutonomousApp extends ComplexOpMode {
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
                 .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
+                .prompt("open_gate", new BooleanPrompt("OPEN GATE?", false))
+                .prompt("gate_spike",
+                        () -> {
+                            if (prompter.get("open_gate").equals(true)) {
+                                return new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4);
+                            }
+                            return null;
+                        }
+                )
                 .onComplete(this::afterPrompts);
     }
 
@@ -279,20 +321,31 @@ public class AutonomousApp extends ComplexOpMode {
         );
 
         for (int i = 0; i < pickupOrder.size(); i++) {
-            int spike = pickupOrder.get(i) - 1;
+            int spikeNumber = pickupOrder.get(i) - 1;
             boolean isLast = (i == pickupOrder.size() - 1);
 
             PathChain[] sourcePaths = startingPosition == StartingPosition.FAR
                     ? farPaths
                     : nearPaths;
 
-            PathChain selectedPath = sourcePaths[spike];
+            PathChain selectedPath = sourcePaths[spikeNumber];
 
             seq.addCommands(
                     new InstantCommand(() -> intake.collect()),
-                    new InstantCommand(() -> telemetry.addData("Current", spike)),
+                    new InstantCommand(() -> telemetry.addData("Current", spikeNumber)),
                     new FollowPathCommand(follower, selectedPath),
-                    new InstantCommand(() -> intake.stop()),
+                    new InstantCommand(() -> intake.stop())
+            );
+
+            if (spikeNumber == gateSpike) {
+                seq.addCommands(
+                        new InstantCommand(() -> telemetry.addData("Current", "Opening gate")),
+                        new FollowPathCommand(follower, spikeNumber == 3 ? spike3Open : spike4Open),
+                        new WaitCommand(500)
+                );
+            }
+
+            seq.addCommands(
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
                     new DeferredCommand(
                             () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
