@@ -68,7 +68,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(61.270, 15.862))
+                                getRelative(new Pose(56.6, 15.862))
                         )
                 )
                 .setConstantHeadingInterpolation(
