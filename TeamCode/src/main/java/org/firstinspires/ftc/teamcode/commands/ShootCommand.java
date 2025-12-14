@@ -42,8 +42,6 @@ public class ShootCommand extends SequentialCommandGroup {
 
     private Command cycle() {
         return new SequentialCommandGroup(
-                new WaitUntilCommand(shooter::reachedRPM),
-
                 new InstantCommand(() -> {
                     if (!transfer.isArtifactDetected()) {
                         intake.collect();
@@ -65,14 +63,16 @@ public class ShootCommand extends SequentialCommandGroup {
                     }
                 }),
 
-                new WaitUntilCommand(shooter::reachedAngle),
-
                 new InstantCommand(intake::stop),
                 new InstantCommand(() -> transfer.toggleTransfer(true, true)), // Reverse so it moves the next artifact out of the kicker's way
 
                 new WaitCommand(20),
 
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
+
+                new WaitUntilCommand(shooter::reachedRPM),
+                new WaitUntilCommand(shooter::reachedAngle),
+
                 transfer.kick()
         );
     }
