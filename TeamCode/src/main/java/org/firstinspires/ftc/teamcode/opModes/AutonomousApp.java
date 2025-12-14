@@ -33,6 +33,8 @@ import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 @Autonomous
 public class AutonomousApp extends ComplexOpMode {
@@ -49,6 +51,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     private final PathChain[] farPaths = new PathChain[4];
     private final PathChain[] nearPaths = new PathChain[4];
+    private PathChain farDriveBackEnd;
+    private PathChain nearDriveBackEnd;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
@@ -143,6 +147,18 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .build();
 
+        farDriveBackEnd = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                getRelative(new Pose(45, 20))
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .setReversed()
+                .build();
+
         nearPaths[0] = follower
                 .pathBuilder()
                 .addPath(
@@ -197,6 +213,19 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .build();
+
+        nearDriveBackEnd = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                getRelative(new Pose(53.716, 112.505))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
     }
 
     public void afterPrompts() {
@@ -231,35 +260,50 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void onStart() {
+        Supplier<PathChain> driveBack =
+                startingPosition == StartingPosition.FAR
+                        ? this::farDriveBack
+                        : this::nearDriveBack;
+
+        Supplier<PathChain> finalDriveBack =
+                startingPosition == StartingPosition.FAR
+                        ? driveBack
+                        : () -> nearDriveBackEnd;
+
         SequentialCommandGroup seq = new SequentialCommandGroup(
                 new FollowPathCommand(
                         follower,
-                        startingPosition == StartingPosition.FAR ? farDriveBack() : nearDriveBack()
+                        driveBack.get()
                 ),
                 new ShootCommand(3, shooter, intake, transfer, drive)
         );
 
-        for (Integer index : pickupOrder) {
-            int i = index - 1;
+        for (int i = 0; i < pickupOrder.size(); i++) {
+            int spike = pickupOrder.get(i) - 1;
+            boolean isLast = (i == pickupOrder.size() - 1);
 
             PathChain[] sourcePaths = startingPosition == StartingPosition.FAR
                     ? farPaths
                     : nearPaths;
 
-            PathChain selectedPath = sourcePaths[i];
+            PathChain selectedPath = sourcePaths[spike];
 
             seq.addCommands(
                     new InstantCommand(() -> intake.collect()),
-                    new InstantCommand(() -> telemetry.addData("Current", i)),
+                    new InstantCommand(() -> telemetry.addData("Current", spike)),
                     new FollowPathCommand(follower, selectedPath),
                     new InstantCommand(() -> intake.stop()),
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
                     new DeferredCommand(
-                            () -> new FollowPathCommand(follower, startingPosition == StartingPosition.FAR ? farDriveBack() : nearDriveBack()),
+                            () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
                             null
                     ),
                     new ShootCommand(3, shooter, intake, transfer, drive)
             );
+        }
+
+        if (startingPosition == StartingPosition.FAR) {
+            seq.addCommands(new FollowPathCommand(follower, farDriveBackEnd));
         }
 
         schedule(seq);
