@@ -94,7 +94,13 @@ public class AutonomousApp extends ComplexOpMode {
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(56.6,8.7, Math.toRadians(180)));
-        nearStartingPose = getRelative(new Pose(17.8, 121, Math.toRadians(144)));
+        nearStartingPose = getRelative(new Pose(20.3, 123.6, Math.toRadians(142)));
+
+        Pose spike1End = getRelative(new Pose(12.330, 7.464));
+        Pose spike2End = getRelative(new Pose(22.283, 35.456));
+        Pose spike3End = getRelative(new Pose(15.086, 57.227));
+        Pose spike4End = getRelative(new Pose(23.216, 83.663));
+        Pose openGateEnd = getRelative(new Pose(14.572, 72));
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -102,7 +108,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(8.708, 102.013)),
-                                getRelative(new Pose(12.330, 7.464))
+                                spike1End
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -114,7 +120,7 @@ public class AutonomousApp extends ComplexOpMode {
                             new BezierCurve(
                                     follower::getPose,
                                     getRelative(new Pose(70.600, 40.121)),
-                                    getRelative(new Pose(22.283, 35.456))
+                                    spike2End
                             )
                     )
                 .setConstantHeadingInterpolation(
@@ -128,7 +134,7 @@ public class AutonomousApp extends ComplexOpMode {
                             new BezierCurve(
                                     follower::getPose,
                                     getRelative(new Pose(80.864, 65.313)),
-                                    getRelative(new Pose(12.086, 57.227))
+                                    spike3End
                             )
                     )
                 .setConstantHeadingInterpolation(
@@ -136,14 +142,13 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .build();
 
-
         farPaths[3] = follower
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(80.864, 92.060)),
-                                getRelative(new Pose(23.216, 83.663))
+                                spike4End
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -170,8 +175,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(9.952, 45.408)),
-                                getRelative(new Pose(9.952, 11.197))
-
+                                spike1End
                         )
                 )
                 .setTangentHeadingInterpolation()
@@ -183,7 +187,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(69.045, 32.968)),
-                                getRelative(new Pose(21.149, 35.145))
+                                spike2End
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -197,7 +201,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(77.132, 57.538)),
-                                getRelative(new Pose(21.149, 59.715))
+                                spike3End
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -210,8 +214,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(84.907, 79.931)),
-                                getRelative(new Pose(21.149, 83.974))
+                                getRelative(new Pose(60.907, 79.931)),
+                                spike4End
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -236,8 +240,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(34.818, 57.39)),
-                                getRelative(new Pose(15.572, 69.287))
+                                getRelative(new Pose(36.818, 57.39)),
+                                openGateEnd
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -251,7 +255,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(33.594, 76.111)),
-                                getRelative(new Pose(15.572, 72.787))
+                                openGateEnd
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -341,7 +345,7 @@ public class AutonomousApp extends ComplexOpMode {
                 seq.addCommands(
                         new InstantCommand(() -> telemetry.addData("Current", "Opening gate")),
                         new FollowPathCommand(follower, spikeNumber == 3 ? spike3Open : spike4Open),
-                        new WaitCommand(500)
+                        new WaitCommand(1000)
                 );
             }
 
