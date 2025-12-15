@@ -110,6 +110,44 @@ public class TeleOpApp extends ComplexOpMode {
                 .and(new Trigger(this::isInsideLaunchZone))
                 .whileActiveContinuous(new ShootCommand(1, shooter, intake, transfer, drive));
 
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
+                .whileHeld(
+                        new InstantCommand(() -> {
+                            shooter.setVerticalManualMode(true);
+                            shooter.setHoodPosition(shooter.getRawHoodPosition() + 0.01);
+                        })
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
+                .whileHeld(
+                        new InstantCommand(() -> {
+                            shooter.setVerticalManualMode(true);
+                            shooter.setHoodPosition(shooter.getRawHoodPosition() - 0.01);
+                        })
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
+                .whileHeld(
+                        new InstantCommand(() -> {
+                            shooter.setHorizontalManualMode(true);
+                            shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) + 0.3);
+                        })
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
+                .whileHeld(
+                        new InstantCommand(() -> {
+                            shooter.setHorizontalManualMode(true);
+                            shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) - 0.3);
+                        })
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
+                .whenPressed(new InstantCommand(() -> {
+                    shooter.setHorizontalManualMode(false);
+                    shooter.setVerticalManualMode(false);
+                }));
+
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                     .whenPressed(drive.goToBase());

@@ -70,8 +70,8 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
 
-                new WaitUntilCommand(shooter::reachedRPM),
-                new WaitUntilCommand(shooter::reachedAngle),
+                new WaitUntilCommand(() -> shooter.reachedRPM() || shooter.getVerticalManualMode()),
+                new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode()),
 
                 transfer.kick()
         );

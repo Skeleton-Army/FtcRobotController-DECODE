@@ -60,6 +60,9 @@ public class Shooter extends SubsystemBase {
     public double shotGoalDistance; // in meters
     final double inchesToMeters = 39.37;
 
+    private boolean horizontalManualMode;
+    private boolean verticalManualMode;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
@@ -97,8 +100,8 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity());
 
-        setHorizontalAngle(solution.getHorizontalAngle());
-        setVerticalAngle(solution.getVerticalAngle());
+        if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle());
+        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle());
         setRPM(solution.getVelocity());
 
         calculateRecovery();
@@ -147,6 +150,22 @@ public class Shooter extends SubsystemBase {
 
     public void setHoodPosition(double angle) {
         hood.set(MathFunctions.clamp(angle, HOOD_POSSIBLE_MIN, HOOD_POSSIBLE_MAX));
+    }
+
+    public void setHorizontalManualMode(boolean enabled) {
+        horizontalManualMode = enabled;
+    }
+
+    public void setVerticalManualMode(boolean enabled) {
+        verticalManualMode = enabled;
+    }
+
+    public boolean getHorizontalManualMode() {
+        return horizontalManualMode;
+    }
+
+    public boolean getVerticalManualMode() {
+        return verticalManualMode;
     }
 
     public double getRecoveryTime() {
