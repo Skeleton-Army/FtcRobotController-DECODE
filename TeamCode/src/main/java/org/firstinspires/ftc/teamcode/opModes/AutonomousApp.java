@@ -159,8 +159,9 @@ public class AutonomousApp extends ComplexOpMode {
                                 getRelative(new Pose(45, 20))
                         )
                 )
-                .setTangentHeadingInterpolation()
-                .setReversed()
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         nearPaths[0] = follower
@@ -226,9 +227,8 @@ public class AutonomousApp extends ComplexOpMode {
                                 getRelative(new Pose(53.716, 112.505))
                         )
                 )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
+                .setTangentHeadingInterpolation()
+                .setReversed()
                 .build();
 
         spike3Open = follower
@@ -237,7 +237,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower::getPose,
                                 getRelative(new Pose(34.818, 57.39)),
-                                getRelative(new Pose(16.272, 69.287))
+                                getRelative(new Pose(15.572, 69.287))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -321,14 +321,14 @@ public class AutonomousApp extends ComplexOpMode {
         );
 
         for (int i = 0; i < pickupOrder.size(); i++) {
-            int spikeNumber = pickupOrder.get(i) - 1;
+            int spikeNumber = pickupOrder.get(i);
             boolean isLast = (i == pickupOrder.size() - 1);
 
             PathChain[] sourcePaths = startingPosition == StartingPosition.FAR
                     ? farPaths
                     : nearPaths;
 
-            PathChain selectedPath = sourcePaths[spikeNumber];
+            PathChain selectedPath = sourcePaths[spikeNumber - 1];
 
             seq.addCommands(
                     new InstantCommand(() -> intake.collect()),
@@ -358,6 +358,8 @@ public class AutonomousApp extends ComplexOpMode {
         if (startingPosition == StartingPosition.FAR) {
             seq.addCommands(new FollowPathCommand(follower, farDriveBackEnd));
         }
+
+        seq.addCommands(new InstantCommand(this::requestOpModeStop));
 
         schedule(seq);
     }
