@@ -97,7 +97,7 @@ public class AutonomousApp extends ComplexOpMode {
         nearStartingPose = getRelative(new Pose(20.3, 123.6, Math.toRadians(142)));
 
         Pose spike1End = getRelative(new Pose(12.330, 7.464));
-        Pose spike2End = getRelative(new Pose(22.283, 35.456));
+        Pose spike2End = getRelative(new Pose(15.550755939524837, 35.76673866090713));
         Pose spike3End = getRelative(new Pose(15.086, 57.227));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
         Pose openGateEnd = getRelative(new Pose(14.572, 72));
@@ -107,11 +107,12 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(8.708, 102.013)),
                                 spike1End
                         )
                 )
-                .setTangentHeadingInterpolation()
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         farPaths[1] = follower
@@ -321,7 +322,7 @@ public class AutonomousApp extends ComplexOpMode {
                         follower,
                         driveBack.get()
                 ),
-                new ShootCommand(3, shooter, intake, transfer, drive)
+                new ShootCommand(4, shooter, intake, transfer, drive)
         );
 
         for (int i = 0; i < pickupOrder.size(); i++) {
@@ -345,7 +346,7 @@ public class AutonomousApp extends ComplexOpMode {
                 seq.addCommands(
                         new InstantCommand(() -> telemetry.addData("Current", "Opening gate")),
                         new FollowPathCommand(follower, spikeNumber == 3 ? spike3Open : spike4Open),
-                        new WaitCommand(1000)
+                        new WaitCommand(500)
                 );
             }
 
@@ -355,7 +356,7 @@ public class AutonomousApp extends ComplexOpMode {
                             () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
                             null
                     ),
-                    new ShootCommand(3, shooter, intake, transfer, drive)
+                    new ShootCommand(4, shooter, intake, transfer, drive)
             );
         }
 

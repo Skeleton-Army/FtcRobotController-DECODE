@@ -51,7 +51,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 // Either artifact gets detected OR the timeout elapses
                 new WaitUntilCommand(transfer::isArtifactDetected)
-                        .withTimeout(1500),
+                        .withTimeout(3000),
 
                 // If we got here but artifact is still NOT detected, it timed out -> cancel the whole ShootCommand
                 new InstantCommand(() -> {
@@ -66,7 +66,7 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(intake::stop),
                 new InstantCommand(() -> transfer.toggleTransfer(true, true)), // Reverse so it moves the next artifact out of the kicker's way
 
-                new WaitCommand(20),
+                new WaitCommand(10),
 
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
 
