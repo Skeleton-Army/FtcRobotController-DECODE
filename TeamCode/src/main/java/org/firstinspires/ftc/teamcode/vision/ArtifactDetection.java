@@ -8,7 +8,6 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import static java.lang.Math.*;
 
 @TeleOp
 public class ArtifactDetection extends OpMode {
@@ -16,30 +15,13 @@ public class ArtifactDetection extends OpMode {
     MultipleTelemetry tolematry;
     Follower follower;
     // Hc: Height of the Limelight lens from the floor (e.g., 0.35m or ~13.78 inches)
-    private final double CAMERA_HEIGHT_M = 0.35;
 
-    // alpha: Camera mounting pitch angle relative to the floor (degrees)
-    // Positive means tilted up, negative means tilted down
-    private final double CAMERA_PITCH_DEG = 10.0;
-
-    // Ht: Known height of the artifact's center from the floor (e.g., 2.0m)
-    private final double TARGET_HEIGHT_M = 2.0;
-
-    // Camera Mounting Offset (Relative to Robot Center in Meters)
-    // FTC uses X=side-to-side (Right is positive), Y=forward/backward (Forward is positive)
-    private final double CAM_OFFSET_X_M = 0.0;  // Center-mounted (X)
-    private final double CAM_OFFSET_Y_M = 0.25; // 25 cm (0.25m) forward (Y)
-    private final double CAM_YAW_DEG = -5.0;    // 5 degrees to the right (negative yaw)
-
-    // Pre-calculate fixed angle constants
-    private final double CAM_PITCH_RAD = toRadians(CAMERA_PITCH_DEG);
-    private final double CAM_YAW_RAD = toRadians(CAM_YAW_DEG);
 
     @Override
     public void init() {
         tolematry = new MultipleTelemetry(FtcDashboard.getInstance().getTelemetry(), telemetry);
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.pipelineSwitch(Goofy.pipelineIndex);
+        limelight.pipelineSwitch(ArtifactTrackingConfig.PIPELINE_INDEX);
         // 0: apriltag detection
         // 1: artifact detection
         // 2: test pipeline
@@ -72,7 +54,7 @@ public class ArtifactDetection extends OpMode {
             double[] artifactPos = artifactFieldPos(
                     robotPose.getX(),
                     robotPose.getY(),
-                    robotPose.getHeading(), // Ensure this is in Radians!
+                    robotPose.getHeading(),
                     llResult.getTx(),
                     llResult.getTy()
             );
