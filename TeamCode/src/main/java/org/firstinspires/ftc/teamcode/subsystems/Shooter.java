@@ -63,6 +63,9 @@ public class Shooter extends SubsystemBase {
     private boolean horizontalManualMode;
     private boolean verticalManualMode;
 
+    private double horizontalOffset = 0;
+    private double verticalOffset = 0;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
@@ -100,8 +103,8 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity());
 
-        if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle());
-        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle());
+        if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
+        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getVelocity());
 
         calculateRecovery();
@@ -148,6 +151,10 @@ public class Shooter extends SubsystemBase {
         return angleUnit == AngleUnit.DEGREES ? Math.toDegrees(turret.getDistance()) : turret.getDistance();
     }
 
+    public void resetTurret() {
+        turret.resetEncoder();
+    }
+
     public void setHoodPosition(double angle) {
         hood.set(MathFunctions.clamp(angle, HOOD_POSSIBLE_MIN, HOOD_POSSIBLE_MAX));
     }
@@ -170,6 +177,22 @@ public class Shooter extends SubsystemBase {
 
     public double getRecoveryTime() {
         return recoveryTime;
+    }
+
+    public void setHorizontalOffset(double offset) {
+        horizontalOffset = offset;
+    }
+
+    public void setVerticalOffset(double offset) {
+        verticalOffset = offset;
+    }
+
+    public double getHorizontalOffset() {
+        return horizontalOffset;
+    }
+
+    public double getVerticalOffset() {
+        return verticalOffset;
     }
 
     /**

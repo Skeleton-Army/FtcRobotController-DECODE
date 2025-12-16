@@ -113,40 +113,51 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
                         new InstantCommand(() -> {
-                            shooter.setVerticalManualMode(true);
-                            shooter.setHoodPosition(shooter.getRawHoodPosition() + 0.01);
+                            if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() + 0.01);
+                            else shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.3);
                         })
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
                 .whileHeld(
                         new InstantCommand(() -> {
-                            shooter.setVerticalManualMode(true);
-                            shooter.setHoodPosition(shooter.getRawHoodPosition() - 0.01);
+                            if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() - 0.01);
+                            else shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.3);
                         })
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
                 .whileHeld(
                         new InstantCommand(() -> {
-                            shooter.setHorizontalManualMode(true);
-                            shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) + 0.3);
+                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) + 0.3);
+                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.1);
                         })
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
                 .whileHeld(
                         new InstantCommand(() -> {
-                            shooter.setHorizontalManualMode(true);
-                            shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) - 0.3);
+                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) - 0.3);
+                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.1);
                         })
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
-                .whenPressed(new InstantCommand(() -> {
-                    shooter.setHorizontalManualMode(false);
-                    shooter.setVerticalManualMode(false);
-                }));
+                .toggleWhenPressed(
+                        new InstantCommand(() -> {
+                            shooter.setHorizontalManualMode(true);
+                            shooter.setVerticalManualMode(true);
+                        }),
+                        new InstantCommand(() -> {
+                            shooter.setHorizontalManualMode(false);
+                            shooter.setVerticalManualMode(false);
+                        })
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
+                .whenPressed(
+                        new InstantCommand(shooter::resetTurret)
+                );
 
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
