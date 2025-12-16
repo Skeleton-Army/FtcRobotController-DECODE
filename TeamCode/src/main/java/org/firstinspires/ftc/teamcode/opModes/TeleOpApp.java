@@ -168,6 +168,11 @@ public class TeleOpApp extends ComplexOpMode {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                     .whenPressed(drive.goToCenter());
         }
+
+        if (!tabletopMode && !debugMode) {
+            gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
+                    .whenPressed(this::resetPoseToNearestCorner);
+        }
     }
 
     @Override
@@ -237,5 +242,34 @@ public class TeleOpApp extends ComplexOpMode {
         boolean insideClose = robotZone.isInside(closeLaunchZone);
         boolean insideFar = robotZone.isInside(farLaunchZone);
         return insideClose || insideFar || debugMode;
+    }
+
+    private void resetPoseToNearestCorner() {
+        Pose currentPose = follower.getPose();
+
+        final double WIDTH = 17;
+        final double HEIGHT = 17;
+        final double X_OFFSET = WIDTH / 2.0;
+        final double Y_OFFSET = HEIGHT / 2.0;
+
+        final Pose FIELD_BOTTOM_LEFT = new Pose(0, 0);
+        final Pose FIELD_BOTTOM_RIGHT = new Pose(144, 0);
+        final double MAX_RESET_DISTANCE = 20.0;
+
+        double distToBottomLeft = currentPose.distanceFrom(FIELD_BOTTOM_LEFT);
+        double distToBottomRight = currentPose.distanceFrom(FIELD_BOTTOM_RIGHT);
+        double minDistance = Math.min(distToBottomLeft, distToBottomRight);
+
+        if (minDistance <= MAX_RESET_DISTANCE) {
+            Pose newPose;
+            if (distToBottomLeft <= distToBottomRight) {
+                newPose = new Pose(X_OFFSET, Y_OFFSET);
+            } else {
+                newPose = new Pose( 144 - X_OFFSET, Y_OFFSET);
+            }
+
+            follower.setPose(new Pose(newPose.getX(), newPose.getY(), currentPose.getHeading()));
+            follower.startTeleopDrive(USE_BRAKE_MODE);
+        }
     }
 }
