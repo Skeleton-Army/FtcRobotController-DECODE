@@ -129,16 +129,16 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
                 .whileHeld(
                         new InstantCommand(() -> {
-                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) + 0.3);
-                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.1);
+                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) + 0.2);
+                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.01);
                         })
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
                 .whileHeld(
                         new InstantCommand(() -> {
-                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) - 0.3);
-                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.1);
+                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) - 0.2);
+                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.01);
                         })
                 );
 
