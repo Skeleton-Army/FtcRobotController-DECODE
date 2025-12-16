@@ -45,26 +45,44 @@ public class ArtifactDetection extends OpMode {
             tolematry.addData("Tx: ", llResult.getTx());
             tolematry.addData("Ty: ", llResult.getTy());
             tolematry.addData("Ta: ", llResult.getTa());
-            tolematry.addLine("python Output: ");
-            for (double pyOut : llResult.getPythonOutput()) {
-                tolematry.addLine(String.valueOf(pyOut));
-            }
-            Pose robotPose = follower.getPose();
 
-            double[] artifactPos = artifactFieldPos(
-                    robotPose.getX(),
-                    robotPose.getY(),
-                    robotPose.getHeading(),
-                    llResult.getTx(),
-                    llResult.getTy()
-            );
+            double ArtifactDistance = getDistance(llResult.getPythonOutput(),ArtifactTrackingConfig.limelightMountAngleDegrees,ArtifactTrackingConfig.goalHeightInches,ArtifactTrackingConfig.limelightLensHeightInches);
+            Pose robotPose = follower.getPose();
+            double[] ArtifactFieldPosition = getFieldPosition(ArtifactDistance,llResult.getPythonOutput(),robotPose);
+            tolematry.addData("ArtifactX", ArtifactFieldPosition[0]);
+            tolematry.addData("ArtifactY", ArtifactFieldPosition[1]);
+
         }
         tolematry.update();
     }
-    private double[] artifactFieldPos(double robotX, double robotY, double robotHeadingRad,
-                                              double tx_deg, double ty_deg) {
-        return new double[0];//temp value to stop error for the time being
+    public double getDistance(double[] llPyOut, double limelightMountAngleDegrees, double goalHeightInches, double limelightLensHeightInches){
+        double targetOffsetAngle_Vertical = llPyOut[1];
+
+        double angleToGoalRadians = Math.toRadians(limelightMountAngleDegrees + targetOffsetAngle_Vertical);
+        //calculate distance
+        return (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
     }
+
+    public static double[] getFieldPosition(
+            double ArtifactDistance,
+            double[] anglesDeg,
+            Pose robotPose
+    ) {
+        // Convert degrees to radians
+        double thetaRad = Math.toRadians(anglesDeg[0]);
+
+        // Calculate offsets
+        double deltaX = ArtifactDistance * Math.cos(thetaRad);
+        double deltaY = ArtifactDistance * Math.sin(thetaRad);
+
+        // Field position
+        double fieldX = robotPose.getX() + deltaX;
+        double fieldY = robotPose.getY() + deltaY;
+
+        return new double[] { fieldX, fieldY };
+    }
+
+
 
 
     @Override
