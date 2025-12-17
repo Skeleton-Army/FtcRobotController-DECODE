@@ -70,7 +70,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(USE_BRAKE_MODE);
-        follower.setStartingPose(startPose);
+        follower.setPose(startPose);
 
         IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
