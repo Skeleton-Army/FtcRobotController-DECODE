@@ -323,7 +323,14 @@ public class AutonomousApp extends ComplexOpMode {
                             return null;
                         }
                 )
-                .prompt("push", new BooleanPrompt("PUSH OTHER ROBOT?", false))
+                .prompt("push",
+                        () -> {
+                            if (prompter.get("starting_position").equals(StartingPosition.FAR)) {
+                                new BooleanPrompt("PUSH OTHER ROBOT?", false);
+                            }
+                            return null;
+                        }
+                )
                 .onComplete(this::afterPrompts);
     }
 
