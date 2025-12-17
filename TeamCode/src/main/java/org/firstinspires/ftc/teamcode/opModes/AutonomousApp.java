@@ -379,6 +379,11 @@ public class AutonomousApp extends ComplexOpMode {
         prompter.run();
     }
 
+    @Override
+    public void end() {
+        Settings.set("pose", follower.getPose(), false);
+    }
+
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.RED) {
             return originalPose.mirror();
