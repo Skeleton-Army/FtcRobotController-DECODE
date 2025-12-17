@@ -104,7 +104,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike2End = getRelative(new Pose(15.550755939524837, 35.76673866090713));
         Pose spike3End = getRelative(new Pose(15.086, 57.227));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
-        Pose openGateEnd = getRelative(new Pose(14.572, 72));
+        Pose openGateEnd = getRelative(new Pose(14.572, 74));
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -287,7 +287,7 @@ public class AutonomousApp extends ComplexOpMode {
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.get("pickup_order");
         gateSpike = prompter.getOrDefault("gate_spike", -1);
-        push = prompter.get("push");
+        push = prompter.getOrDefault("push", false);
         Settings.set("alliance", alliance);
 
         telemetry.addData("Alliance", alliance);
