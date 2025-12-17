@@ -49,6 +49,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Pose farStartingPose;
     private Pose nearStartingPose;
+    private Pose pushStartingPose;
 
     private final PathChain[] farPaths = new PathChain[4];
     private final PathChain[] nearPaths = new PathChain[4];
@@ -56,11 +57,13 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain nearDriveBackEnd;
     private PathChain spike3Open;
     private PathChain spike4Open;
+    private PathChain pushPath;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
     private int gateSpike;
+    private boolean push;
 
     public PathChain farDriveBack() {
         return follower
@@ -95,6 +98,7 @@ public class AutonomousApp extends ComplexOpMode {
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(56.6,8.7, Math.toRadians(180)));
         nearStartingPose = getRelative(new Pose(20.3, 123.6, Math.toRadians(142)));
+        pushStartingPose = getRelative(new Pose(57.85,8.7, Math.toRadians(180)));
 
         Pose spike1End = getRelative(new Pose(12.330, 7.464));
         Pose spike2End = getRelative(new Pose(15.550755939524837, 35.76673866090713));
@@ -263,6 +267,19 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .build();
+
+        pushPath = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                getRelative(new Pose(30,8.7, Math.toRadians(180)))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
     }
 
     public void afterPrompts() {
@@ -270,6 +287,7 @@ public class AutonomousApp extends ComplexOpMode {
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.get("pickup_order");
         gateSpike = prompter.getOrDefault("gate_spike", -1);
+        push = prompter.get("push");
         Settings.set("alliance", alliance);
 
         telemetry.addData("Alliance", alliance);
@@ -285,7 +303,10 @@ public class AutonomousApp extends ComplexOpMode {
 
         setupPaths();
 
-        follower.setStartingPose(startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose);
+        Pose startingPose = startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose;
+        if (push) startingPose = pushStartingPose;
+
+        follower.setStartingPose(startingPose);
     }
 
     @Override
@@ -302,6 +323,7 @@ public class AutonomousApp extends ComplexOpMode {
                             return null;
                         }
                 )
+                .prompt("push", new BooleanPrompt("PUSH OTHER ROBOT?", false))
                 .onComplete(this::afterPrompts);
     }
 
@@ -317,7 +339,15 @@ public class AutonomousApp extends ComplexOpMode {
                         ? driveBack
                         : () -> nearDriveBackEnd;
 
-        SequentialCommandGroup seq = new SequentialCommandGroup(
+        SequentialCommandGroup seq = new SequentialCommandGroup();
+
+        if (push) {
+            seq.addCommands(
+                    new FollowPathCommand(follower, pushPath)
+            );
+        }
+
+        seq.addCommands(
                 new FollowPathCommand(
                         follower,
                         driveBack.get()
