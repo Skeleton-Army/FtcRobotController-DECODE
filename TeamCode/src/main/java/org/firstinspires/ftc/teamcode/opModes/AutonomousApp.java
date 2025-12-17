@@ -359,7 +359,7 @@ public class AutonomousApp extends ComplexOpMode {
                         follower,
                         driveBack.get()
                 ),
-                new ShootCommand(4, shooter, intake, transfer, drive)
+                new ShootCommand(shooter, intake, transfer, drive)
         );
 
         for (int i = 0; i < pickupOrder.size(); i++) {
@@ -393,7 +393,7 @@ public class AutonomousApp extends ComplexOpMode {
                             () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
                             null
                     ),
-                    new ShootCommand(4, shooter, intake, transfer, drive)
+                    new ShootCommand(shooter, intake, transfer, drive)
             );
         }
 

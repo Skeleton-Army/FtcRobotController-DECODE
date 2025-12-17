@@ -10,7 +10,7 @@ public class TransferConfig {
     public static String KICKER_NAME = "kicker";
     public static double KICKER_MIN = 0;
     public static double KICKER_MAX = 0.4;
-    public static long KICK_TIME = 400;
+    public static long KICK_TIME = 1000;
 
     public static String SENSOR_NAME = "transferSensor";
     public static double DISTANCE_THRESHOLD_CM = 4;

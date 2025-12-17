@@ -1,13 +1,9 @@
 package org.firstinspires.ftc.teamcode.commands;
 
-import static org.firstinspires.ftc.teamcode.config.DriveConfig.*;
-
 import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
-import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
@@ -21,9 +17,9 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Transfer transfer;
     private final Drive drive;
 
-    private boolean finished;
+//    private boolean finished;
 
-    public ShootCommand(int numberOfArtifacts, Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
         addRequirements(shooter, intake, transfer);
 
         this.shooter = shooter;
@@ -32,61 +28,63 @@ public class ShootCommand extends SequentialCommandGroup {
         this.drive = drive;
 
         addCommands(new InstantCommand(() -> drive.setShootingMode(true)));
-
-        for (int i = 0; i < numberOfArtifacts; i++) {
-            addCommands(cycle());
-        }
-
+        addCommands(cycle());
         addCommands(new InstantCommand(() -> drive.setShootingMode(false)));
     }
 
     private Command cycle() {
         return new SequentialCommandGroup(
-                new InstantCommand(() -> {
-                    if (!transfer.isArtifactDetected()) {
-                        intake.collect();
-                        transfer.toggleTransfer(true);
-                    }
-                }),
+                waitUntilCanShoot(),
 
-                // Either artifact gets detected OR the timeout elapses
-                new WaitUntilCommand(transfer::isArtifactDetected)
-                        .withTimeout(3000),
+                new InstantCommand(intake::collect),
+                shootWithTransfer(),
 
-                // If we got here but artifact is still NOT detected, it timed out -> cancel the whole ShootCommand
-                new InstantCommand(() -> {
-                    if (!transfer.isArtifactDetected()) {
-                        intake.stop();
-                        transfer.toggleTransfer(false);
-                        finished = true;
-                        cancel();
-                    }
-                }),
+                // Skip if first shot timed-out (only one artifact inside robot)
+                new ConditionalCommand(
+                        new SequentialCommandGroup(
+                                waitUntilCanShoot(),
+                                shootWithTransfer()
+                        ),
+                        new InstantCommand(),
+                        () -> !transfer.isArtifactDetected()
+                ),
+
+                new InstantCommand(() -> transfer.toggleTransfer(true)),
+                waitUntilCanShoot(),
 
                 new InstantCommand(intake::stop),
-                new InstantCommand(() -> transfer.toggleTransfer(true, true)), // Reverse so it moves the next artifact out of the kicker's way
-
-                new WaitCommand(10),
-
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
-
-                new WaitUntilCommand(() -> shooter.reachedRPM() || shooter.getVerticalManualMode()),
-                new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode()),
-
                 transfer.kick()
         );
     }
 
-    @Override
-    public boolean isFinished() {
-        return super.isFinished() || finished;
+    public Command waitUntilCanShoot() {
+        return new SequentialCommandGroup(
+                new WaitUntilCommand(() -> shooter.reachedRPM() || shooter.getVerticalManualMode()),
+                new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
+        );
     }
+
+    public Command shootWithTransfer() {
+        return new SequentialCommandGroup(
+                new InstantCommand(() -> transfer.toggleTransfer(true)),
+                new WaitUntilCommand(transfer::isArtifactDetected),
+                new WaitUntilCommand(() -> !transfer.isArtifactDetected())
+                        .withTimeout(400),
+                new InstantCommand(() -> transfer.toggleTransfer(false))
+        );
+    }
+
+//    @Override
+//    public boolean isFinished() {
+//        return super.isFinished() || finished;
+//    }
 
     @Override
     public void end(boolean interrupted) {
         super.end(interrupted);
 
-        finished = false;
+//        finished = false;
 
         // Ensure everything is off and in its place when the command ends
         transfer.setKickerPosition(false);

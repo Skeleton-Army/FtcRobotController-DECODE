@@ -105,11 +105,11 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whenActive(new ShootCommand(3, shooter, intake, transfer, drive));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whileActiveContinuous(new ShootCommand(1, shooter, intake, transfer, drive));
+                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
