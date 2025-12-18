@@ -3,7 +3,9 @@ package org.firstinspires.ftc.teamcode.commands;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
@@ -16,8 +18,6 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Intake intake;
     private final Transfer transfer;
     private final Drive drive;
-
-//    private boolean finished;
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
         addRequirements(shooter, intake, transfer);
@@ -46,11 +46,15 @@ public class ShootCommand extends SequentialCommandGroup {
                                 shootWithTransfer()
                         ),
                         new InstantCommand(),
-                        () -> !transfer.isArtifactDetected()
+                        () -> !shooter.reachedRPM()
                 ),
 
                 new InstantCommand(() -> transfer.toggleTransfer(true)),
-                waitUntilCanShoot(),
+                new WaitUntilCommand(transfer::isArtifactDetected),
+                new ParallelCommandGroup(
+                        waitUntilCanShoot(),
+                        new WaitCommand(1000)
+                ),
 
                 new InstantCommand(intake::stop),
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
@@ -68,23 +72,15 @@ public class ShootCommand extends SequentialCommandGroup {
     public Command shootWithTransfer() {
         return new SequentialCommandGroup(
                 new InstantCommand(() -> transfer.toggleTransfer(true)),
-                new WaitUntilCommand(transfer::isArtifactDetected),
-                new WaitUntilCommand(() -> !transfer.isArtifactDetected())
+                new WaitUntilCommand(() -> !shooter.reachedRPM())
                         .withTimeout(400),
                 new InstantCommand(() -> transfer.toggleTransfer(false))
         );
     }
 
-//    @Override
-//    public boolean isFinished() {
-//        return super.isFinished() || finished;
-//    }
-
     @Override
     public void end(boolean interrupted) {
         super.end(interrupted);
-
-//        finished = false;
 
         // Ensure everything is off and in its place when the command ends
         transfer.setKickerPosition(false);
