@@ -18,12 +18,14 @@ import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.enums.ShooterMotor;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 
 import java.util.concurrent.TimeUnit;
@@ -123,8 +125,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getRPM() {
-        double motorTPS = flywheel.getCorrectedVelocity();
-        return (motorTPS * 60.0) / flywheel.getCPR();
+        return (getTPS() * 60.0) / flywheel.getCPR();
     }
 
     public double getTargetRPM() {
@@ -193,6 +194,20 @@ public class Shooter extends SubsystemBase {
 
     public double getVerticalOffset() {
         return verticalOffset;
+    }
+
+    public double getTPS() {
+        return flywheel.getCorrectedVelocity();
+    }
+    public double getCurrent(ShooterMotor motor, CurrentUnit currentUnit) {
+        switch (motor) {
+            case TURRET:
+                return turret.getCurrent(currentUnit);
+            case FLYWHEEL:
+                return flywheel.getCurrent(currentUnit);
+            default:
+                return Double.NaN;
+        }
     }
 
     /**

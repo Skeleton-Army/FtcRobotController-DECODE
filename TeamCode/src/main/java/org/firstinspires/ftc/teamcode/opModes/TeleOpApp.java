@@ -2,23 +2,27 @@ package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 
+import android.os.Environment;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
-import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -26,15 +30,22 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
+import org.firstinspires.ftc.teamcode.enums.ShooterMotor;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
+import org.firstinspires.ftc.teamcode.utilities.FlywheelJsonStruct;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.Pose2d;
 import org.psilynx.psikit.core.wpi.Rotation2d;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
@@ -59,6 +70,8 @@ public class TeleOpApp extends ComplexOpMode {
 
     private boolean insideZone;
 
+    private List<FlywheelJsonStruct> flywheelJson;
+
     @Override
     public void initialize() {
         debugMode = Settings.get("debug_mode", false);
@@ -78,6 +91,7 @@ public class TeleOpApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower);
+        flywheelJson = new ArrayList<>(4500); // Educated guess to how much memory to preallocate. This helps with performance.
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -197,7 +211,6 @@ public class TeleOpApp extends ComplexOpMode {
             CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
-        double inchesToMeters = 39.37;
 
         telemetry.addData("Robot x", follower.getPose().getX());
         telemetry.addData("Robot y", follower.getPose().getY());
@@ -216,7 +229,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("hood angle(deg)", (-34.7) * shooter.getRawHoodPosition() + 62.5);
         //telemetry.addData("solution angle(rad)", shooter.solution.getVerticalAngle());
         telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
-        telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
+        telemetry.addData("distance from goal (m): ", inchToMeter(follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL)));
         telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Target RPM", shooter.solution.getVelocity());
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getVelocity()));
@@ -234,7 +247,12 @@ public class TeleOpApp extends ComplexOpMode {
         //telemetry.addData("PodY ticks", follower.getPoseTracker().getLocalizer().getForwardMultiplier());
         telemetry.update();
 
-        Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
+        flywheelJson.add(new FlywheelJsonStruct(shooter.getTPS(), shooter.getRPM(), Math.abs(shooter.getRPM() - shooter.solution.getVelocity()),
+                shooter.getRecoveryTime(), shooter.getCurrent(ShooterMotor.FLYWHEEL, CurrentUnit.AMPS),
+                hardwareMap.voltageSensor.iterator().next().getVoltage(), getRuntime()));
+
+
+        Pose2d robotPose = new Pose2d(inchToMeter(follower.getPose().getX()), inchToMeter(follower.getPose().getY()), new Rotation2d(follower.getPose().getHeading()));
         Logger.recordOutput("Robot Pose", robotPose);
         //Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
@@ -243,6 +261,15 @@ public class TeleOpApp extends ComplexOpMode {
     @Override
     public void end() {
         Settings.set("pose", follower.getPose(), false);
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            File outputJson = new File(Environment.getExternalStorageDirectory() + "/FIRST/flywheelData.json");
+            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+            objectMapper.writeValue(outputJson, flywheelJson);
+
+        } catch (IOException e) {
+            RobotLog.addGlobalWarningMessage("Writing to Json FAILED! \n" + e.getMessage());
+        }
     }
 
     public boolean isInsideLaunchZone() {
@@ -278,5 +305,8 @@ public class TeleOpApp extends ComplexOpMode {
             follower.setPose(new Pose(newPose.getX(), newPose.getY(), currentPose.getHeading()));
             follower.startTeleopDrive(USE_BRAKE_MODE);
         }
+    }
+    private static double inchToMeter(Number inches) {
+        return inches.doubleValue() / 39.37;
     }
 }

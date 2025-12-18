@@ -82,4 +82,8 @@ dependencies {
 
     implementation 'org.psilynx.psikit:core:0.1.0-beta1'
     implementation 'org.psilynx.psikit:ftc:0.1.0-beta1'
+
+    //Do not update FasterXML Jackson
+    //2.10.0 is the latest known good version that doesn't break our code and works with the Android API version on the Control Hub
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.10.0")
 }
