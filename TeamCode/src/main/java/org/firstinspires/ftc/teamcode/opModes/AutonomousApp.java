@@ -86,7 +86,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(42.920, 104.190))
+                                getRelative(new Pose(56.605, 91.127))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -140,6 +140,7 @@ public class AutonomousApp extends ComplexOpMode {
                                     follower::getPose,
                                     getRelative(new Pose(80.864, 65.313)),
                                     spike3End
+
                             )
                     )
                 .setConstantHeadingInterpolation(
