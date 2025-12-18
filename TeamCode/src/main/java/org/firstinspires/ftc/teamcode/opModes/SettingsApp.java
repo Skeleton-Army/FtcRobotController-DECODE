@@ -14,5 +14,6 @@ public class SettingsApp extends SettingsOpMode {
         add("debug_mode", "Debug Mode", new BooleanPrompt("Enable debug mode?", false));
         add("tabletop_mode", "Tabletop Mode", new BooleanPrompt("Enable tabletop mode?", false));
         add("alliance", "Select Alliance", new OptionPrompt<>("Select alliance", Alliance.RED, Alliance.BLUE));
+        add("json", "Flywheel logging", new BooleanPrompt("Enable Json logging of the Flywheel?", false));
     }
 }

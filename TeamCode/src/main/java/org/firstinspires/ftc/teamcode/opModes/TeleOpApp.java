@@ -67,6 +67,7 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean debugMode;
     private boolean tabletopMode;
     private Alliance alliance;
+    private boolean jsonLogging;
 
     private boolean insideZone;
 
@@ -77,6 +78,8 @@ public class TeleOpApp extends ComplexOpMode {
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
+        jsonLogging = Settings.get("json", false);
+
         Pose startPose = new Pose(72, 72);
         if (!debugMode) startPose = Settings.get("pose", new Pose(72, 72));
 
@@ -91,7 +94,9 @@ public class TeleOpApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower);
-        flywheelJson = new ArrayList<>(4500); // Educated guess to how much memory to preallocate. This helps with performance.
+        if (jsonLogging) {
+            flywheelJson = new ArrayList<>(4500); // Educated guess to how much memory to preallocate. This helps with performance.
+        }
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -247,9 +252,11 @@ public class TeleOpApp extends ComplexOpMode {
         //telemetry.addData("PodY ticks", follower.getPoseTracker().getLocalizer().getForwardMultiplier());
         telemetry.update();
 
-        flywheelJson.add(new FlywheelJsonStruct(shooter.getTPS(), shooter.getRPM(), Math.abs(shooter.getRPM() - shooter.solution.getVelocity()),
-                shooter.getRecoveryTime(), shooter.getCurrent(ShooterMotor.FLYWHEEL, CurrentUnit.AMPS),
-                hardwareMap.voltageSensor.iterator().next().getVoltage(), getRuntime()));
+        if (jsonLogging) {
+            flywheelJson.add(new FlywheelJsonStruct(shooter.getTPS(), shooter.getRPM(), Math.abs(shooter.getRPM() - shooter.solution.getVelocity()),
+                    shooter.getRecoveryTime(), shooter.getCurrent(ShooterMotor.FLYWHEEL, CurrentUnit.AMPS),
+                    hardwareMap.voltageSensor.iterator().next().getVoltage(), getRuntime()));
+        }
 
 
         Pose2d robotPose = new Pose2d(inchToMeter(follower.getPose().getX()), inchToMeter(follower.getPose().getY()), new Rotation2d(follower.getPose().getHeading()));
@@ -261,14 +268,16 @@ public class TeleOpApp extends ComplexOpMode {
     @Override
     public void end() {
         Settings.set("pose", follower.getPose(), false);
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            File outputJson = new File(Environment.getExternalStorageDirectory() + "/FIRST/flywheelData.json");
-            objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-            objectMapper.writeValue(outputJson, flywheelJson);
+        if (jsonLogging) {
+            ObjectMapper objectMapper = new ObjectMapper();
+            try {
+                File outputJson = new File(Environment.getExternalStorageDirectory() + "/FIRST/flywheelData.json");
+                objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+                objectMapper.writeValue(outputJson, flywheelJson);
 
-        } catch (IOException e) {
-            RobotLog.addGlobalWarningMessage("Writing to Json FAILED! \n" + e.getMessage());
+            } catch (IOException e) {
+                RobotLog.addGlobalWarningMessage("Writing to Json FAILED! \n" + e.getMessage());
+            }
         }
     }
 
