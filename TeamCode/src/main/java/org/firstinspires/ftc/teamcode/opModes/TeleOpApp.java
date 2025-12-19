@@ -64,7 +64,8 @@ public class TeleOpApp extends ComplexOpMode {
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
-        Pose startPose = Settings.get("pose", new Pose(72, 72));
+        Pose startPose = new Pose(72, 72);
+        if (!debugMode) startPose = Settings.get("pose", new Pose(72, 72));
 
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
@@ -237,6 +238,11 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Robot Pose", robotPose);
         //Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
+    }
+
+    @Override
+    public void end() {
+        Settings.set("pose", follower.getPose(), false);
     }
 
     public boolean isInsideLaunchZone() {

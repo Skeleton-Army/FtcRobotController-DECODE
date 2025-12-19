@@ -9,6 +9,7 @@ import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.pedropathing.follower.Follower;
+import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -65,6 +66,8 @@ public class AutonomousApp extends ComplexOpMode {
     private int gateSpike;
     private boolean push;
 
+    private Command shootCommand;
+
     public PathChain farDriveBack() {
         return follower
                 .pathBuilder()
@@ -86,7 +89,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(42.920, 104.190))
+                                getRelative(new Pose(56.605, 91.127))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -140,6 +143,7 @@ public class AutonomousApp extends ComplexOpMode {
                                     follower::getPose,
                                     getRelative(new Pose(80.864, 65.313)),
                                     spike3End
+
                             )
                     )
                 .setConstantHeadingInterpolation(
@@ -307,6 +311,8 @@ public class AutonomousApp extends ComplexOpMode {
         if (push) startingPose = pushStartingPose;
 
         follower.setStartingPose(startingPose);
+
+        shootCommand = new ShootCommand(shooter, intake, transfer, drive);
     }
 
     @Override
@@ -359,7 +365,7 @@ public class AutonomousApp extends ComplexOpMode {
                         follower,
                         driveBack.get()
                 ),
-                new ShootCommand(shooter, intake, transfer, drive)
+                shootCommand
         );
 
         for (int i = 0; i < pickupOrder.size(); i++) {
@@ -393,7 +399,7 @@ public class AutonomousApp extends ComplexOpMode {
                             () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
                             null
                     ),
-                    new ShootCommand(shooter, intake, transfer, drive)
+                    shootCommand
             );
         }
 
