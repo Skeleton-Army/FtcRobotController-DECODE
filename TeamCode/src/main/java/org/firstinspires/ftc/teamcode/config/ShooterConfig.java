@@ -13,7 +13,7 @@ public class ShooterConfig {
     public static double FLYWHEEL_KI = 0.002;
     public static double FLYWHEEL_KD = 0.1;
     public static double FLYWHEEL_KS = 0;
-    public static double FLYWHEEL_KA = 0;
+    public static double FLYWHEEL_KA = 0.001; //  or 0.01
     public static double FLYWHEEL_KV = 1.66;
 
     public static String TURRET_NAME = "turret";
@@ -24,6 +24,7 @@ public class ShooterConfig {
     public static double TURRET_KD = 0.03;
     public static double TURRET_KS = 0.025;
     public static double TURRET_KV = 0.2;
+    public static double TURRET_KA = 0.001;
     public static double TURRET_MIN = Math.toRadians(-210); // Clockwise
     public static double TURRET_MAX = Math.toRadians(165); // Counter-clockwise
     public static double GEAR_RATIO = (double) 200 / 30;

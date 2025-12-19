@@ -83,7 +83,7 @@ public class Shooter extends SubsystemBase {
         turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
         turretPID.setTolerance(ANGLE_REACHED_THRESHOLD);
 
-        turretFeedforward = new SimpleMotorFeedforward(TURRET_KS, TURRET_KV);
+        turretFeedforward = new SimpleMotorFeedforward(TURRET_KS, TURRET_KV, TURRET_KA);
 
         setHorizontalAngle(0);
 
@@ -116,7 +116,7 @@ public class Shooter extends SubsystemBase {
 
         // Turret PIDF
         double pid = turretPID.calculate(turret.getDistance());
-        double feedforward = turretFeedforward.calculate(-poseTracker.getAngularVelocity());
+        double feedforward = turretFeedforward.calculate(-poseTracker.getAngularVelocity(), poseTracker.getAcceleration().getTheta());
         double result = pid + feedforward;
 
         turret.set(result, voltage);
