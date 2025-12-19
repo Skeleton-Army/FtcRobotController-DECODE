@@ -49,7 +49,6 @@ public class Shooter extends SubsystemBase {
     private double targetTPS;
 
     private final TimerEx timerEx;
-    private final TimerEx startTimer;
 
     public boolean calculatedRecovery = false;
     private double recoveryTime; // in seconds
@@ -95,7 +94,6 @@ public class Shooter extends SubsystemBase {
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
 
         timerEx = new TimerEx(TimeUnit.SECONDS);
-        startTimer = new TimerEx(1, TimeUnit.SECONDS);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
@@ -112,8 +110,6 @@ public class Shooter extends SubsystemBase {
 
         double voltage = voltageSensor.getVoltage();
         flywheel.setVelocity(targetTPS, voltage);
-
-        startTimer.start();
 
         // Turret PIDF
         double pid = turretPID.calculate(turret.getDistance());
