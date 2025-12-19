@@ -9,6 +9,7 @@ import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.pedropathing.follower.Follower;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -21,6 +22,7 @@ import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
 import com.skeletonarmy.marrow.settings.Settings;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
@@ -32,6 +34,9 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
+import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.core.wpi.Pose2d;
+import org.psilynx.psikit.core.wpi.Rotation2d;
 
 import java.util.Collections;
 import java.util.List;
@@ -67,6 +72,8 @@ public class AutonomousApp extends ComplexOpMode {
     private boolean push;
 
     private Command shootCommand;
+
+    private VoltageSensor voltageSensor;
 
     public PathChain farDriveBack() {
         return follower
@@ -338,6 +345,8 @@ public class AutonomousApp extends ComplexOpMode {
                         }
                 )
                 .onComplete(this::afterPrompts);
+
+        voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
 
     @Override
@@ -415,6 +424,19 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void run() {
         telemetry.update();
+
+        final double inchesToMeters = 39.37;
+
+        Pose2d robotPose = new Pose2d((follower.getPose().getX() - 72) / inchesToMeters, (follower.getPose().getY() - 72) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
+        Logger.recordOutput("Robot Pose", robotPose);
+        Logger.recordOutput("Voltage", voltageSensor.getVoltage());
+        Logger.recordOutput("Reached RPM", shooter.reachedRPM());
+        Logger.recordOutput("Reached Angle", shooter.reachedAngle());
+        Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
+        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getVelocity()));
+        Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
+        Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
+        Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
     }
 
     @Override
