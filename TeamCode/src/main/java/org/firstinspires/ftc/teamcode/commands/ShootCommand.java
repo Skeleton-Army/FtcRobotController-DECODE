@@ -50,7 +50,8 @@ public class ShootCommand extends SequentialCommandGroup {
                 ),
 
                 new InstantCommand(() -> transfer.toggleTransfer(true)),
-                new WaitUntilCommand(transfer::isArtifactDetected),
+                new WaitUntilCommand(transfer::isArtifactDetected)
+                        .withTimeout(1000),
                 new ParallelCommandGroup(
                         waitUntilCanShoot(),
                         new WaitCommand(1000)
