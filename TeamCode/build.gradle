@@ -12,8 +12,21 @@
 // Custom definitions may go here
 
 // Include common definitions from above.
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+            url "https://repo.dairy.foundation/releases"
+        }
+    }
+    dependencies {
+        classpath "dev.frozenmilk:Load:0.2.4"
+    }
+}
+
 apply from: '../build.common.gradle'
 apply from: '../build.dependencies.gradle'
+apply plugin: 'dev.frozenmilk.sinister.sloth.load'
 
 android {
     namespace = 'org.firstinspires.ftc.teamcode'
@@ -21,29 +34,52 @@ android {
     packagingOptions {
         jniLibs.useLegacyPackaging true
     }
+
+    testOptions {
+        unitTests.all {
+            useJUnitPlatform()
+        }
+    }
 }
 
 repositories {
-    maven { url = 'https://maven.pedropathing.com' }
+    mavenLocal()
     maven { url = "https://mymaven.bylazar.com/releases" }
     maven { url = "https://repo.dairy.foundation/releases" }
     maven { url = "https://repo.dairy.foundation/snapshots" }
     maven { url = 'https://maven.brott.dev/' }
+    maven { url = 'https://central.sonatype.com/repository/maven-snapshots/' }
+    maven { url = "https://mvnrepository.com/artifact/com.fasterxml.jackson.core/jackson-databind"}
+    maven { url = "https://mvnrepository.com/artifact/org.apache.commons/commons-math3"}
+    mavenCentral()
 }
 
 dependencies {
     implementation project(':FtcRobotController')
 
-    implementation 'com.pedropathing:ftc:2.0.1'
-    implementation 'com.pedropathing:telemetry:0.0.6'
-    implementation 'com.bylazar:fullpanels:1.0.2'
+    testImplementation 'org.junit.jupiter:junit-jupiter:5.10.0'
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.mockito:mockito-core:5.7.0'
 
-    implementation "org.solverslib:core:SNAPSHOT-7cdcc66"
-    implementation "org.solverslib:pedroPathing:SNAPSHOT-7cdcc66"
+    implementation 'com.pedropathing:ftc:2.0.4'
+    implementation 'com.pedropathing:telemetry:1.0.0'
+    implementation 'com.bylazar:fullpanels:1.0.9'
 
-    implementation "io.github.skeleton-army.marrow:core:0.1.0"
-    implementation "io.github.skeleton-army.marrow:solverslib:0.1.0"
+    implementation "org.solverslib:core:0.3.3"
+    implementation "org.solverslib:pedroPathing:0.3.3"
 
-    implementation 'com.acmerobotics.dashboard:dashboard:0.5.0'
-    implementation "page.j5155.AdvantageScope:lite:v26.0.0"
+    implementation "com.skeletonarmyftc.marrow:core:1.0.0-SNAPSHOT"
+    implementation 'com.pedropathing:ftc:2.0.4'
+    implementation 'com.pedropathing:telemetry:1.0.0'
+    implementation 'com.bylazar:fullpanels:1.0.9'
+
+    implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
+    implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.4.17")
+
+    implementation "org.apache.commons:commons-math3:3.6.1"
+
+    implementation("page.j5155.AdvantageScope:lite:v26.0.0")
+
+    implementation 'org.psilynx.psikit:core:0.1.0-beta1'
+    implementation 'org.psilynx.psikit:ftc:0.1.0-beta1'
 }
