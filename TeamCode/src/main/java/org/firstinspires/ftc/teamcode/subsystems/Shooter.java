@@ -74,6 +74,7 @@ public class Shooter extends SubsystemBase {
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
         flywheel.setInverted(FLYWHEEL_INVERTED);
+        flywheel.setDelayCompensation(FLYWHEEL_DELAY_SEC);
 
         turret = new ModifiedMotorEx(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
         turret.setRunMode(Motor.RunMode.RawPower);
@@ -116,7 +117,7 @@ public class Shooter extends SubsystemBase {
 
         // Turret PIDF
         double pid = turretPID.calculate(turret.getDistance());
-        double feedforward = turretFeedforward.calculate(-poseTracker.getAngularVelocity(), poseTracker.getAcceleration().getTheta());
+        double feedforward = turretFeedforward.calculate(-poseTracker.getAngularVelocity(), -poseTracker.getAcceleration().getTheta());
         double result = pid + feedforward;
 
         turret.set(result, voltage);

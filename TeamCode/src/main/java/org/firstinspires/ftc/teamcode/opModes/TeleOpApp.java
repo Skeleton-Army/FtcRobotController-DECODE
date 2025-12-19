@@ -233,7 +233,7 @@ public class TeleOpApp extends ComplexOpMode {
         //telemetry.addData("PodY ticks", follower.getPoseTracker().getLocalizer().getForwardMultiplier());
         telemetry.update();
 
-        Pose2d robotPose = new Pose2d(follower.getPose().getX() / inchesToMeters, follower.getPose().getY() / inchesToMeters, new Rotation2d(follower.getPose().getHeading()));
+        Pose2d robotPose = new Pose2d((follower.getPose().getX() - 72) / inchesToMeters, (follower.getPose().getY() - 72) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
         Logger.recordOutput("Robot Pose", robotPose);
         //Logger.recordOutput("Shooter/Turret Target", Shooter.calculateTurretAngle(follower.getPose().getX(), follower.getPose().getY(), follower.getPose().getHeading()));
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());

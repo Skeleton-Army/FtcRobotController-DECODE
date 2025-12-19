@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
+import static org.firstinspires.ftc.teamcode.config.TransferConfig.*;
 
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
