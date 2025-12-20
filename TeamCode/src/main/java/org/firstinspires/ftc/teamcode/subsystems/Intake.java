@@ -22,6 +22,10 @@ public class Intake extends SubsystemBase {
         intake.set(-INTAKE_POWER);
     }
 
+    public void transfer() {
+        intake.set(-INTAKE_TRANSFER_POWER);
+    }
+
     public void release() {
         intake.set(INTAKE_POWER);
     }

@@ -71,8 +71,6 @@ public class AutonomousApp extends ComplexOpMode {
     private int gateSpike;
     private boolean push;
 
-    private Command shootCommand;
-
     private VoltageSensor voltageSensor;
 
     public PathChain farDriveBack() {
@@ -318,8 +316,6 @@ public class AutonomousApp extends ComplexOpMode {
         if (push) startingPose = pushStartingPose;
 
         follower.setStartingPose(startingPose);
-
-        shootCommand = new ShootCommand(shooter, intake, transfer, drive);
     }
 
     @Override
@@ -374,7 +370,7 @@ public class AutonomousApp extends ComplexOpMode {
                         follower,
                         driveBack.get()
                 ),
-                shootCommand
+                new ShootCommand(shooter, intake, transfer, drive)
         );
 
         for (int i = 0; i < pickupOrder.size(); i++) {
@@ -389,9 +385,11 @@ public class AutonomousApp extends ComplexOpMode {
 
             seq.addCommands(
                     new InstantCommand(() -> intake.collect()),
+                    new InstantCommand(() -> transfer.toggleTransfer(true, true)),
                     new InstantCommand(() -> telemetry.addData("Current", spikeNumber)),
                     new FollowPathCommand(follower, selectedPath),
-                    new InstantCommand(() -> intake.stop())
+                    new InstantCommand(() -> intake.stop()),
+                    new InstantCommand(() -> transfer.toggleTransfer(false))
             );
 
             if (spikeNumber == gateSpike) {
@@ -408,7 +406,7 @@ public class AutonomousApp extends ComplexOpMode {
                             () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
                             null
                     ),
-                    shootCommand
+                    new ShootCommand(shooter, intake, transfer, drive)
             );
         }
 

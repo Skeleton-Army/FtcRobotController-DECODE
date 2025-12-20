@@ -59,6 +59,7 @@ public class TeleOpApp extends ComplexOpMode {
 
     private boolean insideZone;
 
+    Pose2d robotPose;
     @Override
     public void initialize() {
         debugMode = Settings.get("debug_mode", false);
@@ -79,13 +80,19 @@ public class TeleOpApp extends ComplexOpMode {
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower);
 
+
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(new InstantCommand(() -> intake.collect(), intake))
+                .whenPressed(
+                        new InstantCommand(() -> {
+                            intake.collect();
+                            transfer.toggleTransfer(true, true);
+                        }, intake)
+                )
                 .whenReleased(new InstantCommand(() -> intake.stop(), intake));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
@@ -198,10 +205,11 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         final double inchesToMeters = 39.37;
+        robotPose = new Pose2d((72 - follower.getPose().getX()) / inchesToMeters, (72 - follower.getPose().getY()) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
 
-        telemetry.addData("Robot x", follower.getPose().getX());
-        telemetry.addData("Robot y", follower.getPose().getY());
-        telemetry.addData("Robot heading", follower.getPose().getHeading());
+        telemetry.addData("Robot x", robotPose.getX());
+        telemetry.addData("Robot y", robotPose.getY());
+        telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
         telemetry.addData("!Inside LAUNCH ZONE", insideZone);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
@@ -227,7 +235,6 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
         telemetry.update();
 
-        Pose2d robotPose = new Pose2d((follower.getPose().getX() - 72) / inchesToMeters, (follower.getPose().getY() - 72) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
         Logger.recordOutput("Robot Pose", robotPose);
         Logger.recordOutput("Voltage", voltageSensor.getVoltage());
         Logger.recordOutput("Inside LAUNCH ZONE", insideZone);

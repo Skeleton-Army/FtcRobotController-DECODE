@@ -36,7 +36,7 @@ public class ShootCommand extends SequentialCommandGroup {
         return new SequentialCommandGroup(
                 waitUntilCanShoot(),
 
-                new InstantCommand(intake::collect),
+                new InstantCommand(intake::transfer),
                 shootWithTransfer(),
 
                 // Skip if first shot timed-out (only one artifact inside robot)
@@ -54,7 +54,7 @@ public class ShootCommand extends SequentialCommandGroup {
                         .withTimeout(1000),
                 new ParallelCommandGroup(
                         waitUntilCanShoot(),
-                        new WaitCommand(1000)
+                        new WaitCommand(500)
                 ),
 
                 new InstantCommand(intake::stop),

@@ -35,7 +35,7 @@ public class Transfer extends SubsystemBase {
     }
 
     public void toggleTransfer(boolean isOn, boolean reversed) {
-        transfer.set(isOn ? (reversed ? -1 : 0) * TRANSFER_POWER : 0);
+        transfer.set(isOn ? (reversed ? -1 : 0) * TRANSFER_REVERSE_POWER : 0);
     }
 
     public Command kick() {
