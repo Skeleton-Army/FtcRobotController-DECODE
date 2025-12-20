@@ -266,24 +266,14 @@ public class TeleOpApp extends ComplexOpMode {
         final double X_OFFSET = WIDTH / 2.0;
         final double Y_OFFSET = HEIGHT / 2.0;
 
-        final Pose FIELD_BOTTOM_LEFT = new Pose(0, 0);
-        final Pose FIELD_BOTTOM_RIGHT = new Pose(144, 0);
-        final double MAX_RESET_DISTANCE = 20.0;
-
-        double distToBottomLeft = currentPose.distanceFrom(FIELD_BOTTOM_LEFT);
-        double distToBottomRight = currentPose.distanceFrom(FIELD_BOTTOM_RIGHT);
-        double minDistance = Math.min(distToBottomLeft, distToBottomRight);
-
-        if (minDistance <= MAX_RESET_DISTANCE) {
-            Pose newPose;
-            if (distToBottomLeft <= distToBottomRight) {
-                newPose = new Pose(X_OFFSET, Y_OFFSET);
-            } else {
-                newPose = new Pose( 144 - X_OFFSET, Y_OFFSET);
-            }
-
-            follower.setPose(new Pose(newPose.getX(), newPose.getY(), currentPose.getHeading()));
-            follower.startTeleopDrive(USE_BRAKE_MODE);
+        Pose newPose;
+        if (alliance == Alliance.RED) {
+            newPose = new Pose(X_OFFSET, Y_OFFSET);
+        } else {
+            newPose = new Pose(144 - X_OFFSET, Y_OFFSET);
         }
+
+        follower.setPose(new Pose(newPose.getX(), newPose.getY(), currentPose.getHeading()));
+        follower.startTeleopDrive(USE_BRAKE_MODE);
     }
 }
