@@ -316,6 +316,7 @@ public class AutonomousApp extends ComplexOpMode {
         if (push) startingPose = pushStartingPose;
 
         follower.setStartingPose(startingPose);
+        Settings.set("pose", startingPose, false);
     }
 
     @Override
