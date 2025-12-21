@@ -5,6 +5,8 @@ import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.CoordinateSystem;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -203,8 +205,12 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         final double inchesToMeters = 39.37;
-        Pose2d robotPose = new Pose2d((72 - follower.getPose().getX()) / inchesToMeters, (72 - follower.getPose().getY()) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
+        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
+        telemetry.addData("Pedro Robot x", follower.getPose().getX());
+        telemetry.addData("Pedro Robot y", follower.getPose().getY());
+        telemetry.addData("Pedro Robot heading", Math.toDegrees(follower.getPose().getHeading()));
         telemetry.addData("Robot x", robotPose.getX());
         telemetry.addData("Robot y", robotPose.getY());
         telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());

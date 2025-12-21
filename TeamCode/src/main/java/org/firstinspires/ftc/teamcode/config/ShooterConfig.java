@@ -22,7 +22,7 @@ public class ShooterConfig {
     public static double ANGLE_REACHED_THRESHOLD = Math.toRadians(10);
     public static double TURRET_KP = 1.5;
     public static double TURRET_KI = 0.01;
-    public static double TURRET_KD = 0.1;
+    public static double TURRET_KD = 0.04;
     public static double TURRET_KS = 0.025;
     public static double TURRET_KV = 0.22;
     public static double TURRET_KA = 0.01;

@@ -38,6 +38,8 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 new InstantCommand(intake::transfer),
                 shootWithTransfer(),
+                new WaitCommand(500),
+                new InstantCommand(intake::collect),
 
                 // Skip if first shot timed-out (only one artifact inside robot)
                 new ConditionalCommand(
@@ -74,7 +76,7 @@ public class ShootCommand extends SequentialCommandGroup {
         return new SequentialCommandGroup(
                 new InstantCommand(() -> transfer.toggleTransfer(true)),
                 new WaitUntilCommand(() -> !shooter.reachedRPM())
-                        .withTimeout(400),
+                        .withTimeout(700),
                 new InstantCommand(() -> transfer.toggleTransfer(false))
         );
     }
