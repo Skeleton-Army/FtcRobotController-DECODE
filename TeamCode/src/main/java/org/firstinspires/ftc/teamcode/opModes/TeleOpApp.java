@@ -19,6 +19,7 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.teamcode.calculators.TwoZonesCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -71,7 +72,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setPose(startPose);
 
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
+        IShooterCalculator shooterCalc = new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);

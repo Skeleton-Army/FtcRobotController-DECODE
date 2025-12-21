@@ -24,6 +24,7 @@ import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.calculators.TwoZonesCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
@@ -305,7 +306,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         follower = Constants.createFollower(hardwareMap);
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower);
