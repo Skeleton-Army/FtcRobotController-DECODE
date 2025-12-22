@@ -91,9 +91,13 @@ public class TeleOpApp extends ComplexOpMode {
                         new InstantCommand(() -> {
                             intake.collect();
                             transfer.toggleTransfer(true, true);
-                        }, intake)
+                        }, intake, transfer)
                 )
-                .whenReleased(new InstantCommand(() -> intake.stop(), intake));
+                .whenReleased(new InstantCommand(() -> {
+                            intake.stop();
+                            transfer.toggleTransfer(false);
+                        }, intake, transfer)
+                );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
                 .whenPressed(new InstantCommand(() -> {
