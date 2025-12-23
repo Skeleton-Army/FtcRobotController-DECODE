@@ -57,9 +57,6 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean tabletopMode;
     private Alliance alliance;
 
-    private boolean insideZone;
-
-    Pose2d robotPose;
     @Override
     public void initialize() {
         debugMode = Settings.get("debug_mode", false);
@@ -204,13 +201,13 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         final double inchesToMeters = 39.37;
-        robotPose = new Pose2d((72 - follower.getPose().getX()) / inchesToMeters, (72 - follower.getPose().getY()) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
+        Pose2d robotPose = new Pose2d((72 - follower.getPose().getX()) / inchesToMeters, (72 - follower.getPose().getY()) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
 
         telemetry.addData("Robot x", robotPose.getX());
         telemetry.addData("Robot y", robotPose.getY());
         telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("!Inside LAUNCH ZONE", insideZone);
+        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
@@ -236,7 +233,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         Logger.recordOutput("Robot Pose", robotPose);
         Logger.recordOutput("Voltage", voltageSensor.getVoltage());
-        Logger.recordOutput("Inside LAUNCH ZONE", insideZone);
+        Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone());
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
