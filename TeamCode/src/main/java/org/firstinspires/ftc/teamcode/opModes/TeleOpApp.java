@@ -78,8 +78,7 @@ public class TeleOpApp extends ComplexOpMode {
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
-        drive = new Drive(follower);
-
+        drive = new Drive(follower, alliance);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
