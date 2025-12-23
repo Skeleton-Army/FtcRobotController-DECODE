@@ -9,17 +9,22 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+
 @TeleOp
 public class ArtifactDetection extends OpMode {
     Limelight3A limelight;
-    MultipleTelemetry tolematry;
     Follower follower;
     // Hc: Height of the Limelight lens from the floor (e.g., 0.35m or ~13.78 inches)
 
 
     @Override
     public void init() {
-        tolematry = new MultipleTelemetry(FtcDashboard.getInstance().getTelemetry(), telemetry);
+        telemetry = new MultipleTelemetry(FtcDashboard.getInstance().getTelemetry(), telemetry);
+
+        follower = Constants.createFollower(hardwareMap);
+        follower.startTeleopDrive(true);
+
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(ArtifactTrackingConfig.PIPELINE_INDEX);
         // 0: apriltag detection
@@ -33,27 +38,25 @@ public class ArtifactDetection extends OpMode {
 
     @Override
     public void loop() {
-        // Update odometry first
-        if (follower != null) {
-            follower.update();
-        } else {
-            telemetry.addData("Error", "Follower (Pedro Pathing) is not initialized!");
-            return;
-        }
+        follower.update();
+
         LLResult llResult = limelight.getLatestResult();
         if (llResult != null) {
-            tolematry.addData("Tx: ", llResult.getTx());
-            tolematry.addData("Ty: ", llResult.getTy());
-            tolematry.addData("Ta: ", llResult.getTa());
 
-            double ArtifactDistance = getDistance(llResult.getPythonOutput(),ArtifactTrackingConfig.limelightMountAngleDegrees,ArtifactTrackingConfig.goalHeightInches,ArtifactTrackingConfig.limelightLensHeightInches);
+
+            double[] llPytohn = llResult.getPythonOutput();
+
+            double ArtifactDistance = getDistance(llPytohn,ArtifactTrackingConfig.LIMELIGHT_MOUNT_ANGLE,ArtifactTrackingConfig.ARTIFACT_HEIGHT_FROM_FLOOR,ArtifactTrackingConfig.LENS_HEIGHT_INCHES);
             Pose robotPose = follower.getPose();
             double[] ArtifactFieldPosition = getFieldPosition(ArtifactDistance,llResult.getPythonOutput(),robotPose);
-            tolematry.addData("ArtifactX", ArtifactFieldPosition[0]);
-            tolematry.addData("ArtifactY", ArtifactFieldPosition[1]);
+
+            telemetry.addData("tx: ", llPytohn[0]);
+            telemetry.addData("ty: ", llPytohn[1]);
+            telemetry.addData("ArtifactX", ArtifactFieldPosition[0]);
+            telemetry.addData("ArtifactY", ArtifactFieldPosition[1]);
 
         }
-        tolematry.update();
+        telemetry.update();
     }
     public double getDistance(double[] llPyOut, double limelightMountAngleDegrees, double goalHeightInches, double limelightLensHeightInches){
         double targetOffsetAngle_Vertical = llPyOut[1];
@@ -72,7 +75,7 @@ public class ArtifactDetection extends OpMode {
         double thetaRad = Math.toRadians(anglesDeg[0]);
 
         // Calculate offsets
-        double deltaX = ArtifactDistance * Math.cos(thetaRad);
+        double deltaX = (ArtifactDistance + ArtifactTrackingConfig.X_OFFSET - ArtifactTrackingConfig.Y_OFFSET) * Math.cos(thetaRad);
         double deltaY = ArtifactDistance * Math.sin(thetaRad);
 
         // Field position
