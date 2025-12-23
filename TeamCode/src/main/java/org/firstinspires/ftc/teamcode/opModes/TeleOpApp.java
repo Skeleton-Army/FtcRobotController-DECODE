@@ -36,8 +36,9 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.wpi.Pose2d;
-import org.psilynx.psikit.core.wpi.Rotation2d;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Rotation2d;
 
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
@@ -60,6 +61,8 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean tabletopMode;
     private Alliance alliance;
 
+    final double inchesToMeters = 39.37;
+
     @Override
     public void initialize() {
         debugMode = Settings.get("debug_mode", false);
@@ -79,8 +82,7 @@ public class TeleOpApp extends ComplexOpMode {
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
-        drive = new Drive(follower);
-
+        drive = new Drive(follower, alliance);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -209,7 +211,6 @@ public class TeleOpApp extends ComplexOpMode {
             CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
-        final double inchesToMeters = 39.37;
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 

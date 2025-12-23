@@ -5,6 +5,7 @@ import static org.firstinspires.ftc.teamcode.config.DriveConfig.*;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.seattlesolvers.solverslib.command.Command;
@@ -15,16 +16,20 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
+import org.firstinspires.ftc.teamcode.enums.Alliance;
+
 import java.util.Arrays;
 import java.util.Collections;
 
 public class Drive extends SubsystemBase {
     private final Follower follower;
+    private final Alliance alliance;
 
     private boolean shootingMode;
 
-    public Drive(Follower follower) {
+    public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
+        this.alliance = alliance;
     }
 
     @Override
@@ -41,7 +46,7 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            new Pose(38.5, 33.5)
+                                            getRelative(new Pose(38.5, 33.5))
                                     )
                             )
                             .setLinearHeadingInterpolation(
@@ -130,5 +135,21 @@ public class Drive extends SubsystemBase {
         }
 
         return closest;
+    }
+
+    private Pose getRelative(Pose originalPose) {
+        if (alliance == Alliance.RED) {
+            return originalPose.mirror();
+        }
+
+        return originalPose;
+    }
+
+    private double getRelative(double headingRad) {
+        if (alliance == Alliance.RED) {
+            return MathFunctions.normalizeAngle(Math.PI - headingRad);
+        }
+
+        return headingRad;
     }
 }

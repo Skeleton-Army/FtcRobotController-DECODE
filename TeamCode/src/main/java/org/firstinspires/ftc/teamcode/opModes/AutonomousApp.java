@@ -310,7 +310,7 @@ public class AutonomousApp extends ComplexOpMode {
         shooter = new Shooter(hardwareMap, follower.poseTracker, new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
-        drive = new Drive(follower);
+        drive = new Drive(follower, alliance);
 
         setupPaths();
 
