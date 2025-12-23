@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -118,7 +119,7 @@ public class AutonomousApp extends ComplexOpMode {
         farPaths[0] = follower
                 .pathBuilder()
                 .addPath(
-                        new BezierCurve(
+                        new BezierLine(
                                 follower::getPose,
                                 spike1End
                         )
@@ -322,6 +323,9 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void initialize() {
+        Settings.set("debug_mode", false, true);
+        Settings.set("tabletop_mode", false, true);
+
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
                 .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
@@ -429,7 +433,9 @@ public class AutonomousApp extends ComplexOpMode {
 
         final double inchesToMeters = 39.37;
 
-        Pose2d robotPose = new Pose2d((follower.getPose().getX() - 72) / inchesToMeters, (follower.getPose().getY() - 72) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
+        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
+
         Logger.recordOutput("Robot Pose", robotPose);
         Logger.recordOutput("Voltage", voltageSensor.getVoltage());
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());

@@ -24,6 +24,7 @@ import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
+import org.psilynx.psikit.core.Logger;
 
 import java.util.concurrent.TimeUnit;
 
@@ -154,6 +155,12 @@ public class Shooter extends SubsystemBase {
     public void setHoodPosition(double angle) {
         hood.set(MathFunctions.clamp(angle, HOOD_POSSIBLE_MIN, HOOD_POSSIBLE_MAX));
     }
+
+    // get hood angle in deg
+    public double getHoodAngle() {
+        return (-34.7) * getRawHoodPosition() + 62.5;
+    }
+
 
     public void setHorizontalManualMode(boolean enabled) {
         horizontalManualMode = enabled;

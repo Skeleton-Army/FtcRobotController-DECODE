@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import android.util.Log;
+
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -8,10 +10,13 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.core.mechanism.LoggedMechanism2d;
 
 public class ShootCommand extends SequentialCommandGroup {
     private final Shooter shooter;
@@ -67,7 +72,8 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 new InstantCommand(intake::stop),
                 new InstantCommand(() -> transfer.toggleTransfer(false)),
-                transfer.kick()
+                transfer.kick(),
+                new InstantCommand(this::recordShot)
         );
     }
 
@@ -87,6 +93,11 @@ public class ShootCommand extends SequentialCommandGroup {
         );
     }
 
+    public void recordShot() {
+        Logger.recordOutput("Shot/RPM: ", shooter.getRPM());
+        Logger.recordOutput("Shot/Angle hood: ", shooter.getHoodAngle());
+        Logger.recordOutput("Shot/Turret angle error (deg): ", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
+    }
     @Override
     public void end(boolean interrupted) {
         super.end(interrupted);

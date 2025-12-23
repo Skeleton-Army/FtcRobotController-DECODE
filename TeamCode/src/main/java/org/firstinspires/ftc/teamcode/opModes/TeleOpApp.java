@@ -73,6 +73,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setPose(startPose);
+        follower.setMaxPower(1);
 
         IShooterCalculator shooterCalc = new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
@@ -127,7 +128,7 @@ public class TeleOpApp extends ComplexOpMode {
                 .whileHeld(
                         new InstantCommand(() -> {
                             if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() + 0.01);
-                            else shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.3);
+                            else shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.05);
                         })
                 );
 
@@ -135,7 +136,7 @@ public class TeleOpApp extends ComplexOpMode {
                 .whileHeld(
                         new InstantCommand(() -> {
                             if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() - 0.01);
-                            else shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.3);
+                            else shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.05);
                         })
                 );
 
@@ -212,9 +213,9 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
-        telemetry.addData("Pedro Robot x", follower.getPose().getX());
-        telemetry.addData("Pedro Robot y", follower.getPose().getY());
-        telemetry.addData("Pedro Robot heading", Math.toDegrees(follower.getPose().getHeading()));
+        telemetry.addData("Pedro Robot x", 72 - follower.getPose().getX());
+        telemetry.addData("Pedro Robot y", 72 - follower.getPose().getY());
+        telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot x", robotPose.getX());
         telemetry.addData("Robot y", robotPose.getY());
         telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
@@ -226,7 +227,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Turret solution error (deg)", shooter.solution.getHorizontalAngle() - shooter.getTurretAngle(AngleUnit.DEGREES));
 
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
-        telemetry.addData("hood angle(deg)", (-34.7) * shooter.getRawHoodPosition() + 62.5);
+        telemetry.addData("hood angle(deg)", shooter.getHoodAngle());
         telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
         telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
@@ -252,7 +253,9 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getVelocity()));
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
+        Logger.recordOutput("Shooter/Hood Angle (deg)", shooter.getHoodAngle());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        Logger.recordOutput("Turret/Turret Angle error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
     }
 
     @Override
