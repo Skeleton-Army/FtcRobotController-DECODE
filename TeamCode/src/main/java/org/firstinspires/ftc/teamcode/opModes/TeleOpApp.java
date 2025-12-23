@@ -33,11 +33,13 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.wpi.Pose2d;
-import org.psilynx.psikit.core.wpi.Rotation2d;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Rotation2d;
 
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
+    Pose2d robotPose;
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
     private final PolygonZone robotZone = new PolygonZone(17, 17);
@@ -56,6 +58,8 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean debugMode;
     private boolean tabletopMode;
     private Alliance alliance;
+
+    final double inchesToMeters = 39.37;
 
     @Override
     public void initialize() {
@@ -201,8 +205,7 @@ public class TeleOpApp extends ComplexOpMode {
             CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
-        final double inchesToMeters = 39.37;
-        Pose2d robotPose = new Pose2d((72 - follower.getPose().getX()) / inchesToMeters, (72 - follower.getPose().getY()) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
+        robotPose = new Pose2d((72 - follower.getPose().getX()) / inchesToMeters, (72 - follower.getPose().getY()) / inchesToMeters, new Rotation2d(follower.getPose().getHeading() + Math.toRadians(90)));
 
         telemetry.addData("Robot x", robotPose.getX());
         telemetry.addData("Robot y", robotPose.getY());
@@ -233,6 +236,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.update();
 
         Logger.recordOutput("Robot Pose", robotPose);
+
         Logger.recordOutput("Voltage", voltageSensor.getVoltage());
         Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone());
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
