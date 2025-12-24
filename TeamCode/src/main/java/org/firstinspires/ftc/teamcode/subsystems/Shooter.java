@@ -110,7 +110,8 @@ public class Shooter extends SubsystemBase {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity());
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
-        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
+        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, false);
+        //if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, true); // for hood correction
         setRPM(solution.getVelocity());
 
         calculateRecovery();
@@ -210,7 +211,13 @@ public class Shooter extends SubsystemBase {
 
        * @param angleRad the hood angle given by the calculations (radians)
      **/
-    public void setVerticalAngle(double angleRad) {
+    public void setVerticalAngle(double angleRad, boolean useCorrection) {
+        if (useCorrection) {
+            if (getTargetRPM() - getRPM() > 0) {
+                double correction = (getTargetRPM() - getRPM()) * HOOD_COMPENSATION;
+                angleRad += correction;
+            }
+        }
         double normalized = (angleRad - HOOD_MIN) / (HOOD_MAX - HOOD_MIN); // Normalized/converted to servo position
         double invertedNormalized = 1 - normalized;
 

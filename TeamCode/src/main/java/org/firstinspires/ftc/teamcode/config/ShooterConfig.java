@@ -42,4 +42,5 @@ public class ShooterConfig {
     public static double HOOD_POSSIBLE_MAX = 0.9;
     public static double HOOD_MIN = Math.toRadians(27.8);
     public static double HOOD_MAX = Math.toRadians(62.5);
+    public static double  HOOD_COMPENSATION = 0.01;
 }
