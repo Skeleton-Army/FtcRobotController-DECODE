@@ -100,7 +100,8 @@ public class ShooterCalculator implements IShooterCalculator {
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
-                velocityToRPM(newSpeed)
+                velocityToRPM(newSpeed),
+                newSpeed
         );
     }
 }

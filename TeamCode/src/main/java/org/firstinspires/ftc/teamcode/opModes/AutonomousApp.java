@@ -37,8 +37,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.wpi.Pose2d;
-import org.psilynx.psikit.core.wpi.Rotation2d;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Rotation2d;
 
 import java.util.Collections;
 import java.util.List;

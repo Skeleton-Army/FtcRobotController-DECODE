@@ -23,8 +23,13 @@ import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.utilities.Debugger;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.core.wpi.math.Pose3d;
+import org.psilynx.psikit.core.wpi.math.Rotation3d;
+import org.psilynx.psikit.core.wpi.math.Transform3d;
+import org.psilynx.psikit.core.wpi.math.Translation3d;
 
 import java.util.concurrent.TimeUnit;
 
@@ -64,6 +69,7 @@ public class Shooter extends SubsystemBase {
 
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
+    private double lastshotRPM = getRPM();
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -96,6 +102,7 @@ public class Shooter extends SubsystemBase {
         timerEx = new TimerEx(TimeUnit.SECONDS);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
+        lastshotRPM = getRPM();
     }
 
     @Override
@@ -221,8 +228,21 @@ public class Shooter extends SubsystemBase {
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
 
+    // returns true if we just shot, otherwise false
+    private boolean wasBallshot() {
+
+        if ((Math.abs(getTargetRPM() - getRPM()) >  SHOT_RPM_DROP) && (Math.abs(lastshotRPM - getRPM()) > SHOT_RPM_DROP)) {
+            return true;
+        }
+
+        lastshotRPM = getRPM();
+        return false;
+    }
+
+    // checks how much time it took for the flywheel to reach the setpoint
+    // NOTE: the setpoint may CHANGE, so this function checks the time it took for the flywheel to follow the targetRPM
     private void calculateRecovery() {
-        if (getTargetRPM() - getRPM() > RPM_REACHED_THRESHOLD) {
+        if (wasBallshot()) {
             if (!calculatedRecovery) {
                 timerEx.restart();
                 timerEx.start();
@@ -230,7 +250,8 @@ public class Shooter extends SubsystemBase {
                 shotHoodAngle = Math.toDegrees(solution.getVerticalAngle());
                 shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
                 shotFlywheelRPM = getRPM();
-                shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) * inchesToMeters;
+                shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) / inchesToMeters;
+                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(poseTracker.getPose().getX(), poseTracker.getPose().getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec() * inchesToMeters, shotHoodAngle, 2, 0.2));
             }
         } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
             recoveryTime = timerEx.getElapsed();
