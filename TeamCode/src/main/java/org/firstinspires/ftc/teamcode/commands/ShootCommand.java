@@ -39,7 +39,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
     private Command cycle() {
         return new SequentialCommandGroup(
-                waitUntilCanShoot(),
+                //waitUntilCanShoot(),
 
                 new ParallelCommandGroup(
                         new SequentialCommandGroup(
@@ -55,7 +55,7 @@ public class ShootCommand extends SequentialCommandGroup {
                 // Skip if first shot timed-out (only one artifact inside robot)
                 new ConditionalCommand(
                         new SequentialCommandGroup(
-                                waitUntilCanShoot(),
+                                //waitUntilCanShoot(),
                                 shootWithTransfer()
                         ),
                         new InstantCommand(),
@@ -66,8 +66,8 @@ public class ShootCommand extends SequentialCommandGroup {
                 new WaitUntilCommand(transfer::isArtifactDetected)
                         .withTimeout(1000),
                 new ParallelCommandGroup(
-                        waitUntilCanShoot(),
-                        new WaitCommand(500)
+                        //kWaitUntilCanShoot(),
+                        new WaitCommand(10)
                 ),
 
                 new InstantCommand(intake::stop),

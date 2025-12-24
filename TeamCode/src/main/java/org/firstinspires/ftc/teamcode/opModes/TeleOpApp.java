@@ -84,6 +84,20 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
 
+        gamepadEx2.getGamepadButton(GamepadKeys.Button.SQUARE)
+                .whenPressed(
+                        new InstantCommand(() -> {
+                            intake.collect();
+                            transfer.toggleTransfer(true, false);
+                        })
+                )
+                .whenReleased(new InstantCommand(() -> {
+                            intake.stop();
+                            transfer.toggleTransfer(false);
+                        }, intake, transfer)
+                );
+
+
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
                 .whenPressed(
                         new InstantCommand(() -> {
@@ -252,6 +266,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Shooter/Hood Angle (deg)", shooter.getHoodAngle());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         Logger.recordOutput("Turret/Turret Angle error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
+        Logger.recordOutput("Turret/Turret angle solution", Math.toDegrees(shooter.solution.getHorizontalAngle()));
     }
 
     @Override

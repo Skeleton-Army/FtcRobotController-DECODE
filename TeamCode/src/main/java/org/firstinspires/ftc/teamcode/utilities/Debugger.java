@@ -14,6 +14,7 @@ public class Debugger {
             Translation3d startPos,
             double v0,
             double theta,
+            double phi,
             double totalTime,
             double dt
     ) {
@@ -22,14 +23,20 @@ public class Debugger {
 
         final double g = 9.81;
 
-        double vX = v0 * Math.cos(theta);
-        double vZ = v0 * Math.sin(theta);
+        double cosT = Math.cos(theta);
+        double sinT = Math.sin(theta);
+        double cosP = Math.cos(phi);
+        double sinP = Math.sin(phi);
+
+        double vX = v0 * cosT * cosP;
+        double vY = v0 * cosT * sinP;
+        double vZ = v0 * sinT;
 
         for (int i = 0; i < steps; i++) {
             double t = i * dt;
 
             double x = startPos.getX() + vX * t;
-            double y = startPos.getY();
+            double y = startPos.getY() + vY * t;
             double z = startPos.getZ() + vZ * t - 0.5 * g * t * t;
 
             trajectory[i] = new Translation3d(x, y, z);

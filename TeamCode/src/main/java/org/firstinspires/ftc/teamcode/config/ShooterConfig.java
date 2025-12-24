@@ -7,12 +7,12 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor.GoBILDA;
 public class ShooterConfig {
     static double metersToInches = 39.37;
 
-    public static double SHOOT_HEIGHT = 0.4 * metersToInches;
+    public static double SHOOT_HEIGHT = 0.4;
     public static String FLYWHEEL_NAME = "flywheel";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL_INVERTED = true;
     public static int RPM_REACHED_THRESHOLD = 50;
-    public static int SHOT_RPM_DROP = 400;
+    public static int SHOT_RPM_DROP = 200;
     public static double FLYWHEEL_KP = 2.4;
     public static double FLYWHEEL_KI = 0.002;
     public static double FLYWHEEL_KD = 0.1;
@@ -42,5 +42,5 @@ public class ShooterConfig {
     public static double HOOD_POSSIBLE_MAX = 0.9;
     public static double HOOD_MIN = Math.toRadians(27.8);
     public static double HOOD_MAX = Math.toRadians(62.5);
-    public static double  HOOD_COMPENSATION = 0.01;
+    public static double  HOOD_COMPENSATION = 0.0006;
 }

@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 
 import androidx.core.math.MathUtils;
 
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
@@ -26,7 +27,9 @@ import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.utilities.Debugger;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 import org.psilynx.psikit.core.Logger;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Pose3d;
+import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Rotation3d;
 import org.psilynx.psikit.core.wpi.math.Transform3d;
 import org.psilynx.psikit.core.wpi.math.Translation3d;
@@ -69,7 +72,7 @@ public class Shooter extends SubsystemBase {
 
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
-    private double lastshotRPM = getRPM();
+    private double lastshotRPM;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -91,7 +94,7 @@ public class Shooter extends SubsystemBase {
 
         turretFeedforward = new SimpleMotorFeedforward(TURRET_KS, TURRET_KV, TURRET_KA);
 
-        setHorizontalAngle(0);
+        //setHorizontalAngle(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
 
@@ -109,9 +112,10 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity());
 
-        if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
-        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, false);
-        //if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, true); // for hood correction
+        //setHorizontalAngle(0);
+        //if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
+        //if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, false);
+        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, true); // for hood correction
         setRPM(solution.getVelocity());
 
         calculateRecovery();
@@ -258,7 +262,10 @@ public class Shooter extends SubsystemBase {
                 shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
                 shotFlywheelRPM = getRPM();
                 shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) / inchesToMeters;
-                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(poseTracker.getPose().getX(), poseTracker.getPose().getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec() * inchesToMeters, shotHoodAngle, 2, 0.2));
+                Pose rotatedPose = poseTracker.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+                Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
+                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(robotPose.getX(), robotPose.getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec(), Math.toRadians(shotHoodAngle), solution.getHorizontalAngle(),1, 0.1));
+                //Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(robotPose.getX(), robotPose.getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec(), Math.toRadians(shotHoodAngle), getTurretAngle(AngleUnit.RADIANS),2, 0.2));
             }
         } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
             recoveryTime = timerEx.getElapsed();
