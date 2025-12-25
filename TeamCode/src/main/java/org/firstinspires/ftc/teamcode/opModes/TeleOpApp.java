@@ -22,6 +22,7 @@ import org.firstinspires.ftc.teamcode.calculators.TwoZonesCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
@@ -55,6 +56,7 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean debugMode;
     private boolean tabletopMode;
     private Alliance alliance;
+    private double inc = 0;
 
     final double inchesToMeters = 39.37;
 
@@ -74,7 +76,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setMaxPower(1);
 
         IShooterCalculator shooterCalc = new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance, telemetry);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
@@ -96,6 +98,36 @@ public class TeleOpApp extends ComplexOpMode {
                             transfer.toggleTransfer(false);
                         }, intake, transfer)
                 );
+
+        gamepadEx2.getGamepadButton(GamepadKeys.Button.TRIANGLE)
+                .whenPressed(
+                        new InstantCommand(() -> {
+                            ShooterConfig.HOOD_COMPENSATION += inc;
+                        })
+                );
+
+
+        gamepadEx2.getGamepadButton(GamepadKeys.Button.CROSS)
+                .whenPressed(
+                        new InstantCommand(() -> {
+                            ShooterConfig.HOOD_COMPENSATION -= inc;
+                        })
+                );
+
+        gamepadEx2.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
+                .whenPressed(
+                        new InstantCommand(() -> {
+                            inc += 0.00005;
+                        })
+                );
+
+        gamepadEx2.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+                .whenPressed(
+                        new InstantCommand(() -> {
+                            inc -= 0.00005;
+                        })
+                );
+
 
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
@@ -198,6 +230,9 @@ public class TeleOpApp extends ComplexOpMode {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                     .whenPressed(this::resetPoseToNearestCorner);
         }
+
+
+
     }
 
     @Override
@@ -252,6 +287,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
         telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
         telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+        telemetry.addData("inc", inc);
+        telemetry.addData("hood compensation coeff", ShooterConfig.HOOD_COMPENSATION);
         telemetry.update();
 
         Logger.recordOutput("Robot Pose", robotPose);
@@ -267,6 +304,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         Logger.recordOutput("Turret/Turret Angle error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
         Logger.recordOutput("Turret/Turret angle solution", Math.toDegrees(shooter.solution.getHorizontalAngle()));
+        Logger.recordOutput("hood compensation coeff", ShooterConfig.HOOD_COMPENSATION);
     }
 
     @Override

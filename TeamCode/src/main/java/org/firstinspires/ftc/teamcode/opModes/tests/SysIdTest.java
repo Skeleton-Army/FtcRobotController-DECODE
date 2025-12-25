@@ -18,7 +18,7 @@ public class SysIdTest extends OpMode {
     /* ================= CONFIG ================= */
     private static final String MOTOR_NAME = "flywheel";
     private static final double RAMP_RATE = 0.25; // Volts per second
-    private static final double MAX_VOLTAGE = 12.0; // Safety cap
+    private static final double MAX_VOLTAGE = 14; // Safety cap
     private static final double STEP_VOLTAGE = 6.0; // For Dynamic test
     private static final double STEP_DELAY = 1.0;   // Seconds before step applied
 

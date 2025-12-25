@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 
 import androidx.core.math.MathUtils;
 
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
@@ -18,10 +19,12 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
+import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.utilities.Debugger;
@@ -73,8 +76,10 @@ public class Shooter extends SubsystemBase {
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
     private double lastshotRPM;
+    private double currentRPM;
+    Telemetry telemetry;
 
-    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
+    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance, Telemetry telemetry) {
         this.poseTracker = poseTracker;
 
         flywheel = new ModifiedMotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
@@ -94,7 +99,7 @@ public class Shooter extends SubsystemBase {
 
         turretFeedforward = new SimpleMotorFeedforward(TURRET_KS, TURRET_KV, TURRET_KA);
 
-        //setHorizontalAngle(0);
+        setHorizontalAngle(0);
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
 
@@ -113,7 +118,7 @@ public class Shooter extends SubsystemBase {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity());
 
         //setHorizontalAngle(0);
-        //if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
+        if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
         //if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, false);
         if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, true); // for hood correction
         setRPM(solution.getVelocity());
@@ -217,11 +222,13 @@ public class Shooter extends SubsystemBase {
      **/
     public void setVerticalAngle(double angleRad, boolean useCorrection) {
         if (useCorrection) {
-            if (getTargetRPM() - getRPM() > 0) {
-                double correction = (getTargetRPM() - getRPM()) * HOOD_COMPENSATION;
-                angleRad += correction;
-            }
+            double correction = (getTargetRPM() - getRPM()) * HOOD_COMPENSATION;
+            angleRad += correction;
         }
+
+        Logger.recordOutput("Hood/supposed hood angle (deg)",Math.toDegrees(angleRad));
+        if (telemetry != null)
+            telemetry.addData("supposed hood angle (deg)", Math.toDegrees(angleRad));
         double normalized = (angleRad - HOOD_MIN) / (HOOD_MAX - HOOD_MIN); // Normalized/converted to servo position
         double invertedNormalized = 1 - normalized;
 
@@ -239,10 +246,15 @@ public class Shooter extends SubsystemBase {
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
 
+    public double RPMtoVelocity(double RPM) {
+        return (RPM - ShooterCoefficients.VEL_COEFFS[1]) / ShooterCoefficients.VEL_COEFFS[0];
+    }
+
     // returns true if we just shot, otherwise false
     private boolean wasBallshot() {
-
-        if ((Math.abs(getTargetRPM() - getRPM()) >  SHOT_RPM_DROP) && (Math.abs(lastshotRPM - getRPM()) > SHOT_RPM_DROP)) {
+        currentRPM = getRPM();
+        shotFlywheelRPM = lastshotRPM;
+        if ((Math.abs(getTargetRPM() - currentRPM) >  SHOT_RPM_DROP) && (Math.abs(lastshotRPM - currentRPM) > SHOT_RPM_DROP)) {
             return true;
         }
 
@@ -260,11 +272,12 @@ public class Shooter extends SubsystemBase {
                 calculatedRecovery = true;
                 shotHoodAngle = Math.toDegrees(solution.getVerticalAngle());
                 shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
-                shotFlywheelRPM = getRPM();
+                //shotFlywheelRPM = currentRPM;
                 shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) / inchesToMeters;
                 Pose rotatedPose = poseTracker.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
                 Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
-                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(robotPose.getX(), robotPose.getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec(), Math.toRadians(shotHoodAngle), solution.getHorizontalAngle(),1, 0.1));
+                Logger.recordOutput("Shot/trajectory solution",Debugger.generateTrajectory(new Translation3d(robotPose.getX(), robotPose.getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec(), Math.toRadians(shotHoodAngle), solution.getHorizontalAngle() + Math.PI / 2 + robotPose.getRotation().getRadians(),1, 0.1));
+                Logger.recordOutput("Shot/trajectory reality",Debugger.generateTrajectory(new Translation3d(robotPose.getX(), robotPose.getY(), SHOOT_HEIGHT), RPMtoVelocity(shotFlywheelRPM), Math.toRadians(getHoodAngle()), getTurretAngle(AngleUnit.RADIANS) + robotPose.getRotation().getRadians(),1, 0.1));
                 //Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(robotPose.getX(), robotPose.getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec(), Math.toRadians(shotHoodAngle), getTurretAngle(AngleUnit.RADIANS),2, 0.2));
             }
         } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {

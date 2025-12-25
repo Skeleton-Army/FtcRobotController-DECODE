@@ -2,6 +2,8 @@ package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
@@ -74,6 +76,7 @@ public class AutonomousApp extends ComplexOpMode {
     private boolean push;
 
     private VoltageSensor voltageSensor;
+
 
     public PathChain farDriveBack() {
         return follower
@@ -294,6 +297,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     public void afterPrompts() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         alliance = prompter.get("alliance");
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.get("pickup_order");
@@ -307,7 +311,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         follower = Constants.createFollower(hardwareMap);
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS), alliance, telemetry);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
@@ -323,6 +327,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void initialize() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
         Settings.set("debug_mode", false, true);
         Settings.set("tabletop_mode", false, true);
 
