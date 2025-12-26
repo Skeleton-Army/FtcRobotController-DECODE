@@ -74,7 +74,7 @@ dependencies {
     implementation 'com.bylazar:fullpanels:1.0.9'
 
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
-    implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.4.17")
+    implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.5.1")
 
     implementation "org.apache.commons:commons-math3:3.6.1"
 
