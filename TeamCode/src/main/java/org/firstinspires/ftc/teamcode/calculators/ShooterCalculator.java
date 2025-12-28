@@ -1,16 +1,6 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.*;
-
-import com.pedropathing.geometry.Pose;
-
-import com.pedropathing.math.MathFunctions;
-import com.pedropathing.math.Vector;
-import com.seattlesolvers.solverslib.util.MathUtils;
-
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class ShooterCalculator extends OnTheMoveCalculator {
     private final double[] hoodCoeffs;
@@ -40,5 +30,4 @@ public class ShooterCalculator extends OnTheMoveCalculator {
         }
         return (int)result;
     }
-
 }

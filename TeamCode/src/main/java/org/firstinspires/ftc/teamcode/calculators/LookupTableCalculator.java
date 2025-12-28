@@ -4,7 +4,6 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.*;
 import static org.firstinspires.ftc.teamcode.consts.ShooterLookupTable.*;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.*;
 
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
@@ -13,14 +12,13 @@ import com.pedropathing.math.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 public class LookupTableCalculator implements IShooterCalculator {
-
     private static final double INCH_TO_METERS = 0.0254;
     private final double[] velCoeffs;
-
 
     public LookupTableCalculator(double[] velCoeffs) {
         this.velCoeffs = velCoeffs;
     }
+
     private double calculateVerticalAngle(double distance, double velocity) {
         if (distance < MIN_DIST || distance > MAX_DIST || velocity < MIN_VEL || velocity > MAX_VEL) {
             return Double.NaN;
@@ -68,6 +66,7 @@ public class LookupTableCalculator implements IShooterCalculator {
         }
         return (int)result;
     }
+
     protected double shooterVelocity(double distance) {
         if (distance <= CLOSE_MAX_DISTANCE) {
             return CLOSE_SHOOTER_MIN_VELOCITY + (distance - CLOSE_MIN_DISTANCE)
@@ -85,6 +84,7 @@ public class LookupTableCalculator implements IShooterCalculator {
 
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
+
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelRPM) {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);

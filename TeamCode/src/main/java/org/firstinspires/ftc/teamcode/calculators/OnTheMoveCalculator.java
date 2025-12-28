@@ -11,7 +11,6 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 public abstract class OnTheMoveCalculator implements IShooterCalculator {
     private static final double INCH_TO_METERS = 0.0254;
 
-
     protected abstract double calculateVerticalAngle(double distance);
     protected abstract double shooterVelocity(double distance);
 
@@ -27,7 +26,6 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
 
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
-
 
     /**
      * @param robotPose Robot position (pedro field coordinates)

@@ -35,6 +35,5 @@ public interface IShooterCalculator {
         } else {
             return MathUtils.clamp(closestEquiv, min, max);
         }
-
     }
 }
