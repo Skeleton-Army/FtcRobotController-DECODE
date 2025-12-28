@@ -25,8 +25,8 @@ import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.openftc.easyopencv.OpenCvCameraFactory;
 import org.openftc.easyopencv.OpenCvWebcam;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.wpi.Pose2d;
-import org.psilynx.psikit.core.wpi.Rotation2d;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Rotation2d;
 
 import java.util.List;
 
