@@ -79,7 +79,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
     public Command waitUntilCanShoot() {
         return new SequentialCommandGroup(
-                new WaitUntilCommand(() -> shooter.reachedRPM() || shooter.getVerticalManualMode()),
+                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode()),
                 new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
         );
     }
@@ -87,7 +87,9 @@ public class ShootCommand extends SequentialCommandGroup {
     public Command shootWithTransfer() {
         return new SequentialCommandGroup(
                 new InstantCommand(() -> transfer.toggleTransfer(true)),
-                new WaitUntilCommand(() -> !shooter.reachedRPM())
+                new WaitUntilCommand(transfer::isArtifactDetected)
+                        .withTimeout(700),
+                new WaitUntilCommand(() -> !transfer.isArtifactDetected())
                         .withTimeout(700),
                 new InstantCommand(() -> transfer.toggleTransfer(false))
         );
