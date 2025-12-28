@@ -1,0 +1,131 @@
+package org.firstinspires.ftc.teamcode.calculators;
+
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.*;
+import static org.firstinspires.ftc.teamcode.consts.ShooterLookupTable.*;
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.*;
+
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.Vector;
+
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+
+public class LookupTableCalculator implements IShooterCalculator {
+
+    private static final double INCH_TO_METERS = 0.0254;
+    private final double[] velCoeffs;
+
+
+    public LookupTableCalculator(double[] velCoeffs) {
+        this.velCoeffs = velCoeffs;
+    }
+    private double calculateVerticalAngle(double distance, double velocity) {
+        if (distance < MIN_DIST || distance > MAX_DIST || velocity < MIN_VEL || velocity > MAX_VEL) {
+            return Double.NaN;
+        }
+
+        double dIdx = (distance - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
+        double vIdx = (velocity - MIN_VEL) / (MAX_VEL - MIN_VEL) * (VEL_STEPS - 1);
+
+        int r0 = (int) dIdx;
+        int r1 = Math.min(r0 + 1, DIST_STEPS - 1);
+        int c0 = (int) vIdx;
+        int c1 = Math.min(c0 + 1, VEL_STEPS - 1);
+
+        double v00 = ANGLE_TABLE[r0][c0];
+        double v01 = ANGLE_TABLE[r0][c1];
+        double v10 = ANGLE_TABLE[r1][c0];
+        double v11 = ANGLE_TABLE[r1][c1];
+
+        if (Double.isNaN(v00) || Double.isNaN(v01) || Double.isNaN(v10) || Double.isNaN(v11)) {
+            return Double.NaN;
+        }
+
+        double dr = dIdx - r0;
+        double dc = vIdx - c0;
+
+        return (1 - dr) * (1 - dc) * v00 +
+                (1 - dr) * dc * v01 +
+                dr * (1 - dc) * v10 +
+                dr * dc * v11;
+    }
+
+    private double RPMToVelocity(int rpm) {
+        // THIS IS SPECIFICALLY FOR 2 COEFFICIENTS, IF THERE ARE MORE THIS NEEDS TO CHANGE
+        return (rpm - velCoeffs[1]) / velCoeffs[0];
+    }
+
+    /**
+     * @param velocity Starting velocity in meters/second
+     * @return Motor RPM
+     */
+    protected int velocityToRPM(double velocity) {
+        double result = 0.0;
+        for (int exponent = 0; exponent < velCoeffs.length; exponent++) {
+            result += velCoeffs[exponent] * Math.pow(velocity, velCoeffs.length - exponent - 1);
+        }
+        return (int)result;
+    }
+    protected double shooterVelocity(double distance) {
+        if (distance <= CLOSE_MAX_DISTANCE) {
+            return CLOSE_SHOOTER_MIN_VELOCITY + (distance - CLOSE_MIN_DISTANCE)
+                    * (CLOSE_SHOOTER_MAX_VELOCITY - CLOSE_SHOOTER_MIN_VELOCITY)
+                    / (CLOSE_MAX_DISTANCE - CLOSE_MIN_DISTANCE);
+        }
+        return FAR_SHOOTER_MIN_VELOCITY + (distance - CLOSE_MAX_DISTANCE)
+                * (FAR_SHOOTER_MAX_VELOCITY - FAR_SHOOTER_MIN_VELOCITY)
+                / (FAR_MAX_DISTANCE - CLOSE_MAX_DISTANCE);
+    }
+
+    public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
+        double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
+        double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
+
+        return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
+    }
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelRPM) {
+        Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
+        Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
+        Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
+
+        double dx = goalPoseMeters.getX() - robotPoseMeters.getX();
+        double dy = goalPoseMeters.getY() - robotPoseMeters.getY();
+        double r  = Math.hypot(dx, dy);
+
+        // Predict where robot will be at firing time
+        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY * r;
+        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY * r;
+        double predHeading = robotPoseMeters.getHeading();
+        Pose predictedPose = new Pose(predX, predY, predHeading);
+
+        // Compute distance/angles from predicted pose
+        double distance = predictedPose.distanceFrom(goalPoseMeters);
+        double verticalAngle = calculateVerticalAngle(distance, RPMToVelocity(flywheelRPM));
+        double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
+
+        // Compute stationary launch vector in field coordinates
+        double speed = shooterVelocity(distance);
+        double vx = speed * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
+        double vy = speed * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
+        double vz = speed * Math.sin(verticalAngle);
+        Vector3D vLaunch = new Vector3D(vx, vy, vz);
+
+        // Robot velocity at firing instant (we assume constant)
+        Vector3D velocity = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
+
+        // Relative launch vector (what the shooter must produce)
+        Vector3D v0 = vLaunch.subtract(velocity);
+
+        double newSpeed = v0.getNorm();
+        double newHorizontalAngle = v0.getAlpha() - predHeading;
+        double newVerticalAngle = v0.getDelta();
+
+        return new ShootingSolution(
+                MathFunctions.normalizeAngle(newHorizontalAngle),
+                newVerticalAngle,
+                velocityToRPM(newSpeed)
+        );
+    }
+}
