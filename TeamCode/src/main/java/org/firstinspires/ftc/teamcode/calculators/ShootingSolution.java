@@ -17,7 +17,7 @@ public class ShootingSolution {
     public double getVerticalAngle() {
         return verticalAngle;
     }
-    public double getVelocity() {
+    public double getRPM() {
         return flywheelRPM;
     }
 }
