@@ -64,6 +64,8 @@ public class Shooter extends SubsystemBase {
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
 
+    private boolean canShoot;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
@@ -101,8 +103,10 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getRPM());
 
+        canShoot = solution.getVerticalAngle() != -1;
+
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
-        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
+        if (!verticalManualMode && canShoot) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getRPM());
 
         calculateRecovery();
@@ -125,6 +129,10 @@ public class Shooter extends SubsystemBase {
 
     public double getTargetRPM() {
         return (targetTPS * 60.0) / flywheel.getCPR();
+    }
+
+    public boolean getCanShoot() {
+        return canShoot;
     }
 
     public boolean reachedRPM() {
