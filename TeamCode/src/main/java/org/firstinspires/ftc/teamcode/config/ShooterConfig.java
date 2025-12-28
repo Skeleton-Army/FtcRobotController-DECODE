@@ -5,14 +5,10 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor.GoBILDA;
 
 @Config
 public class ShooterConfig {
-    static double metersToInches = 39.37;
-
-    public static double SHOOT_HEIGHT = 0.4 * metersToInches;
     public static String FLYWHEEL_NAME = "flywheel";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL_INVERTED = true;
     public static int RPM_REACHED_THRESHOLD = 50;
-    public static int SHOT_RPM_DROP = 400;
     public static double FLYWHEEL_KP = 2.4;
     public static double FLYWHEEL_KI = 0.002;
     public static double FLYWHEEL_KD = 0.1;
