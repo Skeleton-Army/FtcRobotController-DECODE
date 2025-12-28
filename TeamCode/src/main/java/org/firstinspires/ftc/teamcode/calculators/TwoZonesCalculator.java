@@ -1,20 +1,8 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
-import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
-import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.CLOSE_MAX_DISTANCE;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.*;
-import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
-
-import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.MathFunctions;
-import com.pedropathing.math.Vector;
-
-import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
-import org.firstinspires.ftc.teamcode.consts.ShooterLookupTable;
 
 public class TwoZonesCalculator extends OnTheMoveCalculator {
-    private static final double INCH_TO_METERS = 0.0254;
     private final double[] closeHoodCoeffs;
     private final double[] farHoodCoeffs;
     private final double[] velCoeffs;
