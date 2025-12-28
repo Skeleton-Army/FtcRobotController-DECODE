@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
-
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
@@ -24,7 +22,6 @@ import com.skeletonarmy.marrow.prompts.Prompter;
 import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.TwoZonesCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
@@ -40,9 +37,7 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 @Autonomous
@@ -441,7 +436,7 @@ public class AutonomousApp extends ComplexOpMode {
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
-        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getVelocity()));
+        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));

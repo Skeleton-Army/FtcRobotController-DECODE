@@ -24,7 +24,6 @@ import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
-import org.psilynx.psikit.core.Logger;
 
 import java.util.concurrent.TimeUnit;
 
@@ -104,7 +103,7 @@ public class Shooter extends SubsystemBase {
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
         if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
-        setRPM(solution.getVelocity());
+        setRPM(solution.getRPM());
 
         calculateRecovery();
 
