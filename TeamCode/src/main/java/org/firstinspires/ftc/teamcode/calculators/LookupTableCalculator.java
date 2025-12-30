@@ -68,14 +68,21 @@ public class LookupTableCalculator implements IShooterCalculator {
     }
 
     protected double shooterVelocity(double distance) {
-        if (distance <= CLOSE_MAX_DISTANCE) {
-            return CLOSE_SHOOTER_MIN_VELOCITY + (distance - CLOSE_MIN_DISTANCE)
-                    * (CLOSE_SHOOTER_MAX_VELOCITY - CLOSE_SHOOTER_MIN_VELOCITY)
-                    / (CLOSE_MAX_DISTANCE - CLOSE_MIN_DISTANCE);
+        if (distance < MIN_DIST || distance > MAX_DIST) return MIN_VEL;
+
+        double dIdx = (distance - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
+        int r0 = (int) dIdx;
+        int r1 = Math.min(r0 + 1, DIST_STEPS - 1); // Check the next distance step too
+
+        for (int c = VEL_STEPS - 1; c >= 0; c--) {
+            // A velocity is only truly "highest valid" if it's valid for
+            // the bounding distance steps used in interpolation.
+            if (ANGLE_TABLE[r0][c] != -1 && ANGLE_TABLE[r1][c] != -1) {
+                return MIN_VEL + ((double) c / (VEL_STEPS - 1)) * (MAX_VEL - MIN_VEL);
+            }
         }
-        return FAR_SHOOTER_MIN_VELOCITY + (distance - CLOSE_MAX_DISTANCE)
-                * (FAR_SHOOTER_MAX_VELOCITY - FAR_SHOOTER_MIN_VELOCITY)
-                / (FAR_MAX_DISTANCE - CLOSE_MAX_DISTANCE);
+
+        return MIN_VEL;
     }
 
     public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
@@ -91,15 +98,15 @@ public class LookupTableCalculator implements IShooterCalculator {
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
 
         // Compute distance/angles
+        double currentVelocity = RPMToVelocity(flywheelRPM);
         double distance = robotPoseMeters.distanceFrom(goalPoseMeters);
-        double verticalAngle = calculateVerticalAngle(distance, RPMToVelocity(flywheelRPM));
+        double verticalAngle = calculateVerticalAngle(distance, currentVelocity);
         double horizontalAngle = calculateTurretAngle(goalPose, robotPose.getX(), robotPose.getY(), robotPose.getHeading());
 
         // Compute stationary launch vector in field coordinates
-        double speed = shooterVelocity(distance);
-        double vx = speed * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
-        double vy = speed * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
-        double vz = speed * Math.sin(verticalAngle);
+        double vx = currentVelocity * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
+        double vy = currentVelocity * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
+        double vz = currentVelocity * Math.sin(verticalAngle);
         Vector3D vLaunch = new Vector3D(vx, vy, vz);
 
         // Robot velocity at firing instant (we assume constant)
@@ -110,9 +117,7 @@ public class LookupTableCalculator implements IShooterCalculator {
 
         double newSpeed = v0.getNorm();
         double newHorizontalAngle = v0.getAlpha() - robotPose.getHeading();
-        double newVerticalAngle = v0.getDelta();
-
-        if (verticalAngle == -1) newVerticalAngle = -1;
+        double newVerticalAngle = (verticalAngle == -1 || Double.isNaN(verticalAngle)) ? -1 : v0.getDelta();
 
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
