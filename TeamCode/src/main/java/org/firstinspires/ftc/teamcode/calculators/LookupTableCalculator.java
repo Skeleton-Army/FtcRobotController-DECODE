@@ -112,18 +112,12 @@ public class LookupTableCalculator implements IShooterCalculator {
         double newHorizontalAngle = v0.getAlpha() - robotPose.getHeading();
         double newVerticalAngle = v0.getDelta();
 
-        if (verticalAngle == -1) {
-            return new ShootingSolution(
-                    MathFunctions.normalizeAngle(newHorizontalAngle),
-                    -1,
-                    velocityToRPM(shooterVelocity(distance))
-            );
-        }
+        if (verticalAngle == -1) newVerticalAngle = -1;
 
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
-                velocityToRPM(shooterVelocity(distance))
+                velocityToRPM(newSpeed)
         );
     }
 }
