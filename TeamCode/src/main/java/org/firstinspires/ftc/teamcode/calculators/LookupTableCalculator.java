@@ -92,21 +92,31 @@ public class LookupTableCalculator implements IShooterCalculator {
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
 
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelRPM) {
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelVel) {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
 
-        // Compute distance/angles
-        double currentVelocity = RPMToVelocity(flywheelRPM);
-        double distance = robotPoseMeters.distanceFrom(goalPoseMeters);
-        double verticalAngle = calculateVerticalAngle(distance, currentVelocity);
-        double horizontalAngle = calculateTurretAngle(goalPose, robotPose.getX(), robotPose.getY(), robotPose.getHeading());
+        double dx = goalPoseMeters.getX() - robotPoseMeters.getX();
+        double dy = goalPoseMeters.getY() - robotPoseMeters.getY();
+        double r  = Math.hypot(dx, dy);
+
+        // Predict where robot will be at firing time
+        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY * r;
+        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY * r;
+        double predHeading = robotPoseMeters.getHeading();
+        Pose predictedPose = new Pose(predX, predY, predHeading);
+
+        // Compute distance/angles from predicted pose
+        double distance = predictedPose.distanceFrom(goalPoseMeters);
+        double verticalAngle = calculateVerticalAngle(distance, RPMToVelocity(flywheelVel));
+        double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
 
         // Compute stationary launch vector in field coordinates
-        double vx = currentVelocity * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
-        double vy = currentVelocity * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
-        double vz = currentVelocity * Math.sin(verticalAngle);
+        double speed = RPMToVelocity(flywheelVel);
+        double vx = speed * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
+        double vy = speed * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
+        double vz = speed * Math.sin(verticalAngle);
         Vector3D vLaunch = new Vector3D(vx, vy, vz);
 
         // Robot velocity at firing instant (we assume constant)
@@ -115,9 +125,14 @@ public class LookupTableCalculator implements IShooterCalculator {
         // Relative launch vector (what the shooter must produce)
         Vector3D v0 = vLaunch.subtract(velocity);
 
-        double newHorizontalAngle = v0.getAlpha() - robotPose.getHeading();
-        double newVerticalAngle = (verticalAngle == -1 || Double.isNaN(verticalAngle)) ? -1 : v0.getDelta();
+        double newSpeed = v0.getNorm();
+        double newHorizontalAngle = v0.getAlpha() - predHeading;
+        double newVerticalAngle = v0.getDelta();
 
+        if (verticalAngle == -1 || Double.isNaN(verticalAngle)) {
+            newVerticalAngle = -1;
+            newHorizontalAngle = horizontalAngle;
+        }
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
