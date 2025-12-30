@@ -89,8 +89,7 @@ public class LookupTableCalculator implements IShooterCalculator {
         double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
         double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 
-        double angle = Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
-        return angle;
+        return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
 
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelRPM) {
