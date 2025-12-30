@@ -18,6 +18,7 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
 import org.firstinspires.ftc.teamcode.calculators.TwoZonesCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -73,7 +74,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setPose(startPose);
         follower.setMaxPower(1);
 
-        IShooterCalculator shooterCalc = new TwoZonesCalculator(ShooterCoefficients.CLOSE_HOOD_COEFFS, ShooterCoefficients.FAR_HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
+        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
@@ -209,8 +210,8 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
-        telemetry.addData("Pedro Robot x", 72 - follower.getPose().getX());
-        telemetry.addData("Pedro Robot y", 72 - follower.getPose().getY());
+        telemetry.addData("Pedro Robot x", follower.getPose().getX());
+        telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot x", robotPose.getX());
         telemetry.addData("Robot y", robotPose.getY());
@@ -221,6 +222,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret solution error (deg)", shooter.solution.getHorizontalAngle() - shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret solution", shooter.solution.getHorizontalAngle());
 
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", shooter.getHoodAngle());

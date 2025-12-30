@@ -89,7 +89,8 @@ public class LookupTableCalculator implements IShooterCalculator {
         double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
         double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 
-        return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
+        double angle = Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
+        return angle;
     }
 
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelRPM) {
@@ -115,14 +116,13 @@ public class LookupTableCalculator implements IShooterCalculator {
         // Relative launch vector (what the shooter must produce)
         Vector3D v0 = vLaunch.subtract(velocity);
 
-        double newSpeed = v0.getNorm();
         double newHorizontalAngle = v0.getAlpha() - robotPose.getHeading();
         double newVerticalAngle = (verticalAngle == -1 || Double.isNaN(verticalAngle)) ? -1 : v0.getDelta();
 
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
-                velocityToRPM(newSpeed)
+                velocityToRPM(shooterVelocity(distance))
         );
     }
 }
