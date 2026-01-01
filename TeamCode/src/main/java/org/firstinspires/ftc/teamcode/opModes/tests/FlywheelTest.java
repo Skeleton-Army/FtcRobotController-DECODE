@@ -82,7 +82,7 @@ public class FlywheelTest extends OpMode {
             else targetPower = MathUtils.clamp(targetPower - 0.1, 0, 1);
         }
         if (gamepad1.triangleWasPressed()) {
-            new InstantCommand(() -> CommandScheduler.getInstance().schedule(
+            CommandScheduler.getInstance().schedule(
                     new SequentialCommandGroup(
                             new InstantCommand(() -> kicker.set(KICKER_MAX)),
                             new InstantCommand(() -> timerEx.restart()),
@@ -90,7 +90,7 @@ public class FlywheelTest extends OpMode {
                             new WaitCommand(KICK_TIME),
                             new InstantCommand(() -> kicker.set(KICKER_MIN))
                     )
-            ));
+            );
 
         }
 
