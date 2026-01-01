@@ -8,6 +8,10 @@ public class ShooterConsts {
     public static double SHOOTER_MIN_VELOCITY = 4.65;
     public static double SHOOTER_MAX_VELOCITY = 9;
     public static double MIN_DISTANCE = 0.7;
+    public static double MIN_DISTANCE_TABLE = 0.96;
+    public static double MID_DISTANCE_TABlE = 3.7;
+    public static double MAX_DISTANCE_TABLE = 4.3;
+
     public static double MAX_DISTANCE = 4.3;
     public static double CLOSE_MIN_DISTANCE = 0.7;
     public static double CLOSE_MAX_DISTANCE = 2.5;

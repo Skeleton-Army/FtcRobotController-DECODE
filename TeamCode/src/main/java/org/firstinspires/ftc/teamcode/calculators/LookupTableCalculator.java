@@ -10,6 +10,7 @@ import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.psilynx.psikit.core.Logger;
 
 public class LookupTableCalculator implements IShooterCalculator {
     private static final double INCH_TO_METERS = 0.0254;
@@ -131,8 +132,9 @@ public class LookupTableCalculator implements IShooterCalculator {
 
         if (verticalAngle == -1 || Double.isNaN(verticalAngle)) {
             newVerticalAngle = -1;
-            newHorizontalAngle = horizontalAngle;
+            newHorizontalAngle = horizontalAngle - predHeading;
         }
+
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
