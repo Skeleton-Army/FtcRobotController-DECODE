@@ -37,6 +37,25 @@ public class Drive extends SubsystemBase {
         follower.update();
     }
 
+    public Command goToGate(){
+        return new DeferredCommand(
+                () -> {
+                    PathChain openGate = follower
+                        .pathBuilder()
+                        .addPath(
+                                new BezierLine(
+                                        follower.getPose(),
+                                        getRelative(new Pose())
+                                )
+                        )
+                            .setLinearHeadingInterpolation(
+                                    follower.getHeading(),
+
+                            );
+                }
+        );
+    }
+
     public Command goToBase() {
         // Use DeferredCommand to create the path and command on schedule
         return new DeferredCommand(
