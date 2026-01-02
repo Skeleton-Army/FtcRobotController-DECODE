@@ -33,8 +33,8 @@ public class ShooterConfig {
     public static double TURRET_MIN = Math.toRadians(-210); // Clockwise
     public static double TURRET_MAX = Math.toRadians(165); // Counter-clockwise
     public static double GEAR_RATIO = (double) 200 / 30;
-    public static double TURRET_OFFSET_X = -0.591; // 0.591 inch
-    public static double TURRET_OFFSET_Y = 0;
+    public static double TURRET_OFFSET_X = -0.591; // Positive = Front
+    public static double TURRET_OFFSET_Y = 0; // Positive = Left
     public static boolean TURRET_WRAP = true;
 
     public static String HOOD_NAME = "hood";
