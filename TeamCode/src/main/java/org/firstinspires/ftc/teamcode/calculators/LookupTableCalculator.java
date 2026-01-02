@@ -33,22 +33,35 @@ public class LookupTableCalculator implements IShooterCalculator {
         int c0 = (int) vIdx;
         int c1 = Math.min(c0 + 1, VEL_STEPS - 1);
 
+        // Get values from the four corners
         double v00 = ANGLE_TABLE[r0][c0];
         double v01 = ANGLE_TABLE[r0][c1];
         double v10 = ANGLE_TABLE[r1][c0];
         double v11 = ANGLE_TABLE[r1][c1];
 
-        if (v00 == -1 || v01  == -1 || v10 == -1 || v11 == -1) {
-            return -1;
-        }
-
         double dr = dIdx - r0;
         double dc = vIdx - c0;
 
-        return (1 - dr) * (1 - dc) * v00 +
-                (1 - dr) * dc * v01 +
-                dr * (1 - dc) * v10 +
-                dr * dc * v11;
+        // Calculate weights for each corner
+        double w00 = (1 - dr) * (1 - dc);
+        double w01 = (1 - dr) * dc;
+        double w10 = dr * (1 - dc);
+        double w11 = dr * dc;
+
+        double weightedSum = 0;
+        double totalWeight = 0;
+
+        // Only include valid points (!= -1) in the result
+        if (v00 != -1) { weightedSum += v00 * w00; totalWeight += w00; }
+        if (v01 != -1) { weightedSum += v01 * w01; totalWeight += w01; }
+        if (v10 != -1) { weightedSum += v10 * w10; totalWeight += w10; }
+        if (v11 != -1) { weightedSum += v11 * w11; totalWeight += w11; }
+
+        // If no valid points were found in the bounding box, return -1
+        if (totalWeight == 0) return -1;
+
+        // Normalize by the sum of weights used
+        return weightedSum / totalWeight;
     }
 
     private double RPMToVelocity(int rpm) {
