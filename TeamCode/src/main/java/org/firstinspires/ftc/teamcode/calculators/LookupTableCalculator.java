@@ -20,6 +20,29 @@ public class LookupTableCalculator implements IShooterCalculator {
         this.velCoeffs = velCoeffs;
     }
 
+    private double getClosestValidAngle(double distance, double velocity) {
+        double dIdx = (distance - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
+        double vIdx = (velocity - MIN_VEL) / (MAX_VEL - MIN_VEL) * (VEL_STEPS - 1);
+
+        int centerR = (int) Math.round(Math.max(0, Math.min(DIST_STEPS - 1, dIdx)));
+        int centerC = (int) Math.round(Math.max(0, Math.min(VEL_STEPS - 1, vIdx)));
+
+        // Spiral search or simple radius expansion to find the nearest non -1 value
+        for (int radius = 0; radius < Math.max(DIST_STEPS, VEL_STEPS); radius++) {
+            for (int r = centerR - radius; r <= centerR + radius; r++) {
+                for (int c = centerC - radius; c <= centerC + radius; c++) {
+                    if (r >= 0 && r < DIST_STEPS && c >= 0 && c < VEL_STEPS) {
+                        if (ANGLE_TABLE[r][c] != -1) {
+                            return ANGLE_TABLE[r][c];
+                        }
+                    }
+                }
+            }
+        }
+
+        return 0.0; // Absolute fallback if table is empty
+    }
+
     private double calculateVerticalAngle(double distance, double velocity) {
         if (distance < MIN_DIST || distance > MAX_DIST || velocity < MIN_VEL || velocity > MAX_VEL) {
             return Double.NaN;
@@ -82,20 +105,22 @@ public class LookupTableCalculator implements IShooterCalculator {
     }
 
     protected double shooterVelocity(double distance) {
-        if (distance < MIN_DIST || distance > MAX_DIST) return MIN_VEL;
+        // 1. Clamp distance to table bounds so the shooter stays 'primed' at the edges
+        double clampedDist = Math.max(MIN_DIST, Math.min(MAX_DIST, distance));
 
-        double dIdx = (distance - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
+        double dIdx = (clampedDist - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
         int r0 = (int) dIdx;
-        int r1 = Math.min(r0 + 1, DIST_STEPS - 1); // Check the next distance step too
+        int r1 = Math.min(r0 + 1, DIST_STEPS - 1);
 
+        // 2. Try to find the highest valid velocity for the current distance
         for (int c = VEL_STEPS - 1; c >= 0; c--) {
-            // A velocity is only truly "highest valid" if it's valid for
-            // the bounding distance steps used in interpolation.
-            if (ANGLE_TABLE[r0][c] != -1 && ANGLE_TABLE[r1][c] != -1) {
+            if (ANGLE_TABLE[r0][c] != -1 || ANGLE_TABLE[r1][c] != -1) {
                 return MIN_VEL + ((double) c / (VEL_STEPS - 1)) * (MAX_VEL - MIN_VEL);
             }
         }
 
+        // 3. Absolute fallback: If this entire distance row is empty,
+        // we use the getClosestValidAngle logic to find ANY valid velocity
         return MIN_VEL;
     }
 
@@ -126,6 +151,12 @@ public class LookupTableCalculator implements IShooterCalculator {
         double verticalAngle = calculateVerticalAngle(distance, RPMToVelocity(flywheelVel));
         double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
 
+        boolean canShoot = true;
+        if (verticalAngle == -1 || Double.isNaN(verticalAngle)) {
+            verticalAngle = getClosestValidAngle(distance, RPMToVelocity(flywheelVel));
+            canShoot = false;
+        }
+
         // Compute stationary launch vector in field coordinates
         double speed = RPMToVelocity(flywheelVel);
         double vx = speed * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
@@ -143,15 +174,11 @@ public class LookupTableCalculator implements IShooterCalculator {
         double newHorizontalAngle = v0.getAlpha() - predHeading;
         double newVerticalAngle = v0.getDelta();
 
-        if (verticalAngle == -1 || Double.isNaN(verticalAngle)) {
-            newVerticalAngle = -1;
-            newHorizontalAngle = horizontalAngle - predHeading;
-        }
-
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
-                velocityToRPM(shooterVelocity(distance))
+                velocityToRPM(shooterVelocity(distance)),
+                canShoot
         );
     }
 }

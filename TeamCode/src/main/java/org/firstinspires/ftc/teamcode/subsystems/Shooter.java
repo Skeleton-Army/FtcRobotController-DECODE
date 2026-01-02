@@ -103,10 +103,10 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getRPM());
 
-        canShoot = solution.getVerticalAngle() != -1;
+        canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
-        if (!verticalManualMode && canShoot) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
+        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getRPM());
 
         calculateRecovery();
