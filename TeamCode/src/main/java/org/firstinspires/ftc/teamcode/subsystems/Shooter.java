@@ -69,7 +69,7 @@ public class Shooter extends SubsystemBase {
 
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
-    private double lastshotRPM = getRPM();
+    private double lastshotRPM;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -107,6 +107,8 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (poseTracker == null) return;
+
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity());
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
@@ -237,7 +239,6 @@ public class Shooter extends SubsystemBase {
 
     // returns true if we just shot, otherwise false
     private boolean wasBallshot() {
-
         if ((Math.abs(getTargetRPM() - getRPM()) >  SHOT_RPM_DROP) && (Math.abs(lastshotRPM - getRPM()) > SHOT_RPM_DROP)) {
             return true;
         }
