@@ -105,23 +105,9 @@ public class LookupTableCalculator implements IShooterCalculator {
     }
 
     protected double shooterVelocity(double distance) {
-        // 1. Clamp distance to table bounds so the shooter stays 'primed' at the edges
-        double clampedDist = Math.max(MIN_DIST, Math.min(MAX_DIST, distance));
-
-        double dIdx = (clampedDist - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
-        int r0 = (int) dIdx;
-        int r1 = Math.min(r0 + 1, DIST_STEPS - 1);
-
-        // 2. Try to find the highest valid velocity for the current distance
-        for (int c = VEL_STEPS - 1; c >= 0; c--) {
-            if (ANGLE_TABLE[r0][c] != -1 || ANGLE_TABLE[r1][c] != -1) {
-                return MIN_VEL + ((double) c / (VEL_STEPS - 1)) * (MAX_VEL - MIN_VEL);
-            }
-        }
-
-        // 3. Absolute fallback: If this entire distance row is empty,
-        // we use the getClosestValidAngle logic to find ANY valid velocity
-        return MIN_VEL;
+        return Math.min(MAX_VEL, MIN_VEL + (distance - MIN_DISTANCE_TABLE)
+                * (MAX_VEL - MIN_VEL)
+                / (MAX_DISTANCE_TABLE - MID_DISTANCE_TABlE));
     }
 
     public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
