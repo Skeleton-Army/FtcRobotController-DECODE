@@ -11,6 +11,7 @@ public class ShooterConsts {
     public static double MIN_DISTANCE_TABLE = 1;
     public static double MID_DISTANCE_TABlE = 3;
     public static double MAX_DISTANCE_TABLE = 4.3;
+    public static double VELOCITY_BIAS = 0.8; // 0 = lowest possible velocity, 1 = highest possible velocity
 
     public static double MAX_DISTANCE = 4.3;
     public static double CLOSE_MIN_DISTANCE = 0.7;

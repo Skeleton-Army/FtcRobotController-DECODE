@@ -105,9 +105,35 @@ public class LookupTableCalculator implements IShooterCalculator {
     }
 
     protected double shooterVelocity(double distance) {
-        return Math.min(MAX_VEL, MIN_VEL + (distance - MIN_DISTANCE_TABLE)
-                * (MAX_VEL - MIN_VEL)
-                / (MAX_DISTANCE_TABLE - MID_DISTANCE_TABlE));
+        double clampedDist = Math.max(MIN_DIST, Math.min(MAX_DIST, distance));
+
+        double dIdx = (clampedDist - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
+        int r0 = (int) dIdx;
+        int r1 = Math.min(r0 + 1, DIST_STEPS - 1);
+
+        // 1. Collect all valid velocity indices
+        int[] validCols = new int[VEL_STEPS];
+        int count = 0;
+
+        for (int c = 0; c < VEL_STEPS; c++) {
+            if (ANGLE_TABLE[r0][c] != -1 || ANGLE_TABLE[r1][c] != -1) {
+                validCols[count++] = c;
+            }
+        }
+
+        // 2. If none found, fallback
+        if (count == 0) {
+            return MIN_VEL;
+        }
+
+        // 3. Pick index based on bias
+        double bias = Math.max(0.0, Math.min(1.0, VELOCITY_BIAS));
+        int chosenIndex = (int) Math.round(bias * (count - 1));
+
+        int c = validCols[chosenIndex];
+
+        // 4. Convert column index → velocity
+        return MIN_VEL + ((double) c / (VEL_STEPS - 1)) * (MAX_VEL - MIN_VEL);
     }
 
     public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
