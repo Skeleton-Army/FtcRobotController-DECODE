@@ -222,9 +222,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-        telemetry.addData("Turret error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
-        telemetry.addData("Turret solution error (deg)", shooter.solution.getHorizontalAngle() - shooter.getTurretAngle(AngleUnit.DEGREES));
-        telemetry.addData("Turret solution", shooter.solution.getHorizontalAngle());
+        telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
+        telemetry.addData("Turret error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
 
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", shooter.getHoodAngle());
@@ -256,6 +255,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Shooter/Hood Angle (deg)", shooter.getHoodAngle());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         Logger.recordOutput("Turret/Turret Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+        Logger.recordOutput("Turret/Turret Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
     }
 
     @Override

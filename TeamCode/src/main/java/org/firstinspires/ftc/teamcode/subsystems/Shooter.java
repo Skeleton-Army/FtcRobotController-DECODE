@@ -63,6 +63,7 @@ public class Shooter extends SubsystemBase {
 
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
+    private double lastshotRPM;
 
     private boolean canShoot;
 
@@ -101,8 +102,9 @@ public class Shooter extends SubsystemBase {
 
     @Override
     public void periodic() {
-        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getRPM());
+        if (poseTracker == null) return;
 
+        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getRPM());
         canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
@@ -228,8 +230,20 @@ public class Shooter extends SubsystemBase {
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
 
+    // returns true if we just shot, otherwise false
+    private boolean wasBallshot() {
+        if ((Math.abs(getTargetRPM() - getRPM()) >  SHOT_RPM_DROP) && (Math.abs(lastshotRPM - getRPM()) > SHOT_RPM_DROP)) {
+            return true;
+        }
+
+        lastshotRPM = getRPM();
+        return false;
+    }
+
+    // checks how much time it took for the flywheel to reach the setpoint
+    // NOTE: the setpoint may CHANGE, so this function checks the time it took for the flywheel to follow the targetRPM
     private void calculateRecovery() {
-        if (getTargetRPM() - getRPM() > RPM_REACHED_THRESHOLD) {
+        if (wasBallshot()) {
             if (!calculatedRecovery) {
                 timerEx.restart();
                 timerEx.start();
@@ -237,7 +251,8 @@ public class Shooter extends SubsystemBase {
                 shotHoodAngle = Math.toDegrees(solution.getVerticalAngle());
                 shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
                 shotFlywheelRPM = getRPM();
-                shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) * inchesToMeters;
+                shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) / inchesToMeters;
+                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(poseTracker.getPose().getX(), poseTracker.getPose().getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec() * inchesToMeters, shotHoodAngle, 2, 0.2));
             }
         } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
             recoveryTime = timerEx.getElapsed();

@@ -19,18 +19,18 @@ public class ShooterConfig {
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;
-    public static double ANGLE_REACHED_THRESHOLD = Math.toRadians(10);
-    public static double TURRET_KP = 1.5;
-    public static double TURRET_KI = 0.01;
-    public static double TURRET_KD = 0.04;
+    public static double ANGLE_REACHED_THRESHOLD = Math.toRadians(3);
+    public static double TURRET_KP = 5;
+    public static double TURRET_KI = 0.04;
+    public static double TURRET_KD = 0.2;
     public static double TURRET_KS = 0.025;
     public static double TURRET_KV = 0.22;
-    public static double TURRET_KA = 0.01;
+    public static double TURRET_KA = 0.02;
     public static double TURRET_MIN = Math.toRadians(-210); // Clockwise
     public static double TURRET_MAX = Math.toRadians(165); // Counter-clockwise
     public static double GEAR_RATIO = (double) 200 / 30;
-    public static double TURRET_OFFSET_X = -0.591; // 0.591 inch
-    public static double TURRET_OFFSET_Y = 0;
+    public static double TURRET_OFFSET_X = -0.591; // Positive = Front
+    public static double TURRET_OFFSET_Y = 0; // Positive = Left
     public static boolean TURRET_WRAP = true;
 
     public static String HOOD_NAME = "hood";
