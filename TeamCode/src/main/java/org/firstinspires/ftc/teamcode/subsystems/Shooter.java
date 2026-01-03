@@ -232,7 +232,7 @@ public class Shooter extends SubsystemBase {
 
     // returns true if we just shot, otherwise false
     private boolean wasBallshot() {
-        if ((Math.abs(getTargetRPM() - getRPM()) >  SHOT_RPM_DROP) && (Math.abs(lastshotRPM - getRPM()) > SHOT_RPM_DROP)) {
+        if ((Math.abs(getTargetRPM() - getRPM()) > RPM_REACHED_THRESHOLD) && (Math.abs(lastshotRPM - getRPM()) > RPM_REACHED_THRESHOLD)) {
             return true;
         }
 
@@ -252,7 +252,7 @@ public class Shooter extends SubsystemBase {
                 shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
                 shotFlywheelRPM = getRPM();
                 shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) / inchesToMeters;
-                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(poseTracker.getPose().getX(), poseTracker.getPose().getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec() * inchesToMeters, shotHoodAngle, 2, 0.2));
+//                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(poseTracker.getPose().getX(), poseTracker.getPose().getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec() * inchesToMeters, shotHoodAngle, 2, 0.2));
             }
         } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
             recoveryTime = timerEx.getElapsed();
