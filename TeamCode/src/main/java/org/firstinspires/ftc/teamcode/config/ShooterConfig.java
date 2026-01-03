@@ -16,6 +16,7 @@ public class ShooterConfig {
     public static double FLYWHEEL_KA = 0.001; //  or 0.01
     public static double FLYWHEEL_KV = 1.66;
     public static double FLYWHEEL_DELAY_SEC = 0.06; // ~2 control loops @ 20ms
+    public static final double RPM_SMOOTHING_FACTOR = 0.2; // 0.1 (very smooth) - 0.8 (responsive)
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;

@@ -66,6 +66,7 @@ public class Shooter extends SubsystemBase {
     private double lastshotRPM;
 
     private boolean canShoot;
+    private double filteredRPM = 0;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -104,7 +105,7 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         if (poseTracker == null) return;
 
-        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getRPM());
+        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
         canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
@@ -131,6 +132,11 @@ public class Shooter extends SubsystemBase {
 
     public double getTargetRPM() {
         return (targetTPS * 60.0) / flywheel.getCPR();
+    }
+
+    public double getFilteredRPM() {
+        filteredRPM = (RPM_SMOOTHING_FACTOR * getRPM()) + ((1 - RPM_SMOOTHING_FACTOR) * filteredRPM);
+        return filteredRPM;
     }
 
     public boolean getCanShoot() {
