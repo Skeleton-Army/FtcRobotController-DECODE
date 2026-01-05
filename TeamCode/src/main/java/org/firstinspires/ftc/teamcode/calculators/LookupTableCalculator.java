@@ -94,7 +94,8 @@ public class LookupTableCalculator implements IShooterCalculator {
 
         double newSpeed = v0.getNorm();
         double newHorizontalAngle = v0.getAlpha() - predHeading;
-        double newVerticalAngle = v0.getDelta();
+        double horizontalComp = Math.sqrt(v0.getX() * v0.getX() + v0.getY() * v0.getY());
+        double newVerticalAngle = Math.atan2(v0.getZ(), horizontalComp);
 
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
