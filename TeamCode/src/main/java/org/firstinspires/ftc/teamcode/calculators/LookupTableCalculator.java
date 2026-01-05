@@ -46,29 +46,51 @@ public class LookupTableCalculator implements IShooterCalculator {
         int r0 = (int) dIdx;
         int r1 = Math.min(r0 + 1, DIST_STEPS - 1);
 
-        // 1. Collect all valid velocity indices
-        int[] validCols = new int[VEL_STEPS];
-        int count = 0;
+        // 1. Find the first valid column (Left Boundary)
+        int firstValid = findBoundary(r0, r1, true);
 
-        for (int c = 0; c < VEL_STEPS; c++) {
-            if (ANGLE_TABLE[r0][c] != -1 || ANGLE_TABLE[r1][c] != -1) {
-                validCols[count++] = c;
-            }
-        }
+        // 2. Find the last valid column (Right Boundary)
+        int lastValid = findBoundary(r0, r1, false);
 
-        // 2. If none found, fallback
-        if (count == 0) {
+        // 3. If no valid overlap found, return a safe fallback
+        if (firstValid == -1 || lastValid == -1) {
             return MIN_VEL;
         }
 
-        // 3. Pick index based on bias
+        // 4. Apply bias between the min and max valid velocities
         double bias = Math.max(0.0, Math.min(1.0, VELOCITY_BIAS));
-        int chosenIndex = (int) Math.round(bias * (count - 1));
+        double chosenColIdx = firstValid + bias * (lastValid - firstValid);
 
-        int c = validCols[chosenIndex];
+        // 5. Convert column index to velocity
+        return MIN_VEL + (chosenColIdx / (VEL_STEPS - 1)) * (MAX_VEL - MIN_VEL);
+    }
 
-        // 4. Convert column index → velocity
-        return MIN_VEL + ((double) c / (VEL_STEPS - 1)) * (MAX_VEL - MIN_VEL);
+    /**
+     * Binary search to find the start or end of the 'true' block in the VALIDITY_TABLE.
+     * @param findFirst If true, searches for the leftmost valid index. If false, rightmost.
+     */
+    private int findBoundary(int r0, int r1, boolean findFirst) {
+        int low = 0, high = VEL_STEPS - 1;
+        int result = -1;
+
+        while (low <= high) {
+            int mid = low + (high - low) / 2;
+
+            boolean isValid = VALIDITY_TABLE[r0][mid] || VALIDITY_TABLE[r1][mid];
+
+            if (isValid) {
+                result = mid;
+                if (findFirst) high = mid - 1; // Keep looking left
+                else low = mid + 1;           // Keep looking right
+            } else {
+                // This part is tricky: valid regions in ballistics are usually one
+                // continuous hump. If invalid, we need to know which way to move.
+                // Usually, low velocity at long distance is invalid, so:
+                if (findFirst) low = mid + 1;
+                else high = mid - 1;
+            }
+        }
+        return result;
     }
 
     public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
