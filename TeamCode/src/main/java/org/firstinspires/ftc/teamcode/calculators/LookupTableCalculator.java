@@ -10,6 +10,7 @@ import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.firstinspires.ftc.teamcode.consts.ShooterLookupTable;
 import org.psilynx.psikit.core.Logger;
 
 public class LookupTableCalculator implements IShooterCalculator {
@@ -18,73 +19,6 @@ public class LookupTableCalculator implements IShooterCalculator {
 
     public LookupTableCalculator(double[] velCoeffs) {
         this.velCoeffs = velCoeffs;
-    }
-
-    private double getClosestValidAngle(double distance, double velocity) {
-        double dIdx = (distance - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
-        double vIdx = (velocity - MIN_VEL) / (MAX_VEL - MIN_VEL) * (VEL_STEPS - 1);
-
-        int centerR = (int) Math.round(Math.max(0, Math.min(DIST_STEPS - 1, dIdx)));
-        int centerC = (int) Math.round(Math.max(0, Math.min(VEL_STEPS - 1, vIdx)));
-
-        // Spiral search or simple radius expansion to find the nearest non -1 value
-        for (int radius = 0; radius < Math.max(DIST_STEPS, VEL_STEPS); radius++) {
-            for (int r = centerR - radius; r <= centerR + radius; r++) {
-                for (int c = centerC - radius; c <= centerC + radius; c++) {
-                    if (r >= 0 && r < DIST_STEPS && c >= 0 && c < VEL_STEPS) {
-                        if (ANGLE_TABLE[r][c] != -1) {
-                            return ANGLE_TABLE[r][c];
-                        }
-                    }
-                }
-            }
-        }
-
-        return 0.0; // Absolute fallback if table is empty
-    }
-
-    private double calculateVerticalAngle(double distance, double velocity) {
-        if (distance < MIN_DIST || distance > MAX_DIST || velocity < MIN_VEL || velocity > MAX_VEL) {
-            return Double.NaN;
-        }
-
-        double dIdx = (distance - MIN_DIST) / (MAX_DIST - MIN_DIST) * (DIST_STEPS - 1);
-        double vIdx = (velocity - MIN_VEL) / (MAX_VEL - MIN_VEL) * (VEL_STEPS - 1);
-
-        int r0 = (int) dIdx;
-        int r1 = Math.min(r0 + 1, DIST_STEPS - 1);
-        int c0 = (int) vIdx;
-        int c1 = Math.min(c0 + 1, VEL_STEPS - 1);
-
-        // Get values from the four corners
-        double v00 = ANGLE_TABLE[r0][c0];
-        double v01 = ANGLE_TABLE[r0][c1];
-        double v10 = ANGLE_TABLE[r1][c0];
-        double v11 = ANGLE_TABLE[r1][c1];
-
-        double dr = dIdx - r0;
-        double dc = vIdx - c0;
-
-        // Calculate weights for each corner
-        double w00 = (1 - dr) * (1 - dc);
-        double w01 = (1 - dr) * dc;
-        double w10 = dr * (1 - dc);
-        double w11 = dr * dc;
-
-        double weightedSum = 0;
-        double totalWeight = 0;
-
-        // Only include valid points (!= -1) in the result
-        if (v00 != -1) { weightedSum += v00 * w00; totalWeight += w00; }
-        if (v01 != -1) { weightedSum += v01 * w01; totalWeight += w01; }
-        if (v10 != -1) { weightedSum += v10 * w10; totalWeight += w10; }
-        if (v11 != -1) { weightedSum += v11 * w11; totalWeight += w11; }
-
-        // If no valid points were found in the bounding box, return -1
-        if (totalWeight == 0) return -1;
-
-        // Normalize by the sum of weights used
-        return weightedSum / totalWeight;
     }
 
     private double RPMToVelocity(int rpm) {
@@ -160,17 +94,14 @@ public class LookupTableCalculator implements IShooterCalculator {
 
         // Compute distance/angles from predicted pose
         double distance = predictedPose.distanceFrom(goalPoseMeters);
-        double verticalAngle = calculateVerticalAngle(distance, RPMToVelocity(flywheelVel));
+        double speed = RPMToVelocity(flywheelVel);
+        HoodSolution hoodSolution = lookup(distance, speed);
+        double verticalAngle = hoodSolution.getHoodAngle();
         double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
 
-        boolean canShoot = true;
-        if (verticalAngle == -1 || Double.isNaN(verticalAngle)) {
-            verticalAngle = getClosestValidAngle(distance, RPMToVelocity(flywheelVel));
-            canShoot = false;
-        }
+        boolean canShoot = hoodSolution.isValid();
 
         // Compute stationary launch vector in field coordinates
-        double speed = RPMToVelocity(flywheelVel);
         double vx = speed * Math.cos(verticalAngle) * Math.cos(horizontalAngle);
         double vy = speed * Math.cos(verticalAngle) * Math.sin(horizontalAngle);
         double vz = speed * Math.sin(verticalAngle);
