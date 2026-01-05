@@ -15,6 +15,7 @@ import org.psilynx.psikit.core.Logger;
 
 public class LookupTableCalculator implements IShooterCalculator {
     private static final double INCH_TO_METERS = 0.0254;
+    private static final double MOVEMENT_COMPENSATION = 0.2;
     private final double[] velCoeffs;
 
     public LookupTableCalculator(double[] velCoeffs) {
@@ -120,7 +121,7 @@ public class LookupTableCalculator implements IShooterCalculator {
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
-                velocityToRPM(shooterVelocity(distance)),
+                velocityToRPM(shooterVelocity(distance)) * (1 - MOVEMENT_COMPENSATION) + newSpeed * MOVEMENT_COMPENSATION,
                 canShoot
         );
     }
