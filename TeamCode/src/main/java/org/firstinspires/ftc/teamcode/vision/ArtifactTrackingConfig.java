@@ -15,10 +15,12 @@ public class ArtifactTrackingConfig {
     // distance from the target to the floor
     public static double ARTIFACT_HEIGHT_FROM_FLOOR = 0.0;
 
-    // x and y offset to 0;0
-    public static double Y_OFFSET = -7.48;
-    public static double X_OFFSET = -7.67;
+    // x and y offset to 0;0 of the robot
+    public static double Y_OFFSET = 0; //-7.48
+    public static double X_OFFSET = 0; //-7.67
 
+    public static double ROB_X = 0;
+    public static double ROB_Y = 0;
 
 
 }
