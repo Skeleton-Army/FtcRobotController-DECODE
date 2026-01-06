@@ -18,7 +18,6 @@ import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 public class Drive extends SubsystemBase {
@@ -41,18 +40,27 @@ public class Drive extends SubsystemBase {
         return new DeferredCommand(
                 () -> {
                     PathChain openGate = follower
-                        .pathBuilder()
-                        .addPath(
-                                new BezierLine(
-                                        follower.getPose(),
-                                        getRelative(new Pose())
-                                )
-                        )
+                            .pathBuilder()
+                            .addPath(
+                                    new BezierLine(
+                                            follower.getPose(),
+                                            getRelative(new Pose(18.039, 70.911))
+                                    )
+                            )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
+                                    gateAngle(follower.getHeading())
 
-                            );
-                }
+                            )
+                            .setTranslationalConstraint(1)
+                            .setBrakingStrength(1)
+                            .build();
+
+                    return new SequentialCommandGroup(
+                            new FollowPathCommand(follower, openGate)
+                    );
+                },
+                Collections.singletonList(this)
         );
     }
 
@@ -71,6 +79,7 @@ public class Drive extends SubsystemBase {
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
                                     getClosestRightAngle(follower.getHeading())
+
                             )
                             .setTranslationalConstraint(1)
                             .setBrakingStrength(1)
@@ -154,6 +163,14 @@ public class Drive extends SubsystemBase {
         }
 
         return closest;
+    }
+
+    private double gateAngle(double heading){
+        if(getClosestRightAngle(heading) >= 0 && getClosestRightAngle(heading) < 180){
+            return Math.PI / 2;
+        }
+        return 3 * Math.PI / 2;
+
     }
 
     private Pose getRelative(Pose originalPose) {
