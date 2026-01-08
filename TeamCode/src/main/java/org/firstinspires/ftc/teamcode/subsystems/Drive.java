@@ -138,18 +138,10 @@ public class Drive extends SubsystemBase {
     }
 
     private Pose getRelative(Pose originalPose) {
-        if (alliance == Alliance.RED) {
+        if (alliance == Alliance.BLUE) {
             return originalPose.mirror();
         }
 
         return originalPose;
-    }
-
-    private double getRelative(double headingRad) {
-        if (alliance == Alliance.RED) {
-            return MathFunctions.normalizeAngle(Math.PI - headingRad);
-        }
-
-        return headingRad;
     }
 }
