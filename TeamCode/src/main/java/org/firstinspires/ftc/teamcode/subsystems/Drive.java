@@ -15,6 +15,7 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 
@@ -24,12 +25,14 @@ import java.util.Collections;
 public class Drive extends SubsystemBase {
     private final Follower follower;
     private final Alliance alliance;
+    private final boolean isRobotCentric;
 
     private boolean shootingMode;
 
     public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
         this.alliance = alliance;
+        this.isRobotCentric = Settings.get("robot_centric", true);
     }
 
     @Override
@@ -102,7 +105,7 @@ public class Drive extends SubsystemBase {
                 -gamepad.left_stick_y * (shootingMode ? SHOOTING_FORWARD_SPEED : FORWARD_SPEED),
                 -gamepad.left_stick_x * (shootingMode ? SHOOTING_STRAFE_SPEED : STRAFE_SPEED),
                 -gamepad.right_stick_x * (shootingMode ? SHOOTING_TURN_SPEED : TURN_SPEED),
-                true
+                isRobotCentric
         );
     }
 
