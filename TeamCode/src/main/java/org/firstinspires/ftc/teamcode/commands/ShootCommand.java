@@ -95,7 +95,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
     public void recordShot() {
         Logger.recordOutput("Shot/RPM: ", shooter.getRPM());
-        Logger.recordOutput("Shot/Angle hood: ", shooter.getHoodAngle());
+        Logger.recordOutput("Shot/Angle hood: ", shooter.getHoodAngleDegrees());
         Logger.recordOutput("Shot/Turret angle error (deg): ", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
     }
     @Override

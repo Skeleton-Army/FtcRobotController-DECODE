@@ -167,11 +167,16 @@ public class Shooter extends SubsystemBase {
         hood.set(MathFunctions.clamp(angle, HOOD_POSSIBLE_MIN, HOOD_POSSIBLE_MAX));
     }
 
-    // get hood angle in deg
     public double getHoodAngle() {
-        return (HOOD_INVERTED ? -1 : 1) * (34.7) * getRawHoodPosition() + 62.5;
+        double pos = getRawHoodPosition();
+        double normalizedPos = HOOD_INVERTED ? (1.0 - pos) : pos;
+
+        return HOOD_MIN + (normalizedPos * (HOOD_MAX - HOOD_MIN));
     }
 
+    public double getHoodAngleDegrees() {
+        return Math.toDegrees(getHoodAngle());
+    }
 
     public void setHorizontalManualMode(boolean enabled) {
         horizontalManualMode = enabled;

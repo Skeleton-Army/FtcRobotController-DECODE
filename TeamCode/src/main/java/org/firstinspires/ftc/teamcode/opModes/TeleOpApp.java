@@ -223,7 +223,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Turret error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
 
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
-        telemetry.addData("hood angle(deg)", shooter.getHoodAngle());
+        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
         telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
         telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
@@ -249,7 +249,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getVelocity()));
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
-        Logger.recordOutput("Shooter/Hood Angle (deg)", shooter.getHoodAngle());
+        Logger.recordOutput("Shooter/Hood Angle (deg)", shooter.getHoodAngleDegrees());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         Logger.recordOutput("Turret/Turret Angle Target (deg)", Math.toDegrees(shooter.wrapped));
         Logger.recordOutput("Turret/Turret Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
