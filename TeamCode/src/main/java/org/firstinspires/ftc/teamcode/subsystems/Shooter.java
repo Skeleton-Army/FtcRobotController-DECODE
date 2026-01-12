@@ -14,6 +14,7 @@ import com.seattlesolvers.solverslib.controller.PIDController;
 import com.seattlesolvers.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
+import com.seattlesolvers.solverslib.hardware.motors.MotorGroup;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
@@ -25,10 +26,8 @@ import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.utilities.Debugger;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
+import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.wpi.math.Pose3d;
-import org.psilynx.psikit.core.wpi.math.Rotation3d;
-import org.psilynx.psikit.core.wpi.math.Transform3d;
 import org.psilynx.psikit.core.wpi.math.Translation3d;
 
 import java.util.concurrent.TimeUnit;
@@ -38,7 +37,7 @@ public class Shooter extends SubsystemBase {
 
     private final PoseTracker poseTracker;
 
-    private final ModifiedMotorEx flywheel;
+    private final ModifiedMotorGroup flywheel;
     private final ModifiedMotorEx turret;
     private final ServoEx hood;
 
@@ -74,7 +73,10 @@ public class Shooter extends SubsystemBase {
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
-        flywheel = new ModifiedMotorEx(hardwareMap, FLYWHEEL_NAME, FLYWHEEL_MOTOR);
+        flywheel = new ModifiedMotorGroup(
+                new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR),
+                new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR)
+        );
         flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
@@ -113,7 +115,6 @@ public class Shooter extends SubsystemBase {
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
         if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, false);
-        //if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset, true); // for hood correction
         setRPM(solution.getVelocity());
 
         calculateRecovery();
@@ -130,7 +131,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getRPM() {
-        double motorTPS = flywheel.getCorrectedVelocity();
+        double motorTPS = flywheel.getVelocity();
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
@@ -168,7 +169,7 @@ public class Shooter extends SubsystemBase {
 
     // get hood angle in deg
     public double getHoodAngle() {
-        return (-34.7) * getRawHoodPosition() + 62.5;
+        return (HOOD_INVERTED ? -1 : 1) * (34.7) * getRawHoodPosition() + 62.5;
     }
 
 
@@ -223,7 +224,7 @@ public class Shooter extends SubsystemBase {
         double normalized = (angleRad - HOOD_MIN) / (HOOD_MAX - HOOD_MIN); // Normalized/converted to servo position
         double invertedNormalized = 1 - normalized;
 
-        setHoodPosition(invertedNormalized);
+        setHoodPosition(HOOD_INVERTED ? invertedNormalized : normalized);
     }
 
     public void setHorizontalAngle(double targetAngleRad) {

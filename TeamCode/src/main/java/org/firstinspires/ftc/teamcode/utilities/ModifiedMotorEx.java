@@ -30,6 +30,8 @@ public class ModifiedMotorEx extends Motor {
 
     private boolean targetIsSet = false;
 
+    public ModifiedMotorEx() {}
+
     /**
      * Constructs the instance motor for the wrapper
      */

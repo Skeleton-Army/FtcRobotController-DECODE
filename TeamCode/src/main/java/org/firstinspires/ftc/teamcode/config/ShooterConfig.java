@@ -8,7 +8,8 @@ public class ShooterConfig {
     static double metersToInches = 39.37;
 
     public static double SHOOT_HEIGHT = 0.4 * metersToInches;
-    public static String FLYWHEEL_NAME = "flywheel";
+    public static String FLYWHEEL1_NAME = "flywheel1";
+    public static String FLYWHEEL2_NAME = "flywheel2";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL_INVERTED = true;
     public static int RPM_REACHED_THRESHOLD = 50;
@@ -38,8 +39,9 @@ public class ShooterConfig {
     public static boolean TURRET_WRAP = true;
 
     public static String HOOD_NAME = "hood";
-    public static double HOOD_POSSIBLE_MIN = 0.03;
-    public static double HOOD_POSSIBLE_MAX = 0.9;
+    public static boolean HOOD_INVERTED = false;
+    public static double HOOD_POSSIBLE_MIN = 0;
+    public static double HOOD_POSSIBLE_MAX = 0.96;
     public static double HOOD_MIN = Math.toRadians(27.8);
     public static double HOOD_MAX = Math.toRadians(62.5);
     public static double  HOOD_COMPENSATION = 0.01;
