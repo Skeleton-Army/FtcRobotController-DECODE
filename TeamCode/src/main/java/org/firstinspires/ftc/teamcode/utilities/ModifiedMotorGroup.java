@@ -5,6 +5,8 @@ import androidx.annotation.NonNull;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorGroup;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
@@ -51,6 +53,24 @@ public class ModifiedMotorGroup extends ModifiedMotorEx implements Iterable<Modi
         for (int i = 1; i < group.length; i++) {
             group[i].set(group[0].get(), voltage);
         }
+    }
+
+    @Override
+    public void setVelocity(double velocity) {
+        set(velocity / ACHIEVABLE_MAX_TICKS_PER_SECOND);
+    }
+
+    @Override
+    public void setVelocity(double velocity, double voltage) {
+        set(velocity / ACHIEVABLE_MAX_TICKS_PER_SECOND, voltage);
+    }
+
+    @Override
+    public void setVelocity(double velocity, AngleUnit angleUnit) {
+        setVelocity(
+                getCPR() * AngleUnit.RADIANS.fromUnit(angleUnit, velocity)
+                        / (2 * Math.PI)
+        );
     }
 
     /**
