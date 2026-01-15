@@ -132,10 +132,16 @@ public class Drive extends SubsystemBase {
                     isRobotCentric
             );
         } else {
-            // FALLING EDGE: We just stopped moving. Lock the current position.
+            // Only lock position if we aren't already holding AND velocity is low enough
             if (!isHoldingPosition) {
-                follower.holdPoint(follower.getPose());
-                isHoldingPosition = true;
+                double currentVelocity = follower.getVelocity().getMagnitude();
+
+                if (currentVelocity < HOLD_VELOCITY_THRESHOLD) {
+                    follower.holdPoint(follower.getPose());
+                    isHoldingPosition = true;
+                } else {
+                    follower.setTeleOpDrive(0, 0, 0, isRobotCentric);
+                }
             }
         }
     }
