@@ -26,13 +26,18 @@ public class Drive extends SubsystemBase {
     private final Follower follower;
     private final Alliance alliance;
     private final boolean isRobotCentric;
+    private final boolean tabletopMode;
+    private final boolean debugMode;
 
     private boolean shootingMode;
+    private boolean isHoldingPosition = false;
 
     public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
         this.alliance = alliance;
         this.isRobotCentric = Settings.get("robot_centric", true);
+        this.tabletopMode = Settings.get("tabletop_mode", false);
+        this.debugMode = Settings.get("debug_mode", false);
     }
 
     @Override
@@ -41,6 +46,8 @@ public class Drive extends SubsystemBase {
     }
 
     public Command goToBase() {
+        if (tabletopMode) return new InstantCommand();
+
         // Use DeferredCommand to create the path and command on schedule
         return new DeferredCommand(
                 () -> {
@@ -71,6 +78,8 @@ public class Drive extends SubsystemBase {
     }
 
     public Command goToCenter() {
+        if (tabletopMode || !debugMode) return new InstantCommand();
+
         // Use DeferredCommand to create the path and command on schedule
         return new DeferredCommand(
                 () -> {
@@ -100,13 +109,35 @@ public class Drive extends SubsystemBase {
         );
     }
 
-    public void joystickDrive(Gamepad gamepad) {
-        follower.setTeleOpDrive(
-                -gamepad.left_stick_y * (shootingMode ? SHOOTING_FORWARD_SPEED : FORWARD_SPEED),
-                -gamepad.left_stick_x * (shootingMode ? SHOOTING_STRAFE_SPEED : STRAFE_SPEED),
-                -gamepad.right_stick_x * (shootingMode ? SHOOTING_TURN_SPEED : TURN_SPEED),
-                isRobotCentric
-        );
+    public void teleOpDrive(Gamepad gamepad) {
+        if (tabletopMode) return;
+
+        double leftY = -gamepad.left_stick_y;
+        double leftX = -gamepad.left_stick_x;
+        double rightX = -gamepad.right_stick_x;
+
+        boolean hasInput = Math.abs(leftY) > 0.1 || Math.abs(leftX) > 0.1 || Math.abs(rightX) > 0.1;
+
+        if (hasInput) {
+            // RISING EDGE: We were holding, now we are moving. Switch back to TeleOp control.
+            if (isHoldingPosition) {
+                follower.startTeleopDrive(USE_BRAKE_MODE);
+                isHoldingPosition = false;
+            }
+
+            follower.setTeleOpDrive(
+                    leftY * (shootingMode ? SHOOTING_FORWARD_SPEED : FORWARD_SPEED),
+                    leftX * (shootingMode ? SHOOTING_STRAFE_SPEED : STRAFE_SPEED),
+                    rightX * (shootingMode ? SHOOTING_TURN_SPEED : TURN_SPEED),
+                    isRobotCentric
+            );
+        } else {
+            // FALLING EDGE: We just stopped moving. Lock the current position.
+            if (!isHoldingPosition) {
+                follower.holdPoint(follower.getPose());
+                isHoldingPosition = true;
+            }
+        }
     }
 
     public boolean getShootingMode() {

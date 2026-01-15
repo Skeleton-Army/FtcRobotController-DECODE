@@ -11,6 +11,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -170,20 +171,23 @@ public class TeleOpApp extends ComplexOpMode {
                         new InstantCommand(shooter::resetTurret)
                 );
 
-        if (!tabletopMode) {
-            gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
-                    .whenPressed(drive.goToBase());
-        }
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
+                .whenPressed(drive.goToBase());
 
-        if (!tabletopMode && debugMode) {
-            gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
-                    .whenPressed(drive.goToCenter());
-        }
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
+                .whenPressed(drive.goToCenter());
 
         if (!tabletopMode && !debugMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                     .whenPressed(this::resetPoseToNearestCorner);
         }
+
+        drive.setDefaultCommand(
+                new RunCommand(
+                        () -> drive.teleOpDrive(gamepad1),
+                        drive
+                )
+        );
     }
 
     @Override
@@ -191,12 +195,15 @@ public class TeleOpApp extends ComplexOpMode {
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
-        if (!tabletopMode) {
-            drive.joystickDrive(gamepad1);
-        }
-
         // Immediately cancel drive command if joysticks are moved
-        if (drive.getCurrentCommand() != null && (gamepadEx1.getLeftX() != 0 || gamepadEx1.getLeftY() != 0 || gamepadEx1.getRightX() != 0 || gamepadEx1.getRightY() != 0)) {
+        boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
+                Math.abs(gamepad1.left_stick_x) > 0.1 ||
+                Math.abs(gamepad1.right_stick_x) > 0.1;
+
+        if (!tabletopMode &&
+                drive.getCurrentCommand() != null &&
+                drive.getCurrentCommand() != drive.getDefaultCommand() &&
+                inputDetected) {
             CommandScheduler.getInstance().cancel(drive.getCurrentCommand());
             follower.startTeleopDrive(USE_BRAKE_MODE);
         }
