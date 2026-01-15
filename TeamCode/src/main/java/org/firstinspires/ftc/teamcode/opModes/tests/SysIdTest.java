@@ -16,7 +16,9 @@ import java.util.Locale;
 public class SysIdTest extends OpMode {
 
     /* ================= CONFIG ================= */
-    private static final String MOTOR_NAME = "flywheel";
+    private static final String MOTOR_NAME = "flywheel1";
+    private static final String MOTOR_NAME2 = "flywheel2";
+
     private static final double RAMP_RATE = 0.25; // Volts per second
     private static final double MAX_VOLTAGE = 12.0; // Safety cap
     private static final double STEP_VOLTAGE = 6.0; // For Dynamic test
@@ -36,6 +38,7 @@ public class SysIdTest extends OpMode {
 
     /* ================= HARDWARE ================= */
     private DcMotorEx motor;
+    private DcMotorEx motor2;
     private VoltageSensor voltageSensor;
     private List<LynxModule> allHubs;
 
@@ -54,11 +57,16 @@ public class SysIdTest extends OpMode {
 
         // 2. Setup Hardware
         motor = hardwareMap.get(DcMotorEx.class, MOTOR_NAME);
+        motor2 = hardwareMap.get(DcMotorEx.class, MOTOR_NAME2);
+
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         // 3. Configure Motor for pure voltage control
         motor.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         motor.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+        motor2.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
+        motor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
+
 
         telemetry.addLine("Initialized.");
         telemetry.addLine("Use D-PAD UP/DOWN to select test.");
@@ -144,6 +152,7 @@ public class SysIdTest extends OpMode {
         motorPower = Math.max(-1.0, Math.min(1.0, motorPower));
 
         motor.setPower(motorPower);
+        motor2.setPower(motorPower);
 
         // LOGGING
         // We log the *actual* applied voltage (MotorPower * BatteryVoltage)
