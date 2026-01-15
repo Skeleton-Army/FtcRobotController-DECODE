@@ -23,26 +23,26 @@ public class ShooterConfig {
     public static double FLYWHEEL_DELAY_SEC = 0.06; // ~2 control loops @ 20ms
 
     public static String TURRET_NAME = "turret";
-    public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_435;
+    public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
     public static double ANGLE_REACHED_THRESHOLD = Math.toRadians(3);
-    public static double TURRET_KP = 5;
-    public static double TURRET_KI = 0.04;
-    public static double TURRET_KD = 0.2;
-    public static double TURRET_KS = 0.025;
-    public static double TURRET_KV = 0.22;
-    public static double TURRET_KA = 0.02;
-    public static double TURRET_MIN = Math.toRadians(-210); // Clockwise
-    public static double TURRET_MAX = Math.toRadians(165); // Counter-clockwise
-    public static double GEAR_RATIO = (double) 200 / 30;
+    public static double TURRET_KP = 2.3;
+    public static double TURRET_KI = 0;
+    public static double TURRET_KD = 0;
+    public static double TURRET_KS = 0;
+    public static double TURRET_KV = 0;
+    public static double TURRET_KA = 0;
+    public static double TURRET_MIN = Math.toRadians(-70); // Clockwise
+    public static double TURRET_MAX = Math.toRadians(70); // Counter-clockwise
+    public static double GEAR_RATIO = (double) 111 / 11;
     public static double TURRET_OFFSET_X = -0.591; // Positive = Front
     public static double TURRET_OFFSET_Y = 0; // Positive = Left
-    public static boolean TURRET_WRAP = true;
+    public static boolean TURRET_WRAP = false;
 
     public static String HOOD_NAME = "hood";
-    public static boolean HOOD_INVERTED = false;
+    public static boolean HOOD_INVERTED = true;
     public static double HOOD_POSSIBLE_MIN = 0;
     public static double HOOD_POSSIBLE_MAX = 0.96;
-    public static double HOOD_MIN = Math.toRadians(27.8);
-    public static double HOOD_MAX = Math.toRadians(62.5);
+    public static double HOOD_MIN = Math.toRadians(64);
+    public static double HOOD_MAX = Math.toRadians(30.04);
     public static double  HOOD_COMPENSATION = 0.01;
 }

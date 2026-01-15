@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorGroup;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 
@@ -57,12 +58,12 @@ public class ModifiedMotorGroup extends ModifiedMotorEx implements Iterable<Modi
 
     @Override
     public void setVelocity(double velocity) {
-        set(velocity / ACHIEVABLE_MAX_TICKS_PER_SECOND);
+        set(velocity / group[0].ACHIEVABLE_MAX_TICKS_PER_SECOND);
     }
 
     @Override
     public void setVelocity(double velocity, double voltage) {
-        set(velocity / ACHIEVABLE_MAX_TICKS_PER_SECOND, voltage);
+        set(velocity / group[0].ACHIEVABLE_MAX_TICKS_PER_SECOND, voltage);
     }
 
     @Override
