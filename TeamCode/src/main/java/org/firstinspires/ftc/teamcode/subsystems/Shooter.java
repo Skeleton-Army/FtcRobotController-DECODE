@@ -73,14 +73,16 @@ public class Shooter extends SubsystemBase {
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
 
-        flywheel = new ModifiedMotorGroup(
-                new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR),
-                new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR)
-        );
+        ModifiedMotorEx flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
+        flywheel1.setInverted(FLYWHEEL1_INVERTED);
+
+        ModifiedMotorEx flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
+        flywheel2.setInverted(FLYWHEEL2_INVERTED);
+
+        flywheel = new ModifiedMotorGroup(flywheel1, flywheel2);
         flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
-        flywheel.setInverted(FLYWHEEL_INVERTED);
         flywheel.setDelayCompensation(FLYWHEEL_DELAY_SEC);
 
         turret = new ModifiedMotorEx(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
