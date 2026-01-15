@@ -10,6 +10,7 @@ import com.seattlesolvers.solverslib.command.Robot;
 import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 
+import org.firstinspires.ftc.teamcode.consts.ShooterLookupTable;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
@@ -53,6 +54,7 @@ public abstract class ComplexOpMode extends LinearOpMode {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
+        initCSV();
         initialize();
         startLogger();
 
@@ -128,5 +130,23 @@ public abstract class ComplexOpMode extends LinearOpMode {
         Logger.addDataReceiver(new RLOGWriter(folderName, logFileName));
         Logger.addDataReceiver(new RLOGServer());
         Logger.start();
+    }
+
+    private void initCSV() {
+        try {
+            ShooterLookupTable.VALIDITY_TABLE = CsvUtils.getBooleanMatrixFromCsv("../consts/ValidityTable.csv");
+            ShooterLookupTable.ANGLE_TABLE = CsvUtils.getDoubleMatrixFromCsv("../consts/AngleTable.csv");
+            ShooterLookupTable.VELOCITY_ARRAY = CsvUtils.getDoubleArrayFromCsv("../consts/VelocityArray.csv");
+        }
+        catch (Exception e) {
+            System.out.println("Error loading shooter lookup table CSV files: " + e.getMessage());
+            // Load Default Tables, false for validity, 0.0 for angle
+            for (int i = 0; i < ShooterLookupTable.DIST_STEPS; i++) {
+                for (int j = 0; j < ShooterLookupTable.VEL_STEPS; j++) {
+                    ShooterLookupTable.VALIDITY_TABLE[i][j] = false;
+                    ShooterLookupTable.ANGLE_TABLE[i][j] = 0.0;
+                }
+            }
+        }
     }
 }
