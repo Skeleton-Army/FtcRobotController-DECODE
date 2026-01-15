@@ -26,11 +26,11 @@ public class ShooterConfig {
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
     public static double ANGLE_REACHED_THRESHOLD = Math.toRadians(3);
-    public static double TURRET_KP = 2.3;
+    public static double TURRET_KP = 1.5;
     public static double TURRET_KI = 0;
-    public static double TURRET_KD = 0;
-    public static double TURRET_KS = 0;
-    public static double TURRET_KV = 0;
+    public static double TURRET_KD = 0.05;
+    public static double TURRET_KS = 0.03;
+    public static double TURRET_KV = 0.13;
     public static double TURRET_KA = 0;
     public static double TURRET_MIN = Math.toRadians(-70); // Clockwise
     public static double TURRET_MAX = Math.toRadians(70); // Counter-clockwise
