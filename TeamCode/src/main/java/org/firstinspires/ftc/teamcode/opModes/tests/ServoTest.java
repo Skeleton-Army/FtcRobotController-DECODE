@@ -24,6 +24,15 @@ public class ServoTest extends OpMode {
         if (gamepad1.squareWasPressed()) {
             servo.setPosition(ShooterConfig.HOOD_POSSIBLE_MIN);
         }
+
+        if (gamepad1.dpadUpWasPressed()) {
+            servo.setPosition(servo.getPosition() + 0.1);
+        }
+
+        if (gamepad1.dpadDownWasPressed()) {
+            servo.setPosition(servo.getPosition() - 0.1);
+        }
+
         telemetry.addData("Servo pos", servo.getPosition());
     }
 }
