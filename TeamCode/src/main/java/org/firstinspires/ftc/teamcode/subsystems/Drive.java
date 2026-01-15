@@ -129,7 +129,8 @@ public class Drive extends SubsystemBase {
                     leftY * (shootingMode ? SHOOTING_FORWARD_SPEED : FORWARD_SPEED),
                     leftX * (shootingMode ? SHOOTING_STRAFE_SPEED : STRAFE_SPEED),
                     rightX * (shootingMode ? SHOOTING_TURN_SPEED : TURN_SPEED),
-                    isRobotCentric
+                    isRobotCentric,
+                    Math.toRadians(alliance == Alliance.RED ? 0 : 180)
             );
         } else {
             // Only lock position if we aren't already holding AND velocity is low enough
