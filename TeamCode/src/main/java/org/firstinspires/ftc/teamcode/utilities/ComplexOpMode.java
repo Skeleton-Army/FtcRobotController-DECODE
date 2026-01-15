@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.Robot;
@@ -137,9 +138,12 @@ public abstract class ComplexOpMode extends LinearOpMode {
             ShooterLookupTable.VALIDITY_TABLE = CsvUtils.getBooleanMatrixFromCsv("../consts/ValidityTable.csv");
             ShooterLookupTable.ANGLE_TABLE = CsvUtils.getDoubleMatrixFromCsv("../consts/AngleTable.csv");
             ShooterLookupTable.VELOCITY_ARRAY = CsvUtils.getDoubleArrayFromCsv("../consts/VelocityArray.csv");
+            System.out.println("workinging probably i guess");
         }
         catch (Exception e) {
-            System.out.println("Error loading shooter lookup table CSV files: " + e.getMessage());
+            System.err.println("Error loading shooter lookup table CSV files: " + e.getMessage());
+            RobotLog.addGlobalWarningMessage("Error loading shooter lookup table CSV files: " + e.getMessage());
+            requestOpModeStop();
             // Load Default Tables, false for validity, 0.0 for angle
             for (int i = 0; i < ShooterLookupTable.DIST_STEPS; i++) {
                 for (int j = 0; j < ShooterLookupTable.VEL_STEPS; j++) {

@@ -46,7 +46,7 @@ public class CsvUtils {
         return rowList.toArray(new boolean[0][]);
     }
 
-    public static double[][] getDoubleMatrixFromCsv(String fileName) throws IOException {
+    public static double[][] getDoubleMatrixFromCsv(String fileName) throws IOException, NumberFormatException {
         List<double[]> rowList = new ArrayList<>();
 
         // Use the modern Builder pattern (Non-deprecated)
@@ -63,12 +63,8 @@ public class CsvUtils {
 
                 for (int i = 0; i < columnCount; i++) {
                     String cellValue = record.get(i);
-                    // Parse double values, default to 0.0 on failure
-                    try {
-                        row[i] = Double.parseDouble(cellValue);
-                    } catch (NumberFormatException e) {
-                        row[i] = 0.0;
-                    }
+                    // Parse double values, throws exception on parse error
+                    row[i] = Double.parseDouble(cellValue);
                 }
                 rowList.add(row);
             }
@@ -78,7 +74,7 @@ public class CsvUtils {
         return rowList.toArray(new double[0][]);
     }
 
-    public static double[] getDoubleArrayFromCsv(String fileName) throws IOException {
+    public static double[] getDoubleArrayFromCsv(String fileName) throws IOException, NumberFormatException{
         List<Double> valueList = new ArrayList<>();
 
         // Use the modern Builder pattern (Non-deprecated)
@@ -91,12 +87,8 @@ public class CsvUtils {
 
             for (CSVRecord record : csvParser) {
                 for (String cellValue : record) {
-                    // Parse double values, default to 0.0 on failure
-                    try {
-                        valueList.add(Double.parseDouble(cellValue));
-                    } catch (NumberFormatException e) {
-                        valueList.add(0.0);
-                    }
+                    // Parse double values, throws exception on parse error
+                    valueList.add(Double.parseDouble(cellValue));
                 }
             }
         }
