@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import android.annotation.SuppressLint;
+import android.os.Environment;
 
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -135,9 +136,10 @@ public abstract class ComplexOpMode extends LinearOpMode {
 
     private void initCSV() {
         try {
-            ShooterLookupTable.VALIDITY_TABLE = CsvUtils.getBooleanMatrixFromCsv("../consts/ValidityTable.csv");
-            ShooterLookupTable.ANGLE_TABLE = CsvUtils.getDoubleMatrixFromCsv("../consts/AngleTable.csv");
-            ShooterLookupTable.VELOCITY_ARRAY = CsvUtils.getDoubleArrayFromCsv("../consts/VelocityArray.csv");
+            String defaultPath = "/sdcard/FIRST/shooterTables/";
+            ShooterLookupTable.VALIDITY_TABLE = CsvUtils.getBooleanMatrixFromCsv(defaultPath + "ValidityTable.csv");
+            ShooterLookupTable.ANGLE_TABLE = CsvUtils.getDoubleMatrixFromCsv(defaultPath + "AngleTable.csv");
+            ShooterLookupTable.VELOCITY_ARRAY = CsvUtils.getDoubleArrayFromCsv(defaultPath + "VelocityArray.csv");
             System.out.println("workinging probably i guess");
         }
         catch (Exception e) {

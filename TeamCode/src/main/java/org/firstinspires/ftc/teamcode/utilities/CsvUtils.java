@@ -12,8 +12,8 @@ import java.util.List;
 
 public class CsvUtils {
     /**
-     * Reads a CSV file using the non-deprecated Builder pattern.
-     * Optimized for low memory (1GB RAM) on Android API 24.
+     * Reads a CSV file.
+     * Uses legacy method for compatibility with older Commons CSV versions on Robot Controller.
      * * @param fileName The absolute path to the file.
      * @return A 2D boolean array representing the CSV data.
      * @throws IOException If the file cannot be read.
@@ -21,11 +21,9 @@ public class CsvUtils {
     public static boolean[][] getBooleanMatrixFromCsv(String fileName) throws IOException {
         List<boolean[]> rowList = new ArrayList<>();
 
-        // Use the modern Builder pattern (Non-deprecated)
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setIgnoreSurroundingSpaces(true) // Built-in trim logic
-                .build();
-
+        // Use the legacy pattern for compatibility
+        CSVFormat format = CSVFormat.DEFAULT.withIgnoreSurroundingSpaces(true);
+        
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName));
              CSVParser csvParser = format.parse(reader)) {
 
@@ -49,10 +47,8 @@ public class CsvUtils {
     public static double[][] getDoubleMatrixFromCsv(String fileName) throws IOException, NumberFormatException {
         List<double[]> rowList = new ArrayList<>();
 
-        // Use the modern Builder pattern (Non-deprecated)
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setIgnoreSurroundingSpaces(true) // Built-in trim logic
-                .build();
+        // Use the legacy pattern for compatibility
+        CSVFormat format = CSVFormat.DEFAULT.withIgnoreSurroundingSpaces(true);
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName));
              CSVParser csvParser = format.parse(reader)) {
@@ -77,10 +73,8 @@ public class CsvUtils {
     public static double[] getDoubleArrayFromCsv(String fileName) throws IOException, NumberFormatException{
         List<Double> valueList = new ArrayList<>();
 
-        // Use the modern Builder pattern (Non-deprecated)
-        CSVFormat format = CSVFormat.DEFAULT.builder()
-                .setIgnoreSurroundingSpaces(true) // Built-in trim logic
-                .build();
+        // Use the legacy pattern for compatibility
+        CSVFormat format = CSVFormat.DEFAULT.withIgnoreSurroundingSpaces(true);
 
         try (BufferedReader reader = new BufferedReader(new FileReader(fileName));
              CSVParser csvParser = format.parse(reader)) {
