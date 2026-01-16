@@ -25,7 +25,8 @@ public class ShooterConfig {
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
-    public static double ANGLE_REACHED_THRESHOLD = Math.toRadians(3);
+    public static double TURRET_POSITION_TOLERANCE = Math.toRadians(1);
+    public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(2);
     public static double TURRET_KP = 1.5;
     public static double TURRET_KI = 0;
     public static double TURRET_KD = 0.05;
