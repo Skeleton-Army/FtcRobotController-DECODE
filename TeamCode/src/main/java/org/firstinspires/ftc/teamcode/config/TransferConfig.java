@@ -6,7 +6,7 @@ import com.acmerobotics.dashboard.config.Config;
 public class TransferConfig {
     public static String KICKER_NAME = "kicker";
     public static double KICKER_MIN = 0.29;
-    public static double KICKER_MAX = 0.5;
+    public static double KICKER_MAX = 0.55;
     public static long KICK_TIME = 500;
 
     public static String STOPPER_NAME = "stopper";

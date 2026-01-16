@@ -32,36 +32,23 @@ public class ShootCommand extends SequentialCommandGroup {
         this.transfer = transfer;
         this.drive = drive;
 
-        addCommands(new InstantCommand(() -> drive.setShootingMode(true)));
-        addCommands(cycle());
-        addCommands(new InstantCommand(() -> drive.setShootingMode(false)));
-    }
-
-    private Command cycle() {
-        return new SequentialCommandGroup(
+        addCommands(
                 waitUntilCanShoot(),
+                new InstantCommand(this::recordShot),
+                new InstantCommand(() -> drive.setShootingMode(true)),
 
-                new ParallelCommandGroup(
-                        new SequentialCommandGroup(
-                                new InstantCommand(intake::collect),
-                                new WaitCommand(500),
-                                new InstantCommand(intake::stop)
-                        ),
-                        shootWithTransfer()
-                ),
-
+                new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
-//                new InstantCommand(() -> transfer.toggleTransfer(true)),
-                new WaitCommand(500),
-
-                new WaitUntilCommand(transfer::isArtifactDetected)
-                        .withTimeout(1000),
-                waitUntilCanShoot(),
-
+                new WaitCommand(1000),
+                new ConditionalCommand(
+                        transfer.kick(),
+                        new InstantCommand(),
+                        transfer::isArtifactDetected
+                ),
+                new InstantCommand(transfer::block),
                 new InstantCommand(intake::stop),
-//                new InstantCommand(() -> transfer.toggleTransfer(false)),
-                transfer.kick(),
-                new InstantCommand(this::recordShot)
+
+                new InstantCommand(() -> drive.setShootingMode(false))
         );
     }
 
@@ -72,29 +59,19 @@ public class ShootCommand extends SequentialCommandGroup {
         );
     }
 
-    public Command shootWithTransfer() {
-        return new SequentialCommandGroup(
-//                new InstantCommand(() -> transfer.toggleTransfer(true)),
-                new WaitUntilCommand(transfer::isArtifactDetected)
-                        .withTimeout(700),
-                new WaitUntilCommand(() -> !transfer.isArtifactDetected())
-                        .withTimeout(700)
-//                new InstantCommand(() -> transfer.toggleTransfer(false))
-        );
-    }
-
     public void recordShot() {
         Logger.recordOutput("Shot/RPM: ", shooter.getRPM());
         Logger.recordOutput("Shot/Angle hood: ", shooter.getHoodAngleDegrees());
         Logger.recordOutput("Shot/Turret angle error (deg): ", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
     }
+
     @Override
     public void end(boolean interrupted) {
         super.end(interrupted);
 
         // Ensure everything is off and in its place when the command ends
         transfer.setKickerPosition(false);
-//        transfer.toggleTransfer(false);
+        transfer.block();
         drive.setShootingMode(false);
     }
 }

@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -149,11 +150,18 @@ public class TeleOpApp extends ComplexOpMode {
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
-//                .whenPressed(new InstantCommand(shooter::resetTurret));
-                .toggleWhenPressed(
-                        new InstantCommand(transfer::block),
-                        new InstantCommand(transfer::release)
+                .whenPressed(
+                        new SequentialCommandGroup(
+                                new InstantCommand(transfer::release),
+                                new InstantCommand(intake::collect),
+                                transfer.kick(),
+                                new InstantCommand(intake::stop),
+                                new InstantCommand(transfer::block)
+                        )
                 );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.SHARE)
+                .whenPressed(new InstantCommand(shooter::resetTurret));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
