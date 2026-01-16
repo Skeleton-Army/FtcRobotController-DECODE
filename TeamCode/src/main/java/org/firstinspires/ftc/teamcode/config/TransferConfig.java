@@ -11,7 +11,7 @@ public class TransferConfig {
 
     public static String STOPPER_NAME = "stopper";
     public static double STOPPER_MIN = 0.05;
-    public static double STOPPER_MAX = 0.25;
+    public static double STOPPER_MAX = 0.3;
 
     public static String SENSOR_NAME = "transferSensor";
     public static double DISTANCE_THRESHOLD_CM = 4;
