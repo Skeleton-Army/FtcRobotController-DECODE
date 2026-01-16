@@ -146,8 +146,10 @@ public class TeleOpApp extends ComplexOpMode {
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
-                .whenPressed(
-                        new InstantCommand(shooter::resetTurret)
+//                .whenPressed(new InstantCommand(shooter::resetTurret));
+                .toggleWhenPressed(
+                        new InstantCommand(transfer::block),
+                        new InstantCommand(transfer::release)
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)

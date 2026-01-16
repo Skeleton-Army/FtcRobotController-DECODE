@@ -17,11 +17,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Transfer extends SubsystemBase {
     private final ServoEx kicker;
+    private final ServoEx stopper;
     private final SensorRevColorV3 colorSensor;
 
     public Transfer(final HardwareMap hardwareMap) {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
         kicker.set(KICKER_MIN);
+
+        stopper = new ServoEx(hardwareMap, STOPPER_NAME);
+        stopper.set(STOPPER_MIN);
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
     }
@@ -36,6 +40,14 @@ public class Transfer extends SubsystemBase {
 
     public void setKickerPosition(boolean isUp) {
         kicker.set(isUp ? KICKER_MAX : KICKER_MIN);
+    }
+
+    public void block() {
+        stopper.set(STOPPER_MAX);
+    }
+
+    public void release() {
+        stopper.set(STOPPER_MIN);
     }
 
     public boolean isArtifactDetected() {
