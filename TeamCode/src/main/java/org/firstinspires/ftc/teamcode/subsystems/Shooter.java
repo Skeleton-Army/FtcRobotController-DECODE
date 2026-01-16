@@ -11,10 +11,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.controller.PIDController;
-import com.seattlesolvers.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
-import com.seattlesolvers.solverslib.hardware.motors.MotorGroup;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
@@ -41,7 +39,6 @@ public class Shooter extends SubsystemBase {
     private final ServoEx hood;
 
     private final PIDController turretPID;
-    private final SimpleMotorFeedforward turretFeedforward;
 
     private final VoltageSensor voltageSensor;
 
@@ -93,9 +90,7 @@ public class Shooter extends SubsystemBase {
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
 
         turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
-        turretPID.setTolerance(ANGLE_REACHED_THRESHOLD);
-
-        turretFeedforward = new SimpleMotorFeedforward(TURRET_KS, TURRET_KV, TURRET_KA);
+        turretPID.setTolerance(TURRET_POSITION_TOLERANCE, TURRET_VELOCITY_TOLERANCE);
 
         setHorizontalAngle(0);
 
@@ -126,9 +121,21 @@ public class Shooter extends SubsystemBase {
         double voltage = voltageSensor.getVoltage();
         flywheel.setVelocity(targetTPS, voltage);
 
-        // Turret PIDF
+        // ----- TURRET PIDF -----
         double pid = turretPID.calculate(turret.getDistance());
-        double feedforward = turretFeedforward.calculate(-poseTracker.getAngularVelocity(), -poseTracker.getAcceleration().getTheta());
+        double error = turretPID.getPositionError();
+
+        // Only apply kS if we aren't at the target to prevent high-frequency oscillation
+        double staticComp = 0;
+        if (!turretPID.atSetPoint()) {
+            staticComp = Math.signum(error) * TURRET_KS;
+        }
+
+        // Robot rotation compensation
+        double robotVel = poseTracker.getAngularVelocity();
+        double robotAcc = poseTracker.getAcceleration().getTheta();
+
+        double feedforward = staticComp + (-robotVel * TURRET_KV) + (-robotAcc * TURRET_KA);
         double result = pid + feedforward;
 
         turret.set(result, voltage);

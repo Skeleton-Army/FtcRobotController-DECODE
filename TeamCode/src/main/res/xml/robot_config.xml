@@ -11,9 +11,7 @@
             <goBILDA5202SeriesMotor name="flywheel2" port="3" />
 
             <Servo name="hood" port="0" />
-            <Servo name="kicker" port="1" />
-
-            <RevColorSensorV3 name="transferSensor" port="0" bus="0"/>
+            <Servo name="stopper" port="1" />
         </LynxModule>
 
         <LynxModule name="Control Hub" port="173">
@@ -22,10 +20,11 @@
             <goBILDA5202SeriesMotor name="rightBack" port="2" />
             <goBILDA5202SeriesMotor name="rightFront" port="3" />
 
+            <Servo name="kicker" port="0" />
+
             <ControlHubImuBHI260AP name="imu" port="0" bus="0" />
             <goBILDAPinpoint name="pinpoint" port="0" bus="1" />
-
-            <ContinuousRotationServo name="transfer" port="0" />
+            <RevColorSensorV3 name="transferSensor" port="0" bus="3"/>
         </LynxModule>
     </LynxUsbDevice>
 </Robot>
