@@ -86,33 +86,12 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx2 = new GamepadEx(gamepad2);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(
-                        new InstantCommand(() -> {
-                            intake.collect();
-                            transfer.toggleTransfer(true, true);
-                        }, intake, transfer)
-                )
-                .whenReleased(new InstantCommand(() -> {
-                            intake.stop();
-                            transfer.toggleTransfer(false);
-                        }, intake, transfer)
-                );
+                .whenPressed(new InstantCommand(intake::collect, intake, transfer))
+                .whenReleased(new InstantCommand(intake::stop, intake, transfer));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whenPressed(new InstantCommand(() -> {
-                    intake.release();
-                    transfer.toggleTransfer(true, true);
-                    }, intake, transfer)
-                )
-                .whenReleased(new InstantCommand(() -> {
-                            intake.stop();
-                            transfer.toggleTransfer(false);
-                        }, intake, transfer)
-                );
-
-//        gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-//                .whenPressed(new InstantCommand(() -> transfer.toggleTransfer(true)))
-//                .whenReleased(new InstantCommand(() -> transfer.toggleTransfer(false)));
+                .whenPressed(new InstantCommand(intake::release, intake, transfer))
+                .whenReleased(new InstantCommand(intake::stop, intake, transfer));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .and(new Trigger(this::isInsideLaunchZone))

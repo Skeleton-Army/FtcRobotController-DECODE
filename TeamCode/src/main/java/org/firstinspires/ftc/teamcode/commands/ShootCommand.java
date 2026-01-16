@@ -62,7 +62,7 @@ public class ShootCommand extends SequentialCommandGroup {
                         () -> !shooter.reachedRPM()
                 ),
 
-                new InstantCommand(() -> transfer.toggleTransfer(true)),
+//                new InstantCommand(() -> transfer.toggleTransfer(true)),
                 new WaitUntilCommand(transfer::isArtifactDetected)
                         .withTimeout(1000),
                 new ParallelCommandGroup(
@@ -71,7 +71,7 @@ public class ShootCommand extends SequentialCommandGroup {
                 ),
 
                 new InstantCommand(intake::stop),
-                new InstantCommand(() -> transfer.toggleTransfer(false)),
+//                new InstantCommand(() -> transfer.toggleTransfer(false)),
                 transfer.kick(),
                 new InstantCommand(this::recordShot)
         );
@@ -86,10 +86,10 @@ public class ShootCommand extends SequentialCommandGroup {
 
     public Command shootWithTransfer() {
         return new SequentialCommandGroup(
-                new InstantCommand(() -> transfer.toggleTransfer(true)),
+//                new InstantCommand(() -> transfer.toggleTransfer(true)),
                 new WaitUntilCommand(() -> !shooter.reachedRPM())
-                        .withTimeout(700),
-                new InstantCommand(() -> transfer.toggleTransfer(false))
+                        .withTimeout(700)
+//                new InstantCommand(() -> transfer.toggleTransfer(false))
         );
     }
 
@@ -104,7 +104,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
         // Ensure everything is off and in its place when the command ends
         transfer.setKickerPosition(false);
-        transfer.toggleTransfer(false);
+//        transfer.toggleTransfer(false);
         drive.setShootingMode(false);
     }
 }

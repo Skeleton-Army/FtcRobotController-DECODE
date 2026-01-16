@@ -4,13 +4,9 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class TransferConfig {
-    public static String TRANSFER_NAME = "transfer";
-    public static double TRANSFER_POWER = 1;
-    public static double TRANSFER_REVERSE_POWER = 0.1;
-
     public static String KICKER_NAME = "kicker";
-    public static double KICKER_MIN = 0;
-    public static double KICKER_MAX = 0.4;
+    public static double KICKER_MIN = 0.29;
+    public static double KICKER_MAX = 0.5;
     public static long KICK_TIME = 500;
 
     public static String SENSOR_NAME = "transferSensor";

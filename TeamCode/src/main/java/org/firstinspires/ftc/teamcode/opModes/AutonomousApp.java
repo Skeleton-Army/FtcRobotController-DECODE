@@ -390,11 +390,9 @@ public class AutonomousApp extends ComplexOpMode {
 
             seq.addCommands(
                     new InstantCommand(() -> intake.collect()),
-                    new InstantCommand(() -> transfer.toggleTransfer(true, true)),
                     new InstantCommand(() -> telemetry.addData("Current", spikeNumber)),
                     new FollowPathCommand(follower, selectedPath),
-                    new InstantCommand(() -> intake.stop()),
-                    new InstantCommand(() -> transfer.toggleTransfer(false))
+                    new InstantCommand(() -> intake.stop())
             );
 
             if (spikeNumber == gateSpike) {

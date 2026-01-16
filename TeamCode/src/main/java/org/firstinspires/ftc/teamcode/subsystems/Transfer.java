@@ -16,26 +16,14 @@ import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Transfer extends SubsystemBase {
-    private final CRServoEx transfer;
     private final ServoEx kicker;
     private final SensorRevColorV3 colorSensor;
 
     public Transfer(final HardwareMap hardwareMap) {
-        transfer = new CRServoEx(hardwareMap, TRANSFER_NAME);
-        toggleTransfer(false);
-
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
-        kicker.set(0);
+        kicker.set(KICKER_MIN);
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
-    }
-
-    public void toggleTransfer(boolean isOn) {
-        transfer.set(isOn ? TRANSFER_POWER : 0);
-    }
-
-    public void toggleTransfer(boolean isOn, boolean reversed) {
-        transfer.set(isOn ? (reversed ? -1 : 0) * TRANSFER_REVERSE_POWER : 0);
     }
 
     public Command kick() {
@@ -54,7 +42,7 @@ public class Transfer extends SubsystemBase {
         return getDistance() <= DISTANCE_THRESHOLD_CM;
     }
 
-    public double getDistance() {
+    private double getDistance() {
         return colorSensor.distance(DistanceUnit.CM);
     }
 }
