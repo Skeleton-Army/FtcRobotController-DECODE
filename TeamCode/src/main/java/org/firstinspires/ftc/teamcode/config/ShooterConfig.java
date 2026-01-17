@@ -11,12 +11,12 @@ public class ShooterConfig {
     public static boolean FLYWHEEL1_INVERTED = true;
     public static boolean FLYWHEEL2_INVERTED = false;
     public static int RPM_REACHED_THRESHOLD = 50;
-    public static double FLYWHEEL_KP = 2.4;
-    public static double FLYWHEEL_KI = 0.002;
-    public static double FLYWHEEL_KD = 0.1;
-    public static double FLYWHEEL_KS = 0;
-    public static double FLYWHEEL_KA = 0.001; //  or 0.01
-    public static double FLYWHEEL_KV = 1.66;
+    public static double FLYWHEEL_KP = 5;
+    public static double FLYWHEEL_KI = 0;
+    public static double FLYWHEEL_KD = 0;
+    public static double FLYWHEEL_KS = 190;
+    public static double FLYWHEEL_KA = 0;
+    public static double FLYWHEEL_KV = 1.7;
     public static double FLYWHEEL_DELAY_SEC = 0.06; // ~2 control loops @ 20ms
     public static double RPM_SMOOTHING_FACTOR = 0.2; // 0.1 (very smooth) - 0.8 (responsive)
 
