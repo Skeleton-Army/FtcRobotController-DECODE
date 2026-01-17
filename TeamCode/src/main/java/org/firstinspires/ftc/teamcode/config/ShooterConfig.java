@@ -18,7 +18,7 @@ public class ShooterConfig {
     public static double FLYWHEEL_KA = 0;
     public static double FLYWHEEL_KV = 1.7;
     public static double FLYWHEEL_DELAY_SEC = 0.06; // ~2 control loops @ 20ms
-    public static double RPM_SMOOTHING_FACTOR = 0.2; // 0.1 (very smooth) - 0.8 (responsive)
+    public static double RPM_SMOOTHING_FACTOR = 0.11; // 0.1 (very smooth) - 0.8 (responsive)
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
@@ -38,9 +38,9 @@ public class ShooterConfig {
     public static boolean TURRET_WRAP = false;
 
     public static String HOOD_NAME = "hood";
-    public static boolean HOOD_INVERTED = true;
+    public static boolean HOOD_INVERTED = false;
     public static double HOOD_POSSIBLE_MIN = 0;
     public static double HOOD_POSSIBLE_MAX = 0.96;
-    public static double HOOD_MIN = Math.toRadians(64);
-    public static double HOOD_MAX = Math.toRadians(30.04);
+    public static double HOOD_MIN = Math.toRadians(30.04);
+    public static double HOOD_MAX = Math.toRadians(64);
 }
