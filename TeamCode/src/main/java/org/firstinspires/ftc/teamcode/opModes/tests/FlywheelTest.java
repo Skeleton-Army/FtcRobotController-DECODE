@@ -22,6 +22,8 @@ import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
+import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
 
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 public class FlywheelTest extends OpMode {
     public static int FLYWHEEL_TARGET = 3400;
 
-    private MotorEx motor;
+    private ModifiedMotorGroup motor;
 
     private boolean isPID = true;
     public static double targetPower = 1;
@@ -45,8 +47,14 @@ public class FlywheelTest extends OpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         gamepadEx1 = new GamepadEx(gamepad1);
 
-        motor = new MotorEx(hardwareMap, "flywheel", Motor.GoBILDA.BARE);
-        motor.setInverted(true);
+        ModifiedMotorEx flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
+        flywheel1.setInverted(FLYWHEEL1_INVERTED);
+
+        ModifiedMotorEx flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
+        flywheel2.setInverted(FLYWHEEL2_INVERTED);
+
+        motor = new ModifiedMotorGroup(flywheel1, flywheel2);
+
         handlePID();
 
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
@@ -119,7 +127,7 @@ public class FlywheelTest extends OpMode {
         telemetry.addData("Motor RPM", motorRPM);
         telemetry.addData("error: ", FLYWHEEL_TARGET - motorRPM);
         telemetry.addData("recovery time (sec)",recoveryTime);
-        telemetry.addData("Current (Amps)", motor.motorEx.getCurrent(CurrentUnit.AMPS));
+        telemetry.addData("Current (Amps)", motor.leader.getCurrent(CurrentUnit.AMPS));
         telemetry.addData("PID On?", isPID);
 
         telemetry.update();

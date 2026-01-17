@@ -23,6 +23,8 @@ public class ModifiedMotorGroup extends ModifiedMotorEx implements Iterable<Modi
 
     private final ModifiedMotorEx[] group;
 
+    public final ModifiedMotorEx leader;
+
     /**
      * Create a new MotorGroup with the provided Motors.
      *
@@ -32,6 +34,7 @@ public class ModifiedMotorGroup extends ModifiedMotorEx implements Iterable<Modi
     public ModifiedMotorGroup(@NonNull ModifiedMotorEx leader, ModifiedMotorEx... followers) {
         group = new ModifiedMotorEx[followers.length + 1];
         group[0] = leader;
+        this.leader = leader;
         System.arraycopy(followers, 0, group, 1, followers.length);
     }
 
@@ -94,6 +97,11 @@ public class ModifiedMotorGroup extends ModifiedMotorEx implements Iterable<Modi
     @Override
     public double getVelocity() {
         return group[0].getCorrectedVelocity();
+    }
+
+    @Override
+    public double getCorrectedVelocity() {
+        return getVelocity();
     }
 
     /**
