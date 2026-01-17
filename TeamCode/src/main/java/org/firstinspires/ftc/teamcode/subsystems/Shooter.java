@@ -22,10 +22,9 @@ import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.utilities.Kinematics;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
-import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.wpi.math.Translation3d;
 
 import java.util.concurrent.TimeUnit;
 
@@ -49,6 +48,7 @@ public class Shooter extends SubsystemBase {
     private double targetTPS;
 
     private final TimerEx timerEx;
+    private final Kinematics kinematics;
 
     public boolean calculatedRecovery = false;
     private double recoveryTime; // in seconds
@@ -71,6 +71,7 @@ public class Shooter extends SubsystemBase {
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
+        this.kinematics = new Kinematics();
 
         ModifiedMotorEx flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
         flywheel1.setInverted(FLYWHEEL1_INVERTED);
@@ -109,6 +110,8 @@ public class Shooter extends SubsystemBase {
     public void periodic() {
         if (poseTracker == null) return;
 
+        kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
+
         solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
         canShoot = solution.getCanShoot();
 
@@ -133,7 +136,7 @@ public class Shooter extends SubsystemBase {
 
         // Robot rotation compensation
         double robotVel = poseTracker.getAngularVelocity();
-        double robotAcc = poseTracker.getAcceleration().getTheta();
+        double robotAcc = kinematics.getAngularAcceleration();
 
         double feedforward = staticComp + (-robotVel * TURRET_KV) + (-robotAcc * TURRET_KA);
         double result = pid + feedforward;
@@ -151,7 +154,7 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getFilteredRPM() {
-        filteredRPM = (RPM_SMOOTHING_FACTOR * getRPM()) + ((1 - RPM_SMOOTHING_FACTOR) * filteredRPM);
+        filteredRPM = Kinematics.lowPassFilter(getRPM(), filteredRPM, RPM_SMOOTHING_FACTOR);
         return filteredRPM;
     }
 

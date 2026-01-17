@@ -24,13 +24,14 @@ public class ShooterConfig {
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
     public static double TURRET_POSITION_TOLERANCE = Math.toRadians(1);
     public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(2);
-    public static double TURRET_KP = 1.5;
+    public static double ACCELERATION_SMOOTHING_GAIN = 1;
+    public static double TURRET_KP = 0.7;
     public static double TURRET_KI = 0;
-    public static double TURRET_KD = 0.05;
-    public static double TURRET_KS = 0.03;
-    public static double TURRET_KV = 0.13;
-    public static double TURRET_KA = 0;
-    public static double TURRET_MIN = Math.toRadians(-70); // Clockwise
+    public static double TURRET_KD = 0.03;
+    public static double TURRET_KS = 0.04;
+    public static double TURRET_KV = 0.1;
+    public static double TURRET_KA = 0.007;
+    public static double TURRET_MIN = Math.toRadians(-100); // Clockwise
     public static double TURRET_MAX = Math.toRadians(70); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
     public static double TURRET_OFFSET_X = -0.591; // Positive = Front
