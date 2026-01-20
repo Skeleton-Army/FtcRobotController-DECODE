@@ -19,7 +19,6 @@ import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 
-import java.util.Arrays;
 import java.util.Collections;
 
 public class Drive extends SubsystemBase {
@@ -43,6 +42,36 @@ public class Drive extends SubsystemBase {
     @Override
     public void periodic() {
         follower.update();
+    }
+
+    public Command goToGate(){
+        return new DeferredCommand(
+                () -> {
+                    PathChain openGate = follower
+                            .pathBuilder()
+                            .addPath(
+                                    new BezierLine(
+                                            follower.getPose(),
+                                            getRelative(new Pose(127, 70))
+                                    )
+                            )
+                            .setLinearHeadingInterpolation(
+                                    follower.getHeading(),
+                                    getGateAngle(follower.getHeading())
+
+                            )
+                            .setTranslationalConstraint(1)
+                            .setBrakingStrength(1)
+                            .build();
+
+                    return new SequentialCommandGroup(
+                            new FollowPathCommand(follower, openGate),
+                            new WaitCommand(1000),
+                            new InstantCommand(() -> follower.startTeleopDrive(USE_BRAKE_MODE))
+                    );
+                },
+                Collections.singletonList(this)
+        );
     }
 
     public Command goToBase() {
@@ -176,6 +205,19 @@ public class Drive extends SubsystemBase {
         }
 
         return closest;
+    }
+
+    private double getGateAngle(double heading) {
+        // 1. Normalize heading to [0, 2π)
+        double normalizedHeading = ((heading % (2 * Math.PI)) + (2 * Math.PI)) % (2 * Math.PI);
+
+        // 2. If heading is between 0 and π (0 to 180°), π/2 is the closest vertical angle
+        if (normalizedHeading > 0 && normalizedHeading < Math.PI) {
+            return Math.PI / 2;
+        }
+
+        // 3. Otherwise (between 180 and 360°), 3π/2 is the closest vertical angle
+        return 3 * Math.PI / 2;
     }
 
     private Pose getRelative(Pose originalPose) {
