@@ -32,7 +32,7 @@ public class ShooterConfig {
     public static double TURRET_KV = 0.1;
     public static double TURRET_KA = 0.007;
     public static double TURRET_MIN = Math.toRadians(-100); // Clockwise
-    public static double TURRET_MAX = Math.toRadians(70); // Counter-clockwise
+    public static double TURRET_MAX = Math.toRadians(1); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
     public static double TURRET_OFFSET_X = -0.591; // Positive = Front
     public static double TURRET_OFFSET_Y = 0; // Positive = Left
@@ -42,7 +42,7 @@ public class ShooterConfig {
     public static boolean HOOD_INVERTED = false;
     public static double HOOD_POSSIBLE_MIN = 0;
     public static double HOOD_POSSIBLE_MAX = 0.96;
-    public static double HOOD_MIN = Math.toRadians(30.04);
+    public static double HOOD_MIN = Math.toRadians(33.44);
     public static double HOOD_MAX = Math.toRadians(64);
 
     public static double STALL_TIMEOUT = 1;
