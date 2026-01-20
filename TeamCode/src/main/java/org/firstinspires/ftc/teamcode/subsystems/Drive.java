@@ -44,7 +44,9 @@ public class Drive extends SubsystemBase {
         follower.update();
     }
 
-    public Command goToGate(){
+    public Command goToGate() {
+        if (tabletopMode) return new InstantCommand();
+
         return new DeferredCommand(
                 () -> {
                     PathChain openGate = follower

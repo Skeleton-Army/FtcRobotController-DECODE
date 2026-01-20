@@ -137,18 +137,6 @@ public class TeleOpApp extends ComplexOpMode {
                         })
                 );
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
-                .toggleWhenPressed(
-                        new InstantCommand(() -> {
-                            shooter.setHorizontalManualMode(true);
-                            shooter.setVerticalManualMode(true);
-                        }),
-                        new InstantCommand(() -> {
-                            shooter.setHorizontalManualMode(false);
-                            shooter.setVerticalManualMode(false);
-                        })
-                );
-
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(
                         new SequentialCommandGroup(
@@ -161,7 +149,20 @@ public class TeleOpApp extends ComplexOpMode {
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SHARE)
-                .whenPressed(new InstantCommand(shooter::resetTurret));
+                .toggleWhenPressed(
+                    new InstantCommand(() -> {
+                        shooter.setHorizontalManualMode(true);
+                        shooter.setVerticalManualMode(true);
+                    }),
+                    new InstantCommand(() -> {
+                        shooter.setHorizontalManualMode(false);
+                        shooter.setVerticalManualMode(false);
+                    }
+                )
+        );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
+                .whenPressed(drive.goToGate());
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
