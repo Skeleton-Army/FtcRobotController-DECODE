@@ -161,7 +161,7 @@ public class Shooter extends SubsystemBase {
         double feedforward = staticComp + (-robotVel * TURRET_KV) + (-robotAcc * TURRET_KA);
         double result = pid + feedforward;
 
-        //turret.set(result, voltage);
+        turret.set(result, voltage);
     }
 
     public boolean isFlywheelDamaged() {

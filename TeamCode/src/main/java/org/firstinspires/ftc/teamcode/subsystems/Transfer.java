@@ -25,7 +25,7 @@ public class Transfer extends SubsystemBase {
         kicker.set(KICKER_MIN);
 
         stopper = new ServoEx(hardwareMap, STOPPER_NAME);
-        stopper.set(STOPPER_MIN);
+        stopper.set(STOPPER_MAX);
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
     }
