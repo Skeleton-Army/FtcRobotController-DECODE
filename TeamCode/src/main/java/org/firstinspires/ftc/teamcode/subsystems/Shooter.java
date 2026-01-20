@@ -9,6 +9,7 @@ import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.controller.PIDController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
@@ -17,6 +18,7 @@ import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
@@ -33,6 +35,8 @@ public class Shooter extends SubsystemBase {
 
     private final PoseTracker poseTracker;
 
+    private final ModifiedMotorEx flywheel1;
+    private final ModifiedMotorEx flywheel2;
     private final ModifiedMotorGroup flywheel;
     private final ModifiedMotorEx turret;
     private final ServoEx hood;
@@ -47,7 +51,8 @@ public class Shooter extends SubsystemBase {
 
     private double targetTPS;
 
-    private final TimerEx timerEx;
+    private final TimerEx recoveryTimer;
+    private final TimerEx stallTimer;
     private final Kinematics kinematics;
 
     public boolean calculatedRecovery = false;
@@ -69,14 +74,16 @@ public class Shooter extends SubsystemBase {
     private boolean canShoot;
     private double filteredRPM = 0;
 
+    private boolean emergencyStop = false;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
 
-        ModifiedMotorEx flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
+        flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
         flywheel1.setInverted(FLYWHEEL1_INVERTED);
 
-        ModifiedMotorEx flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
+        flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
         flywheel2.setInverted(FLYWHEEL2_INVERTED);
 
         flywheel = new ModifiedMotorGroup(flywheel1, flywheel2);
@@ -84,6 +91,7 @@ public class Shooter extends SubsystemBase {
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
         flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
         flywheel.setDelayCompensation(FLYWHEEL_DELAY_SEC);
+        flywheel.setCurrentAlert(CURRENT_THRESHOLD, CurrentUnit.AMPS);
 
         turret = new ModifiedMotorEx(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
         turret.setRunMode(Motor.RunMode.RawPower);
@@ -101,7 +109,8 @@ public class Shooter extends SubsystemBase {
         this.alliance = alliance;
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
 
-        timerEx = new TimerEx(TimeUnit.SECONDS);
+        recoveryTimer = new TimerEx(TimeUnit.SECONDS);
+        stallTimer = new TimerEx(TimeUnit.SECONDS);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
@@ -109,6 +118,17 @@ public class Shooter extends SubsystemBase {
     @Override
     public void periodic() {
         if (poseTracker == null) return;
+
+        // --- SAFETY CHECK ---
+        if (emergencyStop) return;
+
+        if (isFlywheelDamaged() && !emergencyStop) {
+            flywheel.stopMotor();
+            emergencyStop = true;
+            canShoot = false;
+            return;
+        }
+        // --------------------
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
@@ -142,6 +162,37 @@ public class Shooter extends SubsystemBase {
         double result = pid + feedforward;
 
         turret.set(result, voltage);
+    }
+
+    public boolean isFlywheelDamaged() {
+        double currentRPM = Math.abs(getRPM());
+        double targetRPM = Math.abs(getTargetRPM());
+        boolean isOverCurrent = flywheel.isOverCurrent();
+
+        // 1. Encoder Direction Check
+        if ((getRPM() < -50  && targetRPM > 0) || (getRPM() > 50 && targetRPM < 0)) {
+            RobotLog.addGlobalWarningMessage("FLYWHEEL IS SPINNING IN THE WRONG DIRECTION.");
+            return true;
+        }
+
+        // 2. Conflict/Stall Check
+        // Trying to spin fast, but barely moving and drawing high current
+        boolean isStalling = targetRPM > 1000 && currentRPM < 200 && isOverCurrent;
+
+        if (isStalling) {
+            stallTimer.start();
+            stallTimer.resume();
+
+            if (stallTimer.getElapsed() > STALL_TIMEOUT) {
+                RobotLog.addGlobalWarningMessage("FLYWHEEL STALL DETECTED. ONE OF THE FLYWHEEL MOTORS IS PROBABLY REVERSED.");
+                return true;
+            }
+        } else {
+            stallTimer.restart();
+            stallTimer.pause();
+        }
+
+        return false;
     }
 
     public double getRPM() {
@@ -275,8 +326,8 @@ public class Shooter extends SubsystemBase {
     private void calculateRecovery() {
         if (wasBallshot()) {
             if (!calculatedRecovery) {
-                timerEx.restart();
-                timerEx.start();
+                recoveryTimer.restart();
+                recoveryTimer.start();
                 calculatedRecovery = true;
                 shotHoodAngle = Math.toDegrees(solution.getVerticalAngle());
                 shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
@@ -285,8 +336,8 @@ public class Shooter extends SubsystemBase {
 //                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(poseTracker.getPose().getX(), poseTracker.getPose().getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec() * inchesToMeters, shotHoodAngle, 2, 0.2));
             }
         } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
-            recoveryTime = timerEx.getElapsed();
-            timerEx.pause();
+            recoveryTime = recoveryTimer.getElapsed();
+            recoveryTimer.pause();
             calculatedRecovery = false;
         }
     }

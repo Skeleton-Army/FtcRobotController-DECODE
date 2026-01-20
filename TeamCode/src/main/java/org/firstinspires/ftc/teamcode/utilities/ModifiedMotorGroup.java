@@ -7,6 +7,7 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorGroup;
 import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 
 import java.util.Arrays;
 import java.util.Iterator;
@@ -262,6 +263,28 @@ public class ModifiedMotorGroup extends ModifiedMotorEx implements Iterable<Modi
         return group[0].getMaxRPM();
     }
 
+    @Override
+    public double getCurrentAlert(CurrentUnit currentUnit) {
+        return group[0].getCurrentAlert(currentUnit);
+    }
+
+    @Override
+    public void setCurrentAlert(double current, CurrentUnit unit) {
+        for (ModifiedMotorEx motor : group) {
+            motor.setCurrentAlert(current, unit);
+        }
+    }
+
+    @Override
+    public boolean isOverCurrent() {
+        for (ModifiedMotorEx motor : group) {
+            if (motor.isOverCurrent())
+                return true;
+        }
+        return false;
+    }
+
+    @Override
     public void setDelayCompensation(double delaySec) {
         for (ModifiedMotorEx x : group) {
             x.setDelayCompensation(delaySec);

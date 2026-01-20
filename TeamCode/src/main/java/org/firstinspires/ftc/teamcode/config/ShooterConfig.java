@@ -44,4 +44,7 @@ public class ShooterConfig {
     public static double HOOD_POSSIBLE_MAX = 0.96;
     public static double HOOD_MIN = Math.toRadians(30.04);
     public static double HOOD_MAX = Math.toRadians(64);
+
+    public static double STALL_TIMEOUT = 1;
+    public static double CURRENT_THRESHOLD = 8;
 }
