@@ -7,7 +7,7 @@ import java.sql.Array;
 public class ShooterLookupTable {
     public static final double MIN_DIST = 0.7;
     public static final double MAX_DIST = 4.3;
-    public static final double MIN_VEL = 4.65;
+    public static final double MIN_VEL = 4.4;
     public static final double MAX_VEL = 8.0;
     public static final int DIST_STEPS = 80;
     public static final int VEL_STEPS = 160;
