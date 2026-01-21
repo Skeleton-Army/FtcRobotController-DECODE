@@ -15,6 +15,7 @@ import com.seattlesolvers.solverslib.controller.PIDController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -152,6 +153,12 @@ public class Shooter extends SubsystemBase {
         double staticComp = 0;
         if (!turretPID.atSetPoint()) {
             staticComp = Math.signum(error) * TURRET_KS;
+        }
+
+        // If we are more than X degrees away, clear the integral sum
+        // This prevents it from building up during the high-speed part of the move
+        if (Math.abs(error) > TURRET_IZONE) {
+            turretPID.clearTotalError();
         }
 
         // Robot rotation compensation

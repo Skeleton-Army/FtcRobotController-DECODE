@@ -54,8 +54,8 @@ public class ShootCommand extends SequentialCommandGroup {
 
     public Command waitUntilCanShoot() {
         return new SequentialCommandGroup(
-                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode())
-//                new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
+                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode()),
+                new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
         );
     }
 

@@ -210,6 +210,12 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
+        telemetry.addData("!Reached RPM", shooter.reachedRPM());
+        telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
+        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
+        telemetry.addData("!Reached angle", shooter.reachedAngle());
+        telemetry.addData("!Can shoot", shooter.getCanShoot());
+
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
@@ -217,7 +223,6 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", robotPose.getY());
         telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
@@ -232,8 +237,6 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
-        telemetry.addData("!Reached RPM", shooter.reachedRPM());
-        telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
 
         telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
         telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
