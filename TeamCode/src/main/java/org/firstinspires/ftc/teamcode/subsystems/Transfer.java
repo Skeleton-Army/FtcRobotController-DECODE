@@ -9,7 +9,9 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.hardware.SensorDistanceEx;
 import com.seattlesolvers.solverslib.hardware.SensorRevColorV3;
+import com.seattlesolvers.solverslib.hardware.SensorRevTOFDistance;
 import com.seattlesolvers.solverslib.hardware.motors.CRServoEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
@@ -19,6 +21,7 @@ public class Transfer extends SubsystemBase {
     private final ServoEx kicker;
     private final ServoEx stopper;
     private final SensorRevColorV3 colorSensor;
+    private final SensorRevTOFDistance sensorDistance;
 
     public Transfer(final HardwareMap hardwareMap) {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
@@ -28,6 +31,7 @@ public class Transfer extends SubsystemBase {
         stopper.set(STOPPER_MAX);
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
+        sensorDistance = new SensorRevTOFDistance(hardwareMap, DISTANCE_SENSOR_NAME);
     }
 
     public Command kick() {
@@ -56,5 +60,13 @@ public class Transfer extends SubsystemBase {
 
     private double getDistance() {
         return colorSensor.distance(DistanceUnit.CM);
+    }
+
+    private double getDistanceIntake() {
+        return sensorDistance.getDistance(DistanceUnit.CM);
+    }
+
+    public boolean isBallDetected()  {
+        return getDistanceIntake() <= DISTANCE_INTAKE_CM;
     }
 }

@@ -15,4 +15,9 @@ public class TransferConfig {
 
     public static String SENSOR_NAME = "transferSensor";
     public static double DISTANCE_THRESHOLD_CM = 4;
+
+    public  static  String DISTANCE_SENSOR_NAME = "intakeSensor";
+    public static double DISTANCE_INTAKE_CM = 1.5;
+
+
 }
