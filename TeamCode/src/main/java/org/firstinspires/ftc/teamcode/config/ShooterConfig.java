@@ -10,15 +10,15 @@ public class ShooterConfig {
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL1_INVERTED = true;
     public static boolean FLYWHEEL2_INVERTED = false;
-    public static int RPM_REACHED_THRESHOLD = 50;
+    public static int RPM_REACHED_THRESHOLD = 200;
     public static double FLYWHEEL_KP = 5;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
-    public static double FLYWHEEL_KS = 190;
+    public static double FLYWHEEL_KS = 150;
     public static double FLYWHEEL_KA = 0;
     public static double FLYWHEEL_KV = 1.7;
     public static double FLYWHEEL_DELAY_SEC = 0.06; // ~2 control loops @ 20ms
-    public static double RPM_SMOOTHING_FACTOR = 0.05; // 0.1 (very smooth) - 0.8 (responsive)
+    public static double RPM_SMOOTHING_FACTOR = 1; // 0.1 (very smooth) - 0.8 (responsive)
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;

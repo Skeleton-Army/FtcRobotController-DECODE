@@ -8,6 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -42,6 +43,8 @@ public class FlywheelTest extends OpMode {
     TimerEx timerEx;
     private double recoveryTime;
 
+    private VoltageSensor voltageSensor;
+
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -61,6 +64,9 @@ public class FlywheelTest extends OpMode {
         kicker.set(0);
 
         timerEx = new TimerEx(TimeUnit.SECONDS);
+
+        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+
         /*gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(new InstantCommand(() -> CommandScheduler.getInstance().schedule(
                         new SequentialCommandGroup(
@@ -104,7 +110,8 @@ public class FlywheelTest extends OpMode {
 
         if (isPID) {
             double targetTPS = (FLYWHEEL_TARGET * motor.getCPR()) / 60.0;
-            motor.setVelocity(targetTPS);
+            double voltage = voltageSensor.getVoltage();
+            motor.setVelocity(targetTPS, voltage);
             telemetry.addData("Target", FLYWHEEL_TARGET);
         }
         else {

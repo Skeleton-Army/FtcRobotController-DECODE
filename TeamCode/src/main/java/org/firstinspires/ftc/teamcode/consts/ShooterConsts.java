@@ -21,4 +21,5 @@ public class ShooterConsts {
     public static double CLOSE_SHOOTER_MAX_VELOCITY = 6.4;
     public static double FAR_SHOOTER_MIN_VELOCITY = 8;
     public static double FAR_SHOOTER_MAX_VELOCITY = 8;
+    public static double MOVEMENT_COMPENSATION = 0.4;
 }
