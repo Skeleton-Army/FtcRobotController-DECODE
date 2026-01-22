@@ -76,6 +76,7 @@ public class Shooter extends SubsystemBase {
     private double filteredRPM = 0;
 
     private boolean emergencyStop = false;
+    private boolean updateHood = true;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -137,7 +138,7 @@ public class Shooter extends SubsystemBase {
         canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
-        if (!verticalManualMode) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
+        if (!verticalManualMode && updateHood) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getRPM());
 
         calculateRecovery();
@@ -311,6 +312,10 @@ public class Shooter extends SubsystemBase {
         wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
         turretPID.setSetPoint(wrapped);
         turret.setTargetDistance(wrapped);
+    }
+
+    public void setUpdateHood(boolean enabled) {
+        updateHood = enabled;
     }
 
     private void setRPM(double rpm) {
