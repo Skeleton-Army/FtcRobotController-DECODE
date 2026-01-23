@@ -22,12 +22,12 @@ public class SysIdRunner extends OpMode {
     private static final String MOTOR_2 = "flywheel2";
 
     private static final double RAMP_RATE = 0.25;     // volts/sec (quasistatic)
-    private static final double STEP_VOLTAGE = 6.0;   // volts (dynamic)
+    private static final double STEP_VOLTAGE = 9.0;   // volts (dynamic)
     private static final double MAX_VOLTAGE = 12.0;
 
     private static final double IDLE_TIME = 0.75;    // seconds
     private static final double QS_TIME = 70;       // seconds
-    private static final double DYN_TIME = 10;     // seconds
+    private static final double DYN_TIME = 15;     // seconds
 
     /* ================= STATES ================= */
 
@@ -104,7 +104,7 @@ public class SysIdRunner extends OpMode {
         try {
             writer = new FileWriter(
                     String.format(Locale.US,
-                            "/sdcard/FIRST/sysid_ftc_%d.csv",
+                            "/sdcard/FIRST/sysid_ftc_%d_fixed.csv",
                             System.currentTimeMillis())
             );
             writer.write("Timestamp,voltage,position,velocity,sysid-test-state\n");
@@ -166,7 +166,7 @@ public class SysIdRunner extends OpMode {
             writer.write(String.format(
                     Locale.US,
                     "%.6f,%.4f,%.2f,%.2f,%s\n",
-                    time, cmdVolts, position, velocity, currentState.label
+                    time, power * volts, position, velocity, currentState.label
             ));
         } catch (IOException ignored) {}
 
