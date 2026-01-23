@@ -1,7 +1,8 @@
 package org.firstinspires.ftc.teamcode.vision;
 
-import static org.firstinspires.ftc.teamcode.vision.ArtifactTrackingConfig.ROB_X;
-import static org.firstinspires.ftc.teamcode.vision.ArtifactTrackingConfig.ROB_Y;
+import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.calculateField;
+import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.getDistance;
+import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.getRelativePos;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -11,18 +12,20 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.seattlesolvers.solverslib.command.RunCommand;
 
-
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.psilynx.psikit.core.wpi.Pose2d;
-import org.psilynx.psikit.core.wpi.Rotation2d;
+import org.firstinspires.ftc.teamcode.subsystems.Drive;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
 
 @TeleOp
 public class ArtifactDetection extends OpMode {
     Limelight3A limelight;
     Follower follower;
     // Hc: Height of the Limelight lens from the floor (e.g., 0.35m or ~13.78 inches)
-    private Pose2d fieldPos; // Field-relative position of the sample
+    Drive drive;
+    private Pose2d fieldPos; // Field-relative position of the sample, uhhhh i mean pixel
 
 
 
@@ -32,6 +35,8 @@ public class ArtifactDetection extends OpMode {
 
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(true);
+        follower.setPose(new Pose(72,72));
+        follower.setMaxPower(1);
 
         limelight = hardwareMap.get(Limelight3A.class, "limelight");
         limelight.pipelineSwitch(ArtifactTrackingConfig.PIPELINE_INDEX);
@@ -40,71 +45,63 @@ public class ArtifactDetection extends OpMode {
         // 2: test pipeline
         limelight.start();
 
-
-
+        drive = new Drive(follower, pickRandomAlliance());
+        drive.setDefaultCommand(new RunCommand(
+                () -> drive.teleOpDrive(gamepad1), drive
+        ));
     }
 
     @Override
     public void loop() {
         follower.update();
 
+        //Uncomment for driving
+        //CommandScheduler.getInstance().run();
+
         LLResult llResult = limelight.getLatestResult();
         if (llResult != null) {
 
-
             double[] llPytohn = llResult.getPythonOutput();
 
-            double ArtifactDistance = getDistance(llPytohn,ArtifactTrackingConfig.LIMELIGHT_MOUNT_ANGLE,ArtifactTrackingConfig.ARTIFACT_HEIGHT_FROM_FLOOR,ArtifactTrackingConfig.LENS_HEIGHT_INCHES);
             Pose robotPose = follower.getPose();
-            Pose2d ArtifactPosition = getRelativePos(ArtifactDistance,llResult.getPythonOutput(),robotPose);
-            calculateField(robotPose, ArtifactPosition.getX(), ArtifactPosition.getY());
+            double artifactDistance = getDistance(llPytohn[1]);
+            Pose2d artifactPosition = getRelativePos(artifactDistance,llPytohn[0]);
+            fieldPos = calculateField(robotPose, artifactPosition);
 
+            telemetry.addData("tx ", llPytohn[0]);
+            telemetry.addData("ty ", llPytohn[1]);
+            telemetry.addData("Artifact Distance ", artifactDistance);
+            telemetry.addData("Artifact Pos X", artifactPosition.getX());
+            telemetry.addData("Artifact Pos Y", artifactPosition.getY());
+            telemetry.addData("Artifact Field Pos X", fieldPos.getX());
+            telemetry.addData("Artifact Field Pos Y", fieldPos.getY());
+            telemetry.addData("Robot X ", follower.getPose().getX());
+            telemetry.addData("Robot Y", follower.getPose().getY());
 
+        /*
             telemetry.addData("tx: ", llPytohn[0]);
             telemetry.addData("ty: ", llPytohn[1]);
-            telemetry.addData("ArtifactX", ArtifactPosition.getX());
-            telemetry.addData("ArtifactY", ArtifactPosition.getY());
+            telemetry.addData("ArtifactX", artifactPosition.getX());
+            telemetry.addData("ArtifactY", artifactPosition.getY());
             telemetry.addData("FieldX", fieldPos.getX());
             telemetry.addData("FieldY", fieldPos.getY());
-            telemetry.addData("Robot X ", ROB_X);
-            telemetry.addData("Robot Y", ROB_Y);
-
+            telemetry.addData("Robot X ", follower.getPose().getX());
+            telemetry.addData("Robot Y", follower.getPose().getY());
+            */
         }
         telemetry.update();
     }
-    public double getDistance(double[] llPyOut, double limelightMountAngleDegrees, double goalHeightInches, double limelightLensHeightInches){
-        double targetOffsetAngle_Vertical = llPyOut[1];
-
-        double angleToGoalRadians = Math.toRadians(limelightMountAngleDegrees + targetOffsetAngle_Vertical);
-        //calculate distance
-        return (goalHeightInches - limelightLensHeightInches) / Math.tan(angleToGoalRadians);
-    }
-
-    public static Pose2d getRelativePos(double ArtifactDistance, double[] anglesDeg, Pose robotPose) {
-        // Convert degrees to radians
-        double thetaRad = Math.toRadians(anglesDeg[0]);
-
-        // Calculate offsets
-        double deltaX = (ArtifactDistance + ArtifactTrackingConfig.X_OFFSET - ArtifactTrackingConfig.Y_OFFSET) * Math.cos(thetaRad);
-        double deltaY = ArtifactDistance * Math.sin(thetaRad);
-
-        // Field position
-        double fieldX = ROB_X + deltaX;
-        double fieldY = ROB_Y + deltaY;
-
-        return new Pose2d(fieldX, fieldY, new Rotation2d(0));
-    }
-
-    public void calculateField(Pose robotPose, double centerX, double  centerY) {
-        double x = robotPose.getX() + centerY * Math.cos(robotPose.getHeading()) - centerX * Math.sin(robotPose.getHeading());
-        double y = robotPose.getY() + centerY * Math.sin(robotPose.getHeading()) + centerX * Math.cos(robotPose.getHeading());
-        fieldPos = new Pose2d(x, y, new Rotation2d(0));
-    }
-
-
 
     @Override
     public void stop() {
         limelight.stop();
+    }
+
+    private Alliance pickRandomAlliance() {
+        if (Math.random() >= .5) {
+            return Alliance.BLUE;
+        }  else {
+            return Alliance.RED;
+        }
     }
 }

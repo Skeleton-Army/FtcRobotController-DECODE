@@ -10,17 +10,13 @@ public class ArtifactTrackingConfig {
     public static double LIMELIGHT_MOUNT_ANGLE = -10.0;
 
     // distance from the center of the Limelight lens to the floor
-    public static double LENS_HEIGHT_INCHES = 7.677;
+    public static double LENS_HEIGHT_INCHES = 9.05; //8.75
 
     // distance from the target to the floor
-    public static double ARTIFACT_HEIGHT_FROM_FLOOR = 0.0;
+    public static double ARTIFACT_HEIGHT_FROM_FLOOR = 1;
 
     // x and y offset to 0;0 of the robot
-    public static double Y_OFFSET = 0; //-7.48
-    public static double X_OFFSET = 0; //-7.67
-
-    public static double ROB_X = 0;
-    public static double ROB_Y = 0;
-
+    public static double Y_OFFSET_INCHES = 0; //-7.48
+    public static double X_OFFSET_INCHES = 8; //-7.67
 
 }
