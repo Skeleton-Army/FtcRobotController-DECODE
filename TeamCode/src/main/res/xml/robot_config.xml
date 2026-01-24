@@ -13,7 +13,7 @@
             <Servo name="hood" port="0" />
             <Servo name="stopper" port="1" />
 
-            <REV_VL53L0X_RANGE_SENSOR name="intakeSensor" port="0" bus="0" />
+            <REV_VL53L0X_RANGE_SENSOR name="intakeSensor" port="0" bus="1" />
         </LynxModule>
 
         <LynxModule name="Control Hub" port="173">
