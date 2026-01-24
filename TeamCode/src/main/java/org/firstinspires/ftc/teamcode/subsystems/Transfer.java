@@ -54,18 +54,22 @@ public class Transfer extends SubsystemBase {
         stopper.set(STOPPER_MIN);
     }
 
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public boolean isArtifactDetected() {
         return getDistance() <= DISTANCE_THRESHOLD_CM;
     }
 
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public double getDistance() {
         return colorSensor.distance(DistanceUnit.CM);
     }
 
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public double getDistanceIntake() {
         return sensorDistance.getDistance(DistanceUnit.CM);
     }
 
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public boolean isArtifactInIntake()  {
         return getDistanceIntake() <= DISTANCE_INTAKE_CM;
     }
