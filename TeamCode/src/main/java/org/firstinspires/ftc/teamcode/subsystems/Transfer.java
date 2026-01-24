@@ -70,28 +70,41 @@ public class Transfer extends SubsystemBase {
         return getDistanceIntake() <= DISTANCE_INTAKE_CM;
     }
 
-    public Trigger threeArtifactsDetected(long thresholdMs) {
+    public Trigger threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
         return new Trigger(new BooleanSupplier() {
             private long localDetectedTime = 0;
+            private long lastEmptyCheckTime = 0;
+            private final long EMPTY_POLL_COOLDOWN = 100;
 
             @Override
             public boolean getAsBoolean() {
-                boolean detected = isArtifactInIntake() && isArtifactDetected();
+                if (!isCollecting.getAsBoolean()) {
+                    localDetectedTime = 0;
+                    return false;
+                }
+
+                long currentTime = System.currentTimeMillis();
 
                 if (localDetectedTime == 0) {
-                    if (detected) {
-                        localDetectedTime = System.currentTimeMillis();
+                    // Only poll I2C if the cooldown has expired
+                    if (currentTime - lastEmptyCheckTime >= EMPTY_POLL_COOLDOWN) {
+                        lastEmptyCheckTime = currentTime;
+
+                        if (isArtifactInIntake() && isArtifactDetected()) {
+                            localDetectedTime = currentTime;
+                        }
                     }
                     return false;
                 }
 
-                long elapsed = System.currentTimeMillis() - localDetectedTime;
+                long elapsed = currentTime - localDetectedTime;
 
                 if (elapsed >= thresholdMs) {
-                    if (detected) {
+                    if (isArtifactInIntake() && isArtifactDetected()) {
                         return true;
                     } else {
                         localDetectedTime = 0;
+                        lastEmptyCheckTime = currentTime;
                         return false;
                     }
                 }

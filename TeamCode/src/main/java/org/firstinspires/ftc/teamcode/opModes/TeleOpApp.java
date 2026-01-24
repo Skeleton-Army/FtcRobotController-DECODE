@@ -176,7 +176,7 @@ public class TeleOpApp extends ComplexOpMode {
                     .whenPressed(this::resetPoseToNearestCorner);
         }
 
-        transfer.threeArtifactsDetected(500)
+        transfer.threeArtifactsDetected(intake::isCollecting, 500)
                 .whenActive(new InstantCommand(() -> gamepad1.rumble(300)));
 
         drive.setDefaultCommand(
@@ -240,7 +240,6 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
-        telemetry.addData("intake distance", transfer.getDistanceIntake());
 
         telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
         telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);

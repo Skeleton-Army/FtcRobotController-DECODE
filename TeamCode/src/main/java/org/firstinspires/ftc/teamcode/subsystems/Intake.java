@@ -8,6 +8,7 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 
 public class Intake extends SubsystemBase {
     private final MotorEx intake;
+    private boolean isCollecting = false;
 
     public Intake(final HardwareMap hardwareMap) {
         intake = new MotorEx(hardwareMap, INTAKE_NAME);
@@ -20,17 +21,25 @@ public class Intake extends SubsystemBase {
 
     public void collect() {
         intake.set(-INTAKE_POWER);
+        isCollecting = true;
     }
 
     public void transfer() {
         intake.set(-INTAKE_TRANSFER_POWER);
+        isCollecting = false;
     }
 
     public void release() {
         intake.set(INTAKE_POWER);
+        isCollecting = false;
     }
 
     public void stop() {
         intake.set(0);
+        isCollecting = false;
+    }
+
+    public boolean isCollecting() {
+        return isCollecting;
     }
 }
