@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.calculators;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.*;
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.*;
 import static org.firstinspires.ftc.teamcode.consts.ShooterLookupTable.*;
 
 import com.pedropathing.geometry.Pose;
@@ -15,27 +16,41 @@ import org.psilynx.psikit.core.Logger;
 
 public class LookupTableCalculator implements IShooterCalculator {
     private static final double INCH_TO_METERS = 0.0254;
-    private final double[] velCoeffs;
 
-    public LookupTableCalculator(double[] velCoeffs) {
-        this.velCoeffs = velCoeffs;
+    private final double[] velCoeffsClose;
+    private final double[] velCoeffsFar;
+
+    public LookupTableCalculator(double[] velCoeffsClose, double[] velCoeffsFar) {
+        this.velCoeffsClose = velCoeffsClose;
+        this.velCoeffsFar = velCoeffsFar;
     }
 
-    private double RPMToVelocity(int rpm) {
-        // THIS IS SPECIFICALLY FOR 2 COEFFICIENTS, IF THERE ARE MORE THIS NEEDS TO CHANGE
-        return (rpm - velCoeffs[1]) / velCoeffs[0];
+    private double RPMToVelocity(int rpm, double distance) {
+        // Select the appropriate coefficient set based on distance
+        double[] currentCoeffs = (distance < DISTANCE_THRESHOLD_METERS) ? velCoeffsClose : velCoeffsFar;
+
+        // Based on your original code: return (rpm - velCoeffs[1]) / velCoeffs[0];
+        // This assumes a linear relationship (first-degree polynomial)
+        if (currentCoeffs.length >= 2) {
+            return (rpm - currentCoeffs[1]) / currentCoeffs[0];
+        }
+        return 0.0;
     }
 
     /**
      * @param velocity Starting velocity in meters/second
      * @return Motor RPM
      */
-    protected int velocityToRPM(double velocity) {
+    protected int velocityToRPM(double velocity, double distance) {
         double result = 0.0;
-        for (int exponent = 0; exponent < velCoeffs.length; exponent++) {
-            result += velCoeffs[exponent] * Math.pow(velocity, velCoeffs.length - exponent - 1);
+
+        // Select the appropriate coefficient set based on distance
+        double[] currentCoeffs = (distance < DISTANCE_THRESHOLD_METERS) ? velCoeffsClose : velCoeffsFar;
+
+        for (int exponent = 0; exponent < currentCoeffs.length; exponent++) {
+            result += currentCoeffs[exponent] * Math.pow(velocity, currentCoeffs.length - exponent - 1);
         }
-        return (int)result;
+        return (int) result;
     }
 
     protected double shooterVelocity(double distance) {
@@ -72,7 +87,7 @@ public class LookupTableCalculator implements IShooterCalculator {
 
         // Compute distance/angles from predicted pose
         double distance = predictedPose.distanceFrom(goalPoseMeters);
-        double speed = RPMToVelocity(flywheelVel);
+        double speed = RPMToVelocity(flywheelVel, distance);
         HoodSolution hoodSolution = lookup(distance, speed);
         double verticalAngle = hoodSolution.getHoodAngle();
         double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
@@ -99,7 +114,7 @@ public class LookupTableCalculator implements IShooterCalculator {
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
-                velocityToRPM(shooterVelocity(distance) * (1 - MOVEMENT_COMPENSATION) + newSpeed * MOVEMENT_COMPENSATION),
+                velocityToRPM(shooterVelocity(distance) * (1 - MOVEMENT_COMPENSATION) + newSpeed * MOVEMENT_COMPENSATION, distance),
                 canShoot
         );
     }

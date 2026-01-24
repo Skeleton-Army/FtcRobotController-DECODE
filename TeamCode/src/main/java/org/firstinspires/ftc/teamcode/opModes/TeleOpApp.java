@@ -78,7 +78,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setMaxPower(1);
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
-        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
+        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
@@ -226,6 +226,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", robotPose.getY());
         telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL));
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
@@ -253,6 +254,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Can Shoot", shooter.getCanShoot());
+        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL));
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
         Logger.recordOutput("Shooter/Flywheel Filtered RPM", shooter.getFilteredRPM());
         Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));

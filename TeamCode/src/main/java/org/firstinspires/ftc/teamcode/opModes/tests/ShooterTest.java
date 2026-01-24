@@ -84,7 +84,7 @@ public class ShooterTest extends ComplexOpMode   {
     @Override
     public void initialize() {
         Alliance alliance = Alliance.RED;
-        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
+        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
 
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose(8.5, 8.5, Math.toRadians(0)));
