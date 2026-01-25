@@ -214,13 +214,19 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
+        Pose rotatedGoalPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / inchesToMeters, -rotatedGoalPose.getY() / inchesToMeters, new Rotation2d());
+
         telemetry.addData("!Reached RPM", shooter.reachedRPM());
         telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
         telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
         telemetry.addData("!Reached angle", shooter.reachedAngle());
         telemetry.addData("!Can shoot", shooter.getCanShoot());
 
-        telemetry.addData("goal pose", new Pose2d(shooter.goalPose.getX(), shooter.goalPose.getY(), new Rotation2d()));
+        telemetry.addData("Goal x", goalPose.getX());
+        telemetry.addData("Goal y", goalPose.getY());
+        telemetry.addData("Goal heading", 0);
+
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
@@ -256,6 +262,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Can Shoot", shooter.getCanShoot());
+        Logger.recordOutput("Goal Pose", goalPose);
         Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters);
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
         Logger.recordOutput("Shooter/Flywheel Filtered RPM", shooter.getFilteredRPM());

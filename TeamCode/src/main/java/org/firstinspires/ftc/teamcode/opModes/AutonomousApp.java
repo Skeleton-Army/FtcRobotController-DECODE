@@ -14,6 +14,7 @@ import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
@@ -72,13 +73,16 @@ public class AutonomousApp extends ComplexOpMode {
 
     private VoltageSensor voltageSensor;
 
+    private final Pose farDriveBack = getRelative(new Pose(56.6, 15.862));
+    private final Pose nearDriveBack = getRelative(new Pose(56.605, 91.127));
+
     public PathChain farDriveBack() {
         return follower
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(56.6, 15.862))
+                                farDriveBack
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -93,7 +97,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(56.605, 91.127))
+                                nearDriveBack
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -103,13 +107,13 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     public void setupPaths() {
-        farStartingPose = getRelative(new Pose(56.6,8.7, Math.toRadians(180)));
-        nearStartingPose = getRelative(new Pose(20.3, 123.6, Math.toRadians(142)));
-        pushStartingPose = getRelative(new Pose(57.85,8.7, Math.toRadians(180)));
+        farStartingPose = getRelative(new Pose(56.6,8.5, Math.toRadians(90)));
+        nearStartingPose = getRelative(new Pose(19.623, 120.368, Math.toRadians(143)));
+        pushStartingPose = getRelative(new Pose(57.85,8.5, Math.toRadians(180)));
 
-        Pose spike1End = getRelative(new Pose(12.330, 7.464));
+        Pose spike1End = getRelative(new Pose(9.330697624190067, 8.708060475161995));
         Pose spike2End = getRelative(new Pose(15.550755939524837, 35.76673866090713));
-        Pose spike3End = getRelative(new Pose(15.086, 57.227));
+        Pose spike3End = getRelative(new Pose(17.263, 60.026));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
         Pose openGateEnd = getRelative(new Pose(14.572, 74));
 
@@ -145,7 +149,7 @@ public class AutonomousApp extends ComplexOpMode {
                     .addPath(
                             new BezierCurve(
                                     follower::getPose,
-                                    getRelative(new Pose(80.864, 65.313)),
+                                    getRelative(new Pose(76.510, 65.313)),
                                     spike3End
 
                             )
@@ -316,6 +320,8 @@ public class AutonomousApp extends ComplexOpMode {
 
         follower.setStartingPose(startingPose);
         Settings.set("pose", startingPose, false);
+
+        shooter.setTargetPose(startingPosition == StartingPosition.FAR ? farDriveBack.withHeading(getRelative(Math.toRadians(180))) : nearDriveBack.withHeading(getRelative(Math.toRadians(180))));
     }
 
     @Override
@@ -375,6 +381,7 @@ public class AutonomousApp extends ComplexOpMode {
                         follower,
                         driveBack.get()
                 ),
+                new WaitCommand(2000),
                 shootCommand.asProxy()
         );
 
@@ -399,8 +406,12 @@ public class AutonomousApp extends ComplexOpMode {
                 seq.addCommands(
                         new InstantCommand(() -> telemetry.addData("Current", "Opening gate")),
                         new FollowPathCommand(follower, spikeNumber == 3 ? spike3Open : spike4Open),
-                        new WaitCommand(500)
+                        new WaitCommand(100)
                 );
+            }
+
+            if (isLast && startingPosition == StartingPosition.CLOSE) {
+                shooter.setTargetPose(nearDriveBackEnd.endPose().withHeading(nearDriveBackEnd.endPose().getHeading()));
             }
 
             seq.addCommands(

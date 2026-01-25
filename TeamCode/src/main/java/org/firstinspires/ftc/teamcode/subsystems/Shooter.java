@@ -78,6 +78,8 @@ public class Shooter extends SubsystemBase {
     private boolean emergencyStop = false;
     private boolean updateHood = true;
 
+    private Pose currentPose;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
@@ -137,7 +139,7 @@ public class Shooter extends SubsystemBase {
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
-        solution = shooterCalculator.getShootingSolution(poseTracker.getPose(), goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
+        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
         canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
@@ -319,6 +321,10 @@ public class Shooter extends SubsystemBase {
 
     public void setUpdateHood(boolean enabled) {
         updateHood = enabled;
+    }
+
+    public void setTargetPose(Pose pose) {
+        currentPose = pose;
     }
 
     private void setRPM(double rpm) {
