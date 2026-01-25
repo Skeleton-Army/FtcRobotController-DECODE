@@ -11,6 +11,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.Robot;
 import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.teamcode.consts.ShooterLookupTable;
 import org.psilynx.psikit.core.Logger;
@@ -18,6 +19,7 @@ import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
@@ -154,5 +156,97 @@ public abstract class ComplexOpMode extends LinearOpMode {
                 }
             }
         }
+    }
+
+    // ----- LOG OVERLOADS -----
+
+    public static void log(String caption, boolean value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, int value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, long value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, float value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, double value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, String value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    // Standard Arrays
+    public static void log(String caption, double[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, int[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, boolean[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, String[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    // 2D Arrays
+    public static void log(String caption, double[][] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.deepToString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, int[][] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.deepToString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, java.util.function.DoubleSupplier value) {
+        OpModeManager.getTelemetry().addData(caption, value.getAsDouble());
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, java.util.function.BooleanSupplier value) {
+        OpModeManager.getTelemetry().addData(caption, value.getAsBoolean());
+        Logger.recordOutput(caption, value);
+    }
+
+    // Enums
+    public static <E extends Enum<E>> void log(String caption, E value) {
+        OpModeManager.getTelemetry().addData(caption, value.toString());
+        Logger.recordOutput(caption, value);
+    }
+
+    // WPISerializable (For Pose2d, Rotation2d, etc.)
+    public static <T extends org.psilynx.psikit.core.wpi.WPISerializable> void log(String caption, T value) {
+        OpModeManager.getTelemetry().addData(caption, value.toString());
+        Logger.recordOutput(caption, value);
+    }
+
+    // Logged Mechanisms
+    public static void log(String caption, org.psilynx.psikit.core.mechanism.LoggedMechanism2d value) {
+        OpModeManager.getTelemetry().addData(caption, "{Mechanism2d}");
+        Logger.recordOutput(caption, value);
     }
 }
