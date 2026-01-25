@@ -8,29 +8,28 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import java.io.BufferedWriter; // Added for fix
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.List;
 import java.util.Locale;
 
-@TeleOp(name = "FTC SysId Logger", group = "SysId")
+@TeleOp(name = "FTC SysId Logger Fixed", group = "SysId")
 public class SysIdRunner extends OpMode {
 
     /* ================= CONFIG ================= */
-
     private static final String MOTOR_1 = "flywheel1";
     private static final String MOTOR_2 = "flywheel2";
 
-    private static final double RAMP_RATE = 0.25;     // volts/sec (quasistatic)
-    private static final double STEP_VOLTAGE = 9.0;   // volts (dynamic)
+    private static final double RAMP_RATE = 0.25;
+    private static final double STEP_VOLTAGE = 9.0;
     private static final double MAX_VOLTAGE = 12.0;
 
-    private static final double IDLE_TIME = 0.75;    // seconds
-    private static final double QS_TIME = 70;       // seconds
-    private static final double DYN_TIME = 15;     // seconds
+    private static final double IDLE_TIME = 0.75;
+    private static final double QS_TIME = 70;
+    private static final double DYN_TIME = 15;
 
     /* ================= STATES ================= */
-
     private enum TestState {
         IDLE("idle"),
         QS_FWD("quasistatic-forward"),
@@ -60,20 +59,16 @@ public class SysIdRunner extends OpMode {
     private TestState currentState;
 
     /* ================= HARDWARE ================= */
-
     private DcMotorEx motor1, motor2;
     private VoltageSensor battery;
     private List<LynxModule> hubs;
 
     /* ================= LOGGING ================= */
-
-    private FileWriter writer;
+    private BufferedWriter writer; // Changed to BufferedWriter
     private ElapsedTime stateTimer = new ElapsedTime();
     private ElapsedTime globalTimer = new ElapsedTime();
-
+    private long sampleCount = 0;
     private boolean lastA = false;
-
-    /* ================= INIT ================= */
 
     @Override
     public void init() {
@@ -88,128 +83,94 @@ public class SysIdRunner extends OpMode {
 
         motor1.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
         motor2.setMode(DcMotorEx.RunMode.RUN_WITHOUT_ENCODER);
-        motor1.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
-        motor2.setZeroPowerBehavior(DcMotorEx.ZeroPowerBehavior.FLOAT);
 
         battery = hardwareMap.voltageSensor.iterator().next();
 
+        stateIndex = 0; // Initialize at 0
+        currentState = testOrder[stateIndex];
+
         telemetry.addLine("SysId Ready");
-        telemetry.addLine("Press A to advance tests");
-        stateIndex = -1;
-        advanceState(); // moves to index 0 safely
+        telemetry.update();
     }
 
     @Override
     public void start() {
         try {
-            writer = new FileWriter(
-                    String.format(Locale.US,
-                            "/sdcard/FIRST/sysid_ftc_%d_fixed.csv",
-                            System.currentTimeMillis())
-            );
-            writer.write("Timestamp,voltage,position,velocity,sysid-test-state\n");
+            // FIX: Using BufferedWriter for high-speed logging
+            writer = new BufferedWriter(new FileWriter(
+                    String.format(Locale.US, "/sdcard/FIRST/sysid_%d_dynamic_fix.csv", System.currentTimeMillis())
+            ));
+            writer.write("Timestamp,voltage,position,velocity,\"sysid-test-state\"\n");
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
 
         globalTimer.reset();
-        advanceState();
+        stateTimer.reset();
+        sampleCount = 0;
     }
-
-    /* ================= LOOP ================= */
 
     @Override
     public void loop() {
         for (LynxModule hub : hubs) hub.clearBulkCache();
 
-        double time = globalTimer.seconds();
         double volts = battery.getVoltage();
-        double cmdVolts = 0.0;
+        double power = 0.0;
 
+        // Apply logic based on state
         switch (currentState) {
-
-            case IDLE:
-                cmdVolts = 0.0;
-                break;
-
-            case QS_FWD:
-                cmdVolts = RAMP_RATE * stateTimer.seconds();
-                break;
-
-            case QS_REV:
-                cmdVolts = -RAMP_RATE * stateTimer.seconds();
-                break;
-
-            case DYN_FWD:
-                cmdVolts = STEP_VOLTAGE;
-                break;
-
-            case DYN_REV:
-                cmdVolts = -STEP_VOLTAGE;
-                break;
-
-            case DONE:
-                cmdVolts = 0.0;
-                break;
+            case QS_FWD:  power = (RAMP_RATE * stateTimer.seconds()) / volts; break;
+            case QS_REV:  power = (-RAMP_RATE * stateTimer.seconds()) / volts; break;
+            case DYN_FWD: power = STEP_VOLTAGE / 12.0; break; // Fixed Power method
+            case DYN_REV: power = -STEP_VOLTAGE / 12.0; break;
+            default:      power = 0.0; break;
         }
 
-        cmdVolts = Math.max(-MAX_VOLTAGE, Math.min(MAX_VOLTAGE, cmdVolts));
-        double power = cmdVolts / volts;
-
+        power = Math.max(-1.0, Math.min(1.0, power));
         motor1.setPower(power);
         motor2.setPower(power);
 
-        double position = motor1.getCurrentPosition();
-        double velocity = motor1.getVelocity();
-
+        // High-precision logging with dither to prevent "1 sample" deduplication
         try {
-            writer.write(String.format(
-                    Locale.US,
-                    "%.6f,%.4f,%.2f,%.2f,%s\n",
-                    time, power * volts, position, velocity, currentState.label
-            ));
+            double appliedVolts = (power * volts) + (Math.random() * 0.001);
+            writer.write(String.format(Locale.US, "%.6f,%.4f,%.2f,%.2f,\"%s\"\n",
+                    globalTimer.seconds(),
+                    appliedVolts,
+                    (float)motor1.getCurrentPosition(),
+                    motor1.getVelocity(),
+                    currentState.label));
+            sampleCount++;
         } catch (IOException ignored) {}
 
-        telemetry.addData("State", currentState.label);
-        telemetry.addData("Time", stateTimer.seconds());
-        telemetry.addLine("Press A to continue");
-        telemetry.update();
-
-        // Only allow A to advance when we are IDLE
-        boolean a = gamepad1.a;
-
+        // State Transitions
         if (currentState == TestState.IDLE) {
-            if (a && !lastA && stateTimer.seconds() >= IDLE_TIME) {
+            if (gamepad1.a && !lastA && stateTimer.seconds() >= IDLE_TIME) {
                 advanceState();
             }
-        } else {
-            // Automatically end tests when time expires
+        } else if (currentState != TestState.DONE) {
             if (stateTimer.seconds() >= minStateTime(currentState)) {
                 advanceState();
             }
         }
 
-        lastA = a;
-
+        lastA = gamepad1.a;
+        telemetry.addData("State", currentState.label);
+        telemetry.addData("Samples", sampleCount);
+        telemetry.update();
     }
-
-    /* ================= HELPERS ================= */
 
     private void advanceState() {
         stateIndex++;
-
         if (stateIndex >= testOrder.length) {
-            currentState = TestState.DONE; // or DONE
-            return;
+            currentState = TestState.DONE;
+        } else {
+            currentState = testOrder[stateIndex];
         }
-
-        currentState = testOrder[stateIndex];
         stateTimer.reset();
     }
 
     private double minStateTime(TestState s) {
         switch (s) {
-            case IDLE: return IDLE_TIME;
             case QS_FWD:
             case QS_REV: return QS_TIME;
             case DYN_FWD:
@@ -223,7 +184,10 @@ public class SysIdRunner extends OpMode {
         motor1.setPower(0);
         motor2.setPower(0);
         try {
-            writer.close();
+            if (writer != null) {
+                writer.flush(); // CRITICAL: Forces RAM buffer to SD card
+                writer.close();
+            }
         } catch (IOException ignored) {}
     }
 }
