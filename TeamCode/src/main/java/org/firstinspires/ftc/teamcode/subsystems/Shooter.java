@@ -48,7 +48,7 @@ public class Shooter extends SubsystemBase {
 
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
-    private final Pose goalPose;
+    public Pose goalPose;
 
     private double targetTPS;
 
@@ -132,6 +132,8 @@ public class Shooter extends SubsystemBase {
             return;
         }
         // --------------------
+
+        calculateGoalPose(); // calculates the current goalpose by the robot pose
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
@@ -355,6 +357,44 @@ public class Shooter extends SubsystemBase {
         }
     }
 
-    public void calculateGoalPose() {}
+    public void calculateGoalPose() {
+        double rx = poseTracker.getPose().getX();
+        double ry = poseTracker.getPose().getY();
+
+        // The "Static" Centroid (the middle of the blue triangle)
+        double centroidX = (GoalPositions.BLUE_GOAL_TOP.getX() + GoalPositions.BLUE_GOAL_BUTTOM.getX() + GoalPositions.BLUE_GOAL_CORNER.getX()) / 3.0;
+        double centroidY = (GoalPositions.BLUE_GOAL_TOP.getY() + GoalPositions.BLUE_GOAL_BUTTOM.getY() + GoalPositions.BLUE_GOAL_CORNER.getY()) / 3.0;
+
+        if (alliance == Alliance.BLUE) {
+        /* DYNAMIC SHIFT:
+           If the robot is near the left wall (low X),
+           the "Ideal X" should track the robot's X to keep the shot straight.
+        */
+            double idealX = Math.max(4.0, Math.min(rx, 24.0)); // Keeps target within the goal's width
+
+            // Calculate distance to the corner to determine how much to "slide" the target
+            double distToCorner = Math.hypot(rx - GoalPositions.BLUE_GOAL_CORNER.getX(), ry - GoalPositions.BLUE_GOAL_CORNER.getY());
+
+            // Interpolation factor (t): 1.0 when far away (use centroid), 0.0 when close (use idealX)
+            double t = Math.max(0, Math.min((distToCorner - 15.0) / 30.0, 1.0));
+
+            // Set the Absolute Field Coordinates
+            goalPose = new Pose(
+                    (idealX * (1 - t)) + (centroidX * t),
+                    (142.0 * (1 - t)) + (centroidY * t) // Slide Y closer to the back wall as you get near
+            );
+        }
+        else if (alliance == Alliance.RED) {
+            // Mirror the logic for the Red side (High X)
+            double idealX = Math.max(120.0, Math.min(rx, 140.0));
+            double distToCorner = Math.hypot(rx - GoalPositions.RED_GOAL_CORNER.getX(), ry - GoalPositions.RED_GOAL_CORNER.getY());
+            double t = Math.max(0, Math.min((distToCorner - 15.0) / 30.0, 1.0));
+
+            goalPose = new Pose(
+                    (idealX * (1 - t)) + (centroidX * t),
+                    (142.0 * (1 - t)) + (centroidY * t)
+            );
+        }
+    }
 
 }

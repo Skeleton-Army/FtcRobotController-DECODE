@@ -220,6 +220,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("!Reached angle", shooter.reachedAngle());
         telemetry.addData("!Can shoot", shooter.getCanShoot());
 
+        telemetry.addData("goal pose", new Pose2d(shooter.goalPose.getX(), shooter.goalPose.getY(), new Rotation2d()));
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
