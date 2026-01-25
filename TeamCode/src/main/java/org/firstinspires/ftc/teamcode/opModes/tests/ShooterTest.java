@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -13,6 +15,7 @@ import com.skeletonarmy.marrow.zones.PolygonZone;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
@@ -24,9 +27,7 @@ import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
 @TeleOp
 public class ShooterTest extends ComplexOpMode   {
-    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
-    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
-    private final PolygonZone robotZone = new PolygonZone(17, 17);
+    private final double INCHES_TO_METERS = 39.37;
 
     private final Pose[] points = new Pose[16];
     private int index = 0;
@@ -103,7 +104,7 @@ public class ShooterTest extends ComplexOpMode   {
         GamepadEx gamepadEx1 = new GamepadEx(gamepad1);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> robotZone.isInside(farLaunchZone)));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenActive(this::forNextPath);
@@ -114,9 +115,6 @@ public class ShooterTest extends ComplexOpMode   {
     @Override
     public void run() {
         follower.update();
-
-        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
-        robotZone.setRotation(follower.getPose().getHeading());
 
         telemetry.addData("Target Point", index);
         telemetry.addData("Target X", points[index].getX());

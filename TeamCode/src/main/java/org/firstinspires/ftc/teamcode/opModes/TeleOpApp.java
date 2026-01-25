@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -60,9 +61,6 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean tabletopMode;
     private Alliance alliance;
 
-    private boolean insideClose;
-    private boolean insideFar;
-
     final double inchesToMeters = 39.37;
 
     @Override
@@ -103,11 +101,11 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> insideFar));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters >= DISTANCE_THRESHOLD_METERS));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> insideFar));
+                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters >= DISTANCE_THRESHOLD_METERS));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
@@ -229,7 +227,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", robotPose.getY());
         telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL));
+        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
@@ -238,7 +236,6 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
         telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
-        telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Filtered Flywheel RPM", shooter.getFilteredRPM());
         telemetry.addData("Target RPM", shooter.solution.getRPM());
@@ -258,7 +255,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Can Shoot", shooter.getCanShoot());
-        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL));
+        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters);
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
         Logger.recordOutput("Shooter/Flywheel Filtered RPM", shooter.getFilteredRPM());
         Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
@@ -276,8 +273,8 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     public boolean isInsideLaunchZone() {
-        insideClose = robotZone.isInside(closeLaunchZone);
-        insideFar = robotZone.isInside(farLaunchZone);
+        boolean insideClose = robotZone.isInside(closeLaunchZone);
+        boolean insideFar = robotZone.isInside(farLaunchZone);
         return insideClose || insideFar || debugMode;
     }
 
