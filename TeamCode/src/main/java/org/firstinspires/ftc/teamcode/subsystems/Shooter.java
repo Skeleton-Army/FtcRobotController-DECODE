@@ -126,6 +126,7 @@ public class Shooter extends SubsystemBase {
 
         if (isFlywheelDamaged() && !emergencyStop) {
             flywheel.stopMotor();
+            turret.stopMotor();
             emergencyStop = true;
             canShoot = false;
             return;
