@@ -6,7 +6,7 @@ import com.acmerobotics.dashboard.config.Config;
 public class ShooterConsts {
     public static double SHOT_LATENCY = 0.0;
     public static double SHOOTER_MIN_VELOCITY = 4.4;
-    public static double SHOOTER_MAX_VELOCITY = 9;
+    public static double SHOOTER_MAX_VELOCITY = 8;
     public static double MIN_DISTANCE = 0.7;
     public static double MIN_DISTANCE_TABLE = 1;
     public static double MID_DISTANCE_TABlE = 3;
