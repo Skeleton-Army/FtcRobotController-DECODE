@@ -7,7 +7,10 @@ import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.get
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.PathChain;
+import com.pedropathing.util.Timer;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -23,9 +26,9 @@ import org.psilynx.psikit.core.wpi.math.Pose2d;
 public class ArtifactDetection extends OpMode {
     Limelight3A limelight;
     Follower follower;
-    // Hc: Height of the Limelight lens from the floor (e.g., 0.35m or ~13.78 inches)
     Drive drive;
     private Pose2d fieldPos; // Field-relative position of the sample, uhhhh i mean pixel
+
 
 
 
@@ -78,17 +81,10 @@ public class ArtifactDetection extends OpMode {
             telemetry.addData("Robot X ", follower.getPose().getX());
             telemetry.addData("Robot Y", follower.getPose().getY());
 
-        /*
-            telemetry.addData("tx: ", llPytohn[0]);
-            telemetry.addData("ty: ", llPytohn[1]);
-            telemetry.addData("ArtifactX", artifactPosition.getX());
-            telemetry.addData("ArtifactY", artifactPosition.getY());
-            telemetry.addData("FieldX", fieldPos.getX());
-            telemetry.addData("FieldY", fieldPos.getY());
-            telemetry.addData("Robot X ", follower.getPose().getX());
-            telemetry.addData("Robot Y", follower.getPose().getY());
-            */
+
         }
+
+
         telemetry.update();
     }
 
@@ -104,4 +100,7 @@ public class ArtifactDetection extends OpMode {
             return Alliance.RED;
         }
     }
+    public double getX() { return fieldPos.getX(); }
+    public double getY() { return fieldPos.getY(); }
+
 }
