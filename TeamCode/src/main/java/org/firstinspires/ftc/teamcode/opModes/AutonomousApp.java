@@ -10,6 +10,7 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -57,9 +58,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private final PathChain[] farPaths = new PathChain[4];
     private final PathChain[] nearPaths = new PathChain[4];
-    private PathChain farDriveBack;
     private PathChain farDriveBackEnd;
-    private PathChain nearDriveBack;
     private PathChain nearDriveBackEnd;
     private PathChain spike3Open;
     private PathChain spike4Open;
@@ -73,6 +72,36 @@ public class AutonomousApp extends ComplexOpMode {
 
     private VoltageSensor voltageSensor;
 
+    public PathChain farDriveBack() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(56.6, 15.862))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+    }
+
+    public PathChain nearDriveBack() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(56.605, 91.127))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+    }
+
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(56.6,8.7, Math.toRadians(180)));
         nearStartingPose = getRelative(new Pose(20.3, 123.6, Math.toRadians(142)));
@@ -83,32 +112,6 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike3End = getRelative(new Pose(15.086, 57.227));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
         Pose openGateEnd = getRelative(new Pose(14.572, 74));
-
-        nearDriveBack = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(56.605, 91.127))
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .build();
-
-        farDriveBack = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(56.6, 15.862))
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .build();
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -347,15 +350,15 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void onStart() {
-        PathChain driveBack =
+        Supplier<PathChain> driveBack =
                 startingPosition == StartingPosition.FAR
-                        ? farDriveBack
-                        : nearDriveBack;
+                        ? this::farDriveBack
+                        : this::nearDriveBack;
 
-        PathChain finalDriveBack =
+        Supplier<PathChain> finalDriveBack =
                 startingPosition == StartingPosition.FAR
                         ? driveBack
-                        : nearDriveBackEnd;
+                        : () -> nearDriveBackEnd;
 
         Command shootCommand = new ShootCommand(shooter, intake, transfer, drive, () -> startingPosition == StartingPosition.FAR);
 
@@ -370,7 +373,7 @@ public class AutonomousApp extends ComplexOpMode {
         seq.addCommands(
                 new FollowPathCommand(
                         follower,
-                        driveBack
+                        driveBack.get()
                 ),
                 shootCommand.asProxy()
         );
@@ -402,7 +405,10 @@ public class AutonomousApp extends ComplexOpMode {
 
             seq.addCommands(
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
-                    new FollowPathCommand(follower, isLast ? finalDriveBack : driveBack),
+                    new DeferredCommand(
+                            () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
+                            null
+                    ),
                     shootCommand.asProxy()
             );
         }
