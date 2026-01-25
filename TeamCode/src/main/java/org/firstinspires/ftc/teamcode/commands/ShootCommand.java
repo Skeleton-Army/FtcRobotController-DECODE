@@ -18,6 +18,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.mechanism.LoggedMechanism2d;
 
+import java.util.function.BooleanSupplier;
+
 public class ShootCommand extends SequentialCommandGroup {
     private final Shooter shooter;
     private final Intake intake;
@@ -25,6 +27,10 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Drive drive;
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
+        this(shooter, intake, transfer, drive, () -> false);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate) {
         addRequirements(shooter, intake, transfer);
 
         this.shooter = shooter;
@@ -36,6 +42,7 @@ public class ShootCommand extends SequentialCommandGroup {
                 waitUntilCanShoot(),
                 new InstantCommand(this::recordShot),
                 new InstantCommand(() -> drive.setShootingMode(true)),
+                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
@@ -48,7 +55,8 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(transfer::block),
                 new InstantCommand(intake::stop),
 
-                new InstantCommand(() -> drive.setShootingMode(false))
+                new InstantCommand(() -> drive.setShootingMode(false)),
+                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
         );
     }
 
@@ -73,5 +81,6 @@ public class ShootCommand extends SequentialCommandGroup {
         transfer.setKickerPosition(false);
         transfer.block();
         drive.setShootingMode(false);
+        shooter.setUpdateHood(true);
     }
 }

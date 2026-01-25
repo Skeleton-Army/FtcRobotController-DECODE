@@ -60,6 +60,9 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean tabletopMode;
     private Alliance alliance;
 
+    private boolean insideClose;
+    private boolean insideFar;
+
     final double inchesToMeters = 39.37;
 
     @Override
@@ -100,11 +103,11 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> insideFar));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive));
+                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> insideFar));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
@@ -237,6 +240,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
         telemetry.addData("distance from goal: ", follower.getPose().distanceFrom(GoalPositions.BLUE_GOAL) / inchesToMeters);
         telemetry.addData("Flywheel RPM", shooter.getRPM());
+        telemetry.addData("Filtered Flywheel RPM", shooter.getFilteredRPM());
         telemetry.addData("Target RPM", shooter.solution.getRPM());
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
@@ -272,8 +276,8 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     public boolean isInsideLaunchZone() {
-        boolean insideClose = robotZone.isInside(closeLaunchZone);
-        boolean insideFar = robotZone.isInside(farLaunchZone);
+        insideClose = robotZone.isInside(closeLaunchZone);
+        insideFar = robotZone.isInside(farLaunchZone);
         return insideClose || insideFar || debugMode;
     }
 

@@ -357,7 +357,7 @@ public class AutonomousApp extends ComplexOpMode {
                         ? driveBack
                         : nearDriveBackEnd;
 
-        Command shootCommand = new ShootCommand(shooter, intake, transfer, drive);
+        Command shootCommand = new ShootCommand(shooter, intake, transfer, drive, () -> startingPosition == StartingPosition.FAR);
 
         SequentialCommandGroup seq = new SequentialCommandGroup();
 
