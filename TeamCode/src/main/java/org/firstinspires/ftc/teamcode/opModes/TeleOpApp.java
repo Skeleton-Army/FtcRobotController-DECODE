@@ -166,8 +166,8 @@ public class TeleOpApp extends ComplexOpMode {
                 )
         );
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .toggleWhenPressed(
+        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5)
+                .toggleWhenActive(
                         new InstantCommand(kickstand::raise),
                         new InstantCommand(kickstand::drop)
                 );
