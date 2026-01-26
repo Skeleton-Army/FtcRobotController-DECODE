@@ -242,7 +242,6 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
-        telemetry.addData("solution angle(deg)", Math.toDegrees(shooter.solution.getVerticalAngle()));
         telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Filtered Flywheel RPM", shooter.getFilteredRPM());
         telemetry.addData("Target RPM", shooter.solution.getRPM());

@@ -254,10 +254,21 @@ public class Shooter extends SubsystemBase {
         hood.set(MathFunctions.clamp(angle, HOOD_POSSIBLE_MIN, HOOD_POSSIBLE_MAX));
     }
 
+    /**
+     * Calculates the current physical angle of the hood based on the servo's position.
+     * @return physical angle in radians
+     */
     public double getHoodAngle() {
         double pos = getRawHoodPosition();
-        double normalizedPos = HOOD_INVERTED ? (1.0 - pos) : pos;
 
+        // Normalize position relative to the possible range
+        double normalizedPos = (pos - HOOD_POSSIBLE_MIN) / (HOOD_POSSIBLE_MAX - HOOD_POSSIBLE_MIN);
+
+        if (HOOD_INVERTED) {
+            normalizedPos = 1.0 - normalizedPos;
+        }
+
+        // Interpolate back to radians
         return HOOD_MIN + (normalizedPos * (HOOD_MAX - HOOD_MIN));
     }
 
@@ -302,15 +313,27 @@ public class Shooter extends SubsystemBase {
     }
 
     /**
-        Sets the hood angle relative to the ground
-
-       * @param angleRad the hood angle given by the calculations (radians)
-     **/
+     * Sets the hood angle by interpolating the target radians between the
+     * physical min/max angles and the servo's possible position range.
+     *
+     * @param angleRad the target hood angle in radians
+     */
     public void setVerticalAngle(double angleRad) {
-        double normalized = (angleRad - HOOD_MIN) / (HOOD_MAX - HOOD_MIN); // Normalized/converted to servo position
-        double invertedNormalized = 1 - normalized;
+        // 1. Clamp the input to ensure it stays within physical hardware limits
+        double clampedAngle = MathUtils.clamp(angleRad, HOOD_MIN, HOOD_MAX);
 
-        setHoodPosition(HOOD_INVERTED ? invertedNormalized : normalized);
+        // 2. Calculate the interpolation factor (t) from 0.0 to 1.0
+        double t = (clampedAngle - HOOD_MIN) / (HOOD_MAX - HOOD_MIN);
+
+        // 3. Map that factor to the servo's possible position range
+        double targetPos = HOOD_POSSIBLE_MIN + (t * (HOOD_POSSIBLE_MAX - HOOD_POSSIBLE_MIN));
+
+        // 4. Handle inversion if the servo rotates opposite to the angle increase
+        if (HOOD_INVERTED) {
+            targetPos = HOOD_POSSIBLE_MAX - (targetPos - HOOD_POSSIBLE_MIN);
+        }
+
+        setHoodPosition(targetPos);
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
