@@ -54,12 +54,12 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(127, 70))
+                                            getRelative(new Pose(132, 60.5))
                                     )
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    getGateAngle(follower.getHeading())
+                                    getRelative(Math.toRadians(45))
 
                             )
                             .setTranslationalConstraint(1)
@@ -87,12 +87,12 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(38.5, 33.5))
+                                            getRelative(new Pose(35, 30))
                                     )
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    getClosestRightAngle(follower.getHeading())
+                                    getRelative(Math.toRadians(45))
                             )
                             .setTranslationalConstraint(1)
                             .setBrakingStrength(1)
@@ -230,5 +230,13 @@ public class Drive extends SubsystemBase {
         }
 
         return originalPose;
+    }
+
+    private double getRelative(double headingRad) {
+        if (alliance == Alliance.BLUE) {
+            return MathFunctions.normalizeAngle(Math.PI - headingRad);
+        }
+
+        return headingRad;
     }
 }
