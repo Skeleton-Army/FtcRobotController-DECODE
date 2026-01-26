@@ -12,11 +12,13 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
+import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
@@ -63,10 +65,14 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean tabletopMode;
     private Alliance alliance;
 
+    private TimerEx matchTime;
+
     final double inchesToMeters = 39.37;
 
     @Override
     public void initialize() {
+        matchTime = new TimerEx(120);
+
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
@@ -166,10 +172,17 @@ public class TeleOpApp extends ComplexOpMode {
                 )
         );
 
-        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5)
+        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
                 .toggleWhenActive(
-                        new InstantCommand(kickstand::raise),
-                        new InstantCommand(kickstand::drop)
+                        new InstantCommand(() -> {
+                            kickstand.raise();
+                            shooter.setHorizontalAngle(0);
+                            shooter.disable();
+                        }),
+                        new InstantCommand(() -> {
+                            kickstand.drop();
+                            shooter.enable();
+                        })
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)

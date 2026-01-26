@@ -77,6 +77,7 @@ public class Shooter extends SubsystemBase {
 
     private boolean emergencyStop = false;
     private boolean updateHood = true;
+    private boolean disabled = false;
 
     private Pose currentPose;
 
@@ -142,14 +143,14 @@ public class Shooter extends SubsystemBase {
         solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
         canShoot = solution.getCanShoot();
 
-        if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
-        if (!verticalManualMode && updateHood) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
+        if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
+        if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getRPM());
 
         calculateRecovery();
 
         double voltage = voltageSensor.getVoltage();
-        flywheel.setVelocity(targetTPS, voltage);
+        if (!disabled) flywheel.setVelocity(targetTPS, voltage);
 
         // ----- TURRET PIDF -----
         double pid = turretPID.calculate(turret.getDistance());
@@ -344,6 +345,15 @@ public class Shooter extends SubsystemBase {
 
     public void setUpdateHood(boolean enabled) {
         updateHood = enabled;
+    }
+
+    public void disable() {
+        disabled = true;
+        flywheel.stopMotor();
+    }
+
+    public void enable() {
+        disabled = false;
     }
 
     public void setTargetPose(Pose pose) {
