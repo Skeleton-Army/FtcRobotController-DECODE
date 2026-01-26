@@ -9,6 +9,7 @@ import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
@@ -68,6 +69,9 @@ public class ShootCommand extends SequentialCommandGroup {
     }
 
     public void recordShot() {
+        OpModeManager.getTelemetry().addData("Shot/RPM", shooter.getRPM());
+        OpModeManager.getTelemetry().addData("Shot/Angle hood", shooter.getHoodAngleDegrees());
+        OpModeManager.getTelemetry().addData("Shot/Turret angle error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
         Logger.recordOutput("Shot/RPM: ", shooter.getRPM());
         Logger.recordOutput("Shot/Angle hood: ", shooter.getHoodAngleDegrees());
         Logger.recordOutput("Shot/Turret angle error (deg): ", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));

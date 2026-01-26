@@ -73,8 +73,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     private VoltageSensor voltageSensor;
 
-    private final Pose farDriveBack = getRelative(new Pose(56.6, 15.862));
-    private final Pose nearDriveBack = getRelative(new Pose(56.605, 91.127));
+    private Pose farDriveBack;
+    private Pose nearDriveBack;
 
     public PathChain farDriveBack() {
         return follower
@@ -116,6 +116,9 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike3End = getRelative(new Pose(17.263, 60.026));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
         Pose openGateEnd = getRelative(new Pose(14.572, 74));
+
+        farDriveBack = getRelative(new Pose(56.6, 15.862));
+        nearDriveBack = getRelative(new Pose(56.605, 91.127));
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -321,7 +324,7 @@ public class AutonomousApp extends ComplexOpMode {
         follower.setStartingPose(startingPose);
         Settings.set("pose", startingPose, false);
 
-        shooter.setTargetPose(startingPosition == StartingPosition.FAR ? farDriveBack.withHeading(getRelative(Math.toRadians(180))) : nearDriveBack.withHeading(getRelative(Math.toRadians(180))));
+//        shooter.setTargetPose(startingPosition == StartingPosition.FAR ? farDriveBack.withHeading(getRelative(Math.toRadians(180))) : nearDriveBack.withHeading(getRelative(Math.toRadians(180))));
     }
 
     @Override
@@ -410,9 +413,9 @@ public class AutonomousApp extends ComplexOpMode {
                 );
             }
 
-            if (isLast && startingPosition == StartingPosition.CLOSE) {
-                shooter.setTargetPose(nearDriveBackEnd.endPose().withHeading(nearDriveBackEnd.endPose().getHeading()));
-            }
+//            if (isLast && startingPosition == StartingPosition.CLOSE) {
+//                shooter.setTargetPose(nearDriveBackEnd.endPose().withHeading(nearDriveBackEnd.endPose().getHeading()));
+//            }
 
             seq.addCommands(
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),

@@ -94,7 +94,7 @@ public class ShooterTest extends ComplexOpMode   {
         IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(8.5, 8.5, Math.toRadians(0)));
+        follower.setStartingPose(new Pose(7.87, 8.26, Math.toRadians(0)));
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);

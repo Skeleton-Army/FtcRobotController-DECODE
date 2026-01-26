@@ -73,13 +73,16 @@ public class Shooter extends SubsystemBase {
     private double lastshotRPM;
 
     private boolean canShoot;
-    private double filteredRPM = 0;
 
     private boolean emergencyStop = false;
     private boolean updateHood = true;
     private boolean disabled = false;
 
     private Pose currentPose;
+
+    private final double[] rpmBuffer = new double[RPM_WINDOW_SIZE];
+    private int bufferIndex = 0;
+    private double runningRpmSum = 0;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -136,7 +139,7 @@ public class Shooter extends SubsystemBase {
         }
         // --------------------
 
-        calculateGoalPose(); // calculates the current goalpose by the robot pose
+        //calculateGoalPose(); // calculates the current goalpose by the robot pose
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
@@ -147,7 +150,7 @@ public class Shooter extends SubsystemBase {
         if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getRPM());
 
-        calculateRecovery();
+        //calculateRecovery();
 
         double voltage = voltageSensor.getVoltage();
         if (!disabled) flywheel.setVelocity(targetTPS, voltage);
@@ -219,8 +222,21 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getFilteredRPM() {
-        filteredRPM = Kinematics.lowPassFilter(getRPM(), filteredRPM, RPM_SMOOTHING_FACTOR);
-        return filteredRPM;
+        double currentRPM = getRPM();
+
+        // Subtract the oldest sample from the sum
+        runningRpmSum -= rpmBuffer[bufferIndex];
+
+        // Add the new sample to the buffer and the sum
+        rpmBuffer[bufferIndex] = currentRPM;
+        runningRpmSum += currentRPM;
+
+        // Advance the index (circular buffer)
+        bufferIndex = (bufferIndex + 1) % RPM_WINDOW_SIZE;
+
+        // Calculate the average
+        double movingAverageRPM = runningRpmSum / RPM_WINDOW_SIZE;
+        return movingAverageRPM;
     }
 
     public boolean getCanShoot() {
@@ -435,5 +451,4 @@ public class Shooter extends SubsystemBase {
             );
         }
     }
-
 }

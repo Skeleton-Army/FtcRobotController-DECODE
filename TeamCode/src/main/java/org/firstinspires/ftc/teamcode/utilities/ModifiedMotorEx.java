@@ -30,6 +30,9 @@ public class ModifiedMotorEx extends Motor {
 
     private boolean targetIsSet = false;
 
+//    private double lastSpeed = 0;
+//    private double lastTime = 0;
+
     public ModifiedMotorEx() {}
 
     /**
@@ -108,6 +111,43 @@ public class ModifiedMotorEx extends Motor {
             setPower(output * (12.0 / voltage));
         }
     }
+
+//    public void set(double output, double voltage) {
+//        if (runmode == RunMode.VelocityControl) {
+//            double speed = bufferFraction * output * ACHIEVABLE_MAX_TICKS_PER_SECOND;
+//
+//            long currentTime = System.currentTimeMillis();
+//            double dt = (currentTime - lastTime) / 1000;
+//            double targetAcceleration = 0;
+//
+//            if (dt > 0)
+//                targetAcceleration = (speed - lastSpeed) / dt;
+//
+//            double predictedVelocity = getPredictedVelocity();
+//            double futureSpeed = speed + targetAcceleration * delaySec;
+//
+//            double pid =
+//                    veloController.calculate(predictedVelocity, futureSpeed);
+//
+//            double ff =
+//                    feedforward.calculate(futureSpeed, targetAcceleration);
+//
+//            double velocityCmd = pid + ff;
+//
+//            setPower(
+//                    velocityCmd / voltage
+//            );
+//
+//            lastSpeed = speed;
+//            lastTime = currentTime;
+//        } else if (runmode == RunMode.PositionControl) {
+//            double error = positionController.calculate(getDistance());
+//            setPower(output * error * (12.0 / voltage));
+//
+//        } else {
+//            setPower(output * (12.0 / voltage));
+//        }
+//    }
 
     /* ---------------------------------------------------------------------- */
     /* Position control                                                        */

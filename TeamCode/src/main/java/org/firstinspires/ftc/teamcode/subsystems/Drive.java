@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.*;
+import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.X_OFFSET;
+import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.Y_OFFSET;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
@@ -119,7 +121,7 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            new Pose(72, 72)
+                                            new Pose(X_OFFSET, Y_OFFSET)
                                     )
                             )
                             .setLinearHeadingInterpolation(

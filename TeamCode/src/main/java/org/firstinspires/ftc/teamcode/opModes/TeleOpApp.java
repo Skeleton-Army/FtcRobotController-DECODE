@@ -12,7 +12,6 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.button.Trigger;
@@ -24,8 +23,6 @@ import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
-import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
-import org.firstinspires.ftc.teamcode.calculators.TwoZonesCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -67,7 +64,11 @@ public class TeleOpApp extends ComplexOpMode {
 
     private TimerEx matchTime;
 
-    final double inchesToMeters = 39.37;
+    public static final double INCHES_TO_METERS = 39.37;
+    public static final double WIDTH = 15.74;
+    public static final double HEIGHT = 16.53;
+    public static final double X_OFFSET = WIDTH / 2.0;
+    public static final double Y_OFFSET = HEIGHT / 2.0;
 
     @Override
     public void initialize() {
@@ -76,8 +77,8 @@ public class TeleOpApp extends ComplexOpMode {
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
-        Pose startPose = new Pose(72, 72);
-        if (!debugMode) startPose = Settings.get("pose", new Pose(72, 72));
+        Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        if (!debugMode) startPose = Settings.get("pose", new Pose(X_OFFSET, Y_OFFSET));
 
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
@@ -110,11 +111,11 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters >= DISTANCE_THRESHOLD_METERS));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters >= DISTANCE_THRESHOLD_METERS));
+                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
@@ -234,10 +235,10 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
+        Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
         Pose rotatedGoalPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / inchesToMeters, -rotatedGoalPose.getY() / inchesToMeters, new Rotation2d());
+        Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
 
         telemetry.addData("!Reached RPM", shooter.reachedRPM());
         telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
@@ -256,7 +257,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", robotPose.getY());
         telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters);
+        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
@@ -284,7 +285,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Can Shoot", shooter.getCanShoot());
         Logger.recordOutput("Goal Pose", goalPose);
-        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / inchesToMeters);
+        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
         Logger.recordOutput("Shooter/Flywheel Filtered RPM", shooter.getFilteredRPM());
         Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
@@ -309,11 +310,6 @@ public class TeleOpApp extends ComplexOpMode {
 
     private void resetPoseToNearestCorner() {
         Pose currentPose = follower.getPose();
-
-        final double WIDTH = 17;
-        final double HEIGHT = 17;
-        final double X_OFFSET = WIDTH / 2.0;
-        final double Y_OFFSET = HEIGHT / 2.0;
 
         Pose newPose;
         if (alliance == Alliance.RED) {
