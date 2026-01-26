@@ -10,8 +10,8 @@ public class TransferConfig {
     public static long KICK_TIME = 500;
 
     public static String STOPPER_NAME = "stopper";
-    public static double STOPPER_MIN = 0.12;
-    public static double STOPPER_MAX = 0.3;
+    public static double STOPPER_MIN = 0.46;
+    public static double STOPPER_MAX = 0.75;
 
     public static String SENSOR_NAME = "transferSensor";
     public static double DISTANCE_THRESHOLD_CM = 4;
