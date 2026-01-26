@@ -33,6 +33,7 @@ import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
@@ -51,6 +52,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Shooter shooter;
     private Transfer transfer;
     private Drive drive;
+    private Kickstand kickstand;
 
     private VoltageSensor voltageSensor;
 
@@ -85,6 +87,7 @@ public class TeleOpApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
+        kickstand = new Kickstand(hardwareMap);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -162,6 +165,12 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 )
         );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
+                .toggleWhenPressed(
+                        new InstantCommand(kickstand::raise),
+                        new InstantCommand(kickstand::drop)
+                );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
                 .whenPressed(drive.goToGate());
