@@ -46,26 +46,8 @@ public class MinimalTeleop extends OpMode {
 
     @Override
     public void loop() {
-        if (gamepad1.left_bumper) {
-            drive(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-        } else {
-            driveFieldRelative(-gamepad1.left_stick_y, gamepad1.left_stick_x, gamepad1.right_stick_x);
-        }
+            drive(gamepad1.left_stick_y, -gamepad1.left_stick_x, gamepad1.right_stick_x);
     }
-
-    private void driveFieldRelative(double forward, double right, double rotate) {
-        double theta = Math.atan2(forward, right);
-        double r = Math.hypot(right, forward);
-
-        theta = AngleUnit.normalizeRadians(theta -
-                imu.getRobotYawPitchRollAngles().getYaw(AngleUnit.RADIANS));
-
-        double newForward = r * Math.sin(theta);
-        double newRight = r * Math.cos(theta);
-
-        drive(newForward, newRight, rotate);
-    }
-
     public void drive(double forward, double right, double rotate) {
         double frontLeftPower = forward + right + rotate;
         double frontRightPower = forward - right - rotate;
