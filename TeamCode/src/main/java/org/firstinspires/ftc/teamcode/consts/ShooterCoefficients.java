@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class ShooterCoefficients {
-    public static double[] VEL_COEFFS = {400, 100};
+    public static double[] VEL_COEFFS = {395, 100};
     public static double[] CLOSE_VEL_COEFFS = {360, 80};
     public static double[] FAR_VEL_COEFFS = {395, 0};
     public static final double DISTANCE_THRESHOLD_METERS = 2.5;

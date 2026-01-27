@@ -53,7 +53,11 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
-                new WaitCommand(1000),
+                new WaitCommand(200),
+                new InstantCommand(intake::stop),
+                new WaitCommand(200), // Wait for third ball
+                new InstantCommand(intake::collect),
+                new WaitCommand(700),
                 new ConditionalCommand(
                         transfer.kick(),
                         new InstantCommand(),

@@ -228,6 +228,15 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                getRelative(new Pose(21.263, 58.026))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         nearPaths[3] = follower

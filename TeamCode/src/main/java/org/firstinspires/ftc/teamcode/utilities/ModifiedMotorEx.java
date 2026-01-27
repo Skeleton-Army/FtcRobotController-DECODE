@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.controller.PIDFController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -99,6 +100,10 @@ public class ModifiedMotorEx extends Motor {
 
             double velocityCmd = pid + ff;
 
+            OpModeManager.getTelemetry().addData("Flywheel/PowerCommand", velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND
+                    * (12.0 / voltage));
+
+            OpModeManager.getTelemetry().addData("Flywheel/VoltageCommand", velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND);
             setPower(
                     velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND
                             * (12.0 / voltage)
