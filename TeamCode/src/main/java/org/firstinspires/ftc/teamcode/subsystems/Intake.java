@@ -12,10 +12,14 @@ public class Intake extends SubsystemBase {
     private boolean isCollecting = false;
     private final TimerEx runtime = new TimerEx();
 
+    private double power;
+
     public Intake(final HardwareMap hardwareMap) {
         intake = new MotorEx(hardwareMap, INTAKE_NAME, INTAKE_MOTOR);
         runtime.start();
         runtime.pause();
+
+        power = INTAKE_POWER;
     }
 
     public double getRPM() {
@@ -27,8 +31,12 @@ public class Intake extends SubsystemBase {
         if (!isCollecting) {
             runtime.restart();
         }
-        intake.set(-INTAKE_POWER);
+        intake.set(-power);
         isCollecting = true;
+    }
+
+    public void setSlowMode(boolean enabled) {
+        power = enabled ? SLOW_INTAKE_POWER : INTAKE_POWER;
     }
 
     public void release() {

@@ -43,7 +43,8 @@ public class ShootCommand extends SequentialCommandGroup {
                 waitUntilCanShoot(),
                 new InstantCommand(this::recordShot),
                 new InstantCommand(() -> drive.setShootingMode(true)),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
+//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
+                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setSlowMode(true); }),
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
@@ -57,7 +58,8 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(intake::stop),
 
                 new InstantCommand(() -> drive.setShootingMode(false)),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
+                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setSlowMode(false); })
+//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
         );
     }
 
@@ -86,5 +88,6 @@ public class ShootCommand extends SequentialCommandGroup {
         transfer.block();
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
+        intake.setSlowMode(false);
     }
 }

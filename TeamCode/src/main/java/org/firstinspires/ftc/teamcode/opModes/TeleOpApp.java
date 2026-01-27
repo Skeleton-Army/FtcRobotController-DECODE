@@ -23,6 +23,7 @@ import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -88,7 +89,8 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setMaxPower(1);
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
-        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
+//        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
+        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
@@ -246,16 +248,16 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("!Reached angle", shooter.reachedAngle());
         telemetry.addData("!Can shoot", shooter.getCanShoot());
 
-        telemetry.addData("Goal x", goalPose.getX());
-        telemetry.addData("Goal y", goalPose.getY());
+        telemetry.addData("Goal x", rotatedGoalPose.getX());
+        telemetry.addData("Goal y", rotatedGoalPose.getY());
         telemetry.addData("Goal heading", 0);
 
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Robot x", robotPose.getX());
+        telemetry.addData("Robot x", rotatedPose.getX());
         telemetry.addData("Robot y", robotPose.getY());
-        telemetry.addData("Robot heading", robotPose.getRotation().getDegrees());
+        telemetry.addData("Robot heading", rotatedPose.getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
         telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
