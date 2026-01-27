@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.INTAKE_POWER;
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SHOOTING_POWER;
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
+
 import android.util.Log;
 
 import com.seattlesolvers.solverslib.command.Command;
@@ -43,8 +47,9 @@ public class ShootCommand extends SequentialCommandGroup {
                 waitUntilCanShoot(),
                 new InstantCommand(this::recordShot),
                 new InstantCommand(() -> drive.setShootingMode(true)),
+                new InstantCommand(() -> intake.setIntakeSpeed(SHOOTING_POWER)),
 //                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setSlowMode(true); }),
+                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setIntakeSpeed(SLOW_SHOOTING_POWER); }),
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
@@ -58,7 +63,7 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(intake::stop),
 
                 new InstantCommand(() -> drive.setShootingMode(false)),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setSlowMode(false); })
+                new InstantCommand(() -> intake.setIntakeSpeed(INTAKE_POWER))
 //                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
         );
     }
@@ -88,6 +93,6 @@ public class ShootCommand extends SequentialCommandGroup {
         transfer.block();
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
-        intake.setSlowMode(false);
+        intake.setIntakeSpeed(INTAKE_POWER);
     }
 }

@@ -181,10 +181,12 @@ public class TeleOpApp extends ComplexOpMode {
                             kickstand.raise();
                             shooter.setHorizontalAngle(0);
                             shooter.disable();
+                            drive.disable();
                         }),
                         new InstantCommand(() -> {
                             kickstand.drop();
                             shooter.enable();
+                            drive.enable();
                         })
                 );
 
@@ -211,6 +213,11 @@ public class TeleOpApp extends ComplexOpMode {
                         drive
                 )
         );
+    }
+
+    @Override
+    public void onStart() {
+        matchTime.start();
     }
 
     @Override
@@ -247,6 +254,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
         telemetry.addData("!Reached angle", shooter.reachedAngle());
         telemetry.addData("!Can shoot", shooter.getCanShoot());
+
+        telemetry.addData("Time remaining", matchTime.getRemaining());
 
         telemetry.addData("Goal x", rotatedGoalPose.getX());
         telemetry.addData("Goal y", rotatedGoalPose.getY());

@@ -33,6 +33,8 @@ public class Drive extends SubsystemBase {
     private boolean shootingMode;
     private boolean isHoldingPosition = false;
 
+    private boolean enabled = true;
+
     public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
         this.alliance = alliance;
@@ -43,6 +45,7 @@ public class Drive extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (!enabled) return;
         follower.update();
     }
 
@@ -143,7 +146,7 @@ public class Drive extends SubsystemBase {
     }
 
     public void teleOpDrive(Gamepad gamepad) {
-        if (tabletopMode) return;
+        if (tabletopMode|| !enabled) return;
 
         double leftY = -gamepad.left_stick_y;
         double leftX = -gamepad.left_stick_x;
@@ -180,6 +183,19 @@ public class Drive extends SubsystemBase {
                 }
             }
         }
+    }
+
+    public void disable() {
+        this.enabled = false;
+        follower.setTeleOpDrive(0, 0, 0);
+    }
+
+    public void enable() {
+        this.enabled = true;
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     public boolean getShootingMode() {

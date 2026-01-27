@@ -35,8 +35,8 @@ public class Intake extends SubsystemBase {
         isCollecting = true;
     }
 
-    public void setSlowMode(boolean enabled) {
-        power = enabled ? SLOW_INTAKE_POWER : INTAKE_POWER;
+    public void setIntakeSpeed(double power) {
+        this.power = power;
     }
 
     public void release() {

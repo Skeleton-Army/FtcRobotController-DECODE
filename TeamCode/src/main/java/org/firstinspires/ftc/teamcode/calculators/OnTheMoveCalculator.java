@@ -33,7 +33,7 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
      * @param robotVel Robot velocity vector in inches per second
      * @return ShootingSolution at field coordinates (e.g. horizontal angle at relative to the field and not the robot)
      */
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelVel) {
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Pose turretGoalPose, Vector robotVel, double angularVel, int flywheelVel) {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
@@ -51,7 +51,7 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
         // Compute distance/angles from predicted pose
         double distance = predictedPose.distanceFrom(goalPoseMeters);
         double verticalAngle = calculateVerticalAngle(distance);
-        double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
+        double horizontalAngle = calculateTurretAngle(turretGoalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
 
         // Compute stationary launch vector in field coordinates
         double speed = shooterVelocity(distance);

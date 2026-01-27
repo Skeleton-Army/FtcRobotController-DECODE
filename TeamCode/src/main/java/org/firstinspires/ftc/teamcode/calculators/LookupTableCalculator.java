@@ -70,7 +70,7 @@ public class LookupTableCalculator implements IShooterCalculator {
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
 
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelVel) {
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Pose turretGoalPose, Vector robotVel, double angularVel, int flywheelVel) {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);

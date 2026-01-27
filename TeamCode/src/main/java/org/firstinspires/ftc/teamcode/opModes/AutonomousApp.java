@@ -114,7 +114,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Pose spike1End = getRelative(new Pose(9.330697624190067, 8.708060475161995));
         Pose spike2End = getRelative(new Pose(15.550755939524837, 35.76673866090713));
-        Pose spike3End = getRelative(new Pose(17.263, 60.026));
+        Pose spike3End = getRelative(new Pose(17.263, 58.026));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
         Pose openGateEnd = getRelative(new Pose(14.572, 74));
 
@@ -415,13 +415,13 @@ public class AutonomousApp extends ComplexOpMode {
                 );
             }
 
-//            if (isLast && startingPosition == StartingPosition.CLOSE) {
-//                shooter.setTargetPose(nearDriveBackEnd.endPose().withHeading(nearDriveBackEnd.endPose().getHeading()));
-//            }
-
             seq.addCommands(
                     new InstantCommand(() -> telemetry.addData("Current", "Driving back")),
                     new DeferredCommand(
+//                            () -> new SequentialCommandGroup(
+//                                    new InstantCommand(() -> { if (isLast && startingPosition == StartingPosition.CLOSE) shooter.setTargetPose(null); }),
+//                                    new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get())
+//                            ),
                             () -> new FollowPathCommand(follower, isLast ? finalDriveBack.get() : driveBack.get()),
                             null
                     ),

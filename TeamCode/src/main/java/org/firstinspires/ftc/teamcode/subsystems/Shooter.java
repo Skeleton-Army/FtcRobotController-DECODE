@@ -49,6 +49,7 @@ public class Shooter extends SubsystemBase {
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
     public Pose goalPose;
+    public Pose turretGoalPose;
 
     private double targetTPS;
 
@@ -139,11 +140,11 @@ public class Shooter extends SubsystemBase {
         }
         // --------------------
 
-        //calculateGoalPose(); // calculates the current goalpose by the robot pose
+        calculateGoalPose(); // calculates the current goalpose by the robot pose
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
-        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
+        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
         canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
@@ -413,8 +414,9 @@ public class Shooter extends SubsystemBase {
     }
 
     public void calculateGoalPose() {
-        double rx = poseTracker.getPose().getX();
-        double ry = poseTracker.getPose().getY();
+        Pose referencePose = (currentPose == null) ? poseTracker.getPose() : currentPose;
+        double rx = referencePose.getX();
+        double ry = referencePose.getY();
 
         // 1. Calculate the Static Centroid (The geometric center of the triangle)
         // Formula: (x1 + x2 + x3) / 3
@@ -437,7 +439,7 @@ public class Shooter extends SubsystemBase {
             double idealX = Math.max(GoalPositions.BLUE_GOAL_CORNER.getX(), Math.min(rx, GoalPositions.BLUE_GOAL_TOP.getX()));
             double idealY = GoalPositions.BLUE_GOAL_CORNER.getY() - 2.0; // Stay 2 inches off the back wall
 
-            goalPose = new Pose(
+            turretGoalPose = new Pose(
                     (idealX * (1 - t)) + (blueCentroidX * t),
                     (idealY * (1 - t)) + (blueCentroidY * t)
             );
@@ -450,7 +452,7 @@ public class Shooter extends SubsystemBase {
             double idealX = Math.max(GoalPositions.RED_GOAL_TOP.getX(), Math.min(rx, GoalPositions.RED_GOAL_CORNER.getX()));
             double idealY = GoalPositions.RED_GOAL_CORNER.getY() - 2.0;
 
-            goalPose = new Pose(
+            turretGoalPose = new Pose(
                     (idealX * (1 - t)) + (redCentroidX * t),
                     (idealY * (1 - t)) + (redCentroidY * t)
             );
