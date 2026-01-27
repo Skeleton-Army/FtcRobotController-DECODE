@@ -43,8 +43,8 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
         double r  = Math.hypot(dx, dy);
 
         // Predict where robot will be at firing time
-        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY * r;
-        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY * r;
+        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
+        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
         double predHeading = robotPoseMeters.getHeading();
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
