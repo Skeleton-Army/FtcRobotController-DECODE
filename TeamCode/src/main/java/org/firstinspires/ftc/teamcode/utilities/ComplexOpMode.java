@@ -58,9 +58,9 @@ public abstract class ComplexOpMode extends LinearOpMode {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
+        startLogger();
         initCSV();
         initialize();
-        startLogger();
 
         // run the scheduler
         try {
@@ -94,9 +94,10 @@ public abstract class ComplexOpMode extends LinearOpMode {
             }
         } finally {
             try {
-                Logger.end();
-
                 end();
+
+                Thread.sleep(100); // Give the background logger thread 100ms to catch up
+                Logger.end();
             } finally {
                 reset();
             }
@@ -132,17 +133,21 @@ public abstract class ComplexOpMode extends LinearOpMode {
         String logFileName = className + "_" + date + "_" + time;
 
         Logger.addDataReceiver(new RLOGWriter(folderName, logFileName));
-        Logger.addDataReceiver(new RLOGServer());
+
+        RLOGServer server = new RLOGServer();
+        server.start(); // This ensures the ServerThread and broadcastQueue are created
+        Logger.addDataReceiver(server);
+
         Logger.start();
     }
 
+    @SuppressLint("SdCardPath")
     private void initCSV() {
         try {
             String defaultPath = "/sdcard/FIRST/shooterTables/";
             ShooterLookupTable.VALIDITY_TABLE = CsvUtils.getBooleanMatrixFromCsv(defaultPath + "ValidityTable.csv");
             ShooterLookupTable.ANGLE_TABLE = CsvUtils.getDoubleMatrixFromCsv(defaultPath + "AngleTable.csv");
             ShooterLookupTable.VELOCITY_ARRAY = CsvUtils.getDoubleArrayFromCsv(defaultPath + "VelocityArray.csv");
-            System.out.println("workinging probably i guess");
         }
         catch (Exception e) {
             System.err.println("Error loading shooter lookup table CSV files: " + e.getMessage());

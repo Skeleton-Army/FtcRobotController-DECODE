@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.controller.PIDFController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -29,6 +30,9 @@ public class ModifiedMotorEx extends Motor {
     private double cachingTolerance = 0.0001;
 
     private boolean targetIsSet = false;
+
+//    private double lastSpeed = 0;
+//    private double lastTime = 0;
 
     public ModifiedMotorEx() {}
 
@@ -96,6 +100,10 @@ public class ModifiedMotorEx extends Motor {
 
             double velocityCmd = pid + ff;
 
+            OpModeManager.getTelemetry().addData("Flywheel/PowerCommand", velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND
+                    * (12.0 / voltage));
+
+            OpModeManager.getTelemetry().addData("Flywheel/VoltageCommand", velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND);
             setPower(
                     velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND
                             * (12.0 / voltage)
@@ -108,6 +116,43 @@ public class ModifiedMotorEx extends Motor {
             setPower(output * (12.0 / voltage));
         }
     }
+
+//    public void set(double output, double voltage) {
+//        if (runmode == RunMode.VelocityControl) {
+//            double speed = bufferFraction * output * ACHIEVABLE_MAX_TICKS_PER_SECOND;
+//
+//            long currentTime = System.currentTimeMillis();
+//            double dt = (currentTime - lastTime) / 1000;
+//            double targetAcceleration = 0;
+//
+//            if (dt > 0)
+//                targetAcceleration = (speed - lastSpeed) / dt;
+//
+//            double predictedVelocity = getPredictedVelocity();
+//            double futureSpeed = speed + targetAcceleration * delaySec;
+//
+//            double pid =
+//                    veloController.calculate(predictedVelocity, futureSpeed);
+//
+//            double ff =
+//                    feedforward.calculate(futureSpeed, targetAcceleration);
+//
+//            double velocityCmd = pid + ff;
+//
+//            setPower(
+//                    velocityCmd / voltage
+//            );
+//
+//            lastSpeed = speed;
+//            lastTime = currentTime;
+//        } else if (runmode == RunMode.PositionControl) {
+//            double error = positionController.calculate(getDistance());
+//            setPower(output * error * (12.0 / voltage));
+//
+//        } else {
+//            setPower(output * (12.0 / voltage));
+//        }
+//    }
 
     /* ---------------------------------------------------------------------- */
     /* Position control                                                        */

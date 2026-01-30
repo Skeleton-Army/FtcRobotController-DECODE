@@ -1,5 +1,9 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.INTAKE_POWER;
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SHOOTING_POWER;
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
+
 import android.util.Log;
 
 import com.seattlesolvers.solverslib.command.Command;
@@ -9,6 +13,7 @@ import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
@@ -39,14 +44,20 @@ public class ShootCommand extends SequentialCommandGroup {
         this.drive = drive;
 
         addCommands(
-                waitUntilCanShoot(),
+//                waitUntilCanShoot(),
                 new InstantCommand(this::recordShot),
                 new InstantCommand(() -> drive.setShootingMode(true)),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
+                new InstantCommand(() -> intake.setIntakeSpeed(SHOOTING_POWER)),
+//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
+                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setIntakeSpeed(SLOW_SHOOTING_POWER); }),
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
-                new WaitCommand(1000),
+                new WaitCommand(200),
+                new InstantCommand(intake::stop),
+                new WaitCommand(200), // Wait for third ball
+                new InstantCommand(intake::collect),
+                new WaitCommand(700),
                 new ConditionalCommand(
                         transfer.kick(),
                         new InstantCommand(),
@@ -56,7 +67,8 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(intake::stop),
 
                 new InstantCommand(() -> drive.setShootingMode(false)),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
+                new InstantCommand(() -> intake.setIntakeSpeed(INTAKE_POWER))
+//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
         );
     }
 
@@ -68,6 +80,9 @@ public class ShootCommand extends SequentialCommandGroup {
     }
 
     public void recordShot() {
+        OpModeManager.getTelemetry().addData("Shot/RPM", shooter.getRPM());
+        OpModeManager.getTelemetry().addData("Shot/Angle hood", shooter.getHoodAngleDegrees());
+        OpModeManager.getTelemetry().addData("Shot/Turret angle error (deg)", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
         Logger.recordOutput("Shot/RPM: ", shooter.getRPM());
         Logger.recordOutput("Shot/Angle hood: ", shooter.getHoodAngleDegrees());
         Logger.recordOutput("Shot/Turret angle error (deg): ", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
@@ -82,5 +97,6 @@ public class ShootCommand extends SequentialCommandGroup {
         transfer.block();
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
+        intake.setIntakeSpeed(INTAKE_POWER);
     }
 }

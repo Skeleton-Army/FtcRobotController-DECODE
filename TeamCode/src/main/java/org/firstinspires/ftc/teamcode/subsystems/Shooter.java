@@ -49,6 +49,7 @@ public class Shooter extends SubsystemBase {
     private final IShooterCalculator shooterCalculator;
     private final Alliance alliance;
     public Pose goalPose;
+    public Pose turretGoalPose;
 
     private double targetTPS;
 
@@ -73,12 +74,16 @@ public class Shooter extends SubsystemBase {
     private double lastshotRPM;
 
     private boolean canShoot;
-    private double filteredRPM = 0;
 
     private boolean emergencyStop = false;
     private boolean updateHood = true;
+    private boolean disabled = false;
 
     private Pose currentPose;
+
+    private final double[] rpmBuffer = new double[RPM_WINDOW_SIZE];
+    private int bufferIndex = 0;
+    private double runningRpmSum = 0;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -111,7 +116,7 @@ public class Shooter extends SubsystemBase {
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
-        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
+        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL_FAR : GoalPositions.RED_GOAL_FAR;
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);
@@ -135,21 +140,21 @@ public class Shooter extends SubsystemBase {
         }
         // --------------------
 
-        calculateGoalPose(); // calculates the current goalpose by the robot pose
+        //calculateGoalPose(); // calculates the current goalpose by the robot pose
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
-        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
+        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
         canShoot = solution.getCanShoot();
 
-        if (!horizontalManualMode) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
-        if (!verticalManualMode && updateHood) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
+        if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
+        if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getRPM());
 
-        calculateRecovery();
+        //calculateRecovery();
 
         double voltage = voltageSensor.getVoltage();
-        flywheel.setVelocity(targetTPS, voltage);
+        if (!disabled) flywheel.setVelocity(targetTPS, voltage);
 
         // ----- TURRET PIDF -----
         double pid = turretPID.calculate(turret.getDistance());
@@ -213,13 +218,32 @@ public class Shooter extends SubsystemBase {
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
+    public double getRPMCorrectedTiming() {
+        double motorTPS = flywheel.getVelocity() + flywheel.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
+        return (motorTPS * 60.0) / flywheel.getCPR();
+    }
+
+
     public double getTargetRPM() {
         return (targetTPS * 60.0) / flywheel.getCPR();
     }
 
     public double getFilteredRPM() {
-        filteredRPM = Kinematics.lowPassFilter(getRPM(), filteredRPM, RPM_SMOOTHING_FACTOR);
-        return filteredRPM;
+        double currentRPM = getRPM();
+
+        // Subtract the oldest sample from the sum
+        runningRpmSum -= rpmBuffer[bufferIndex];
+
+        // Add the new sample to the buffer and the sum
+        rpmBuffer[bufferIndex] = currentRPM;
+        runningRpmSum += currentRPM;
+
+        // Advance the index (circular buffer)
+        bufferIndex = (bufferIndex + 1) % RPM_WINDOW_SIZE;
+
+        // Calculate the average
+        double movingAverageRPM = runningRpmSum / RPM_WINDOW_SIZE;
+        return movingAverageRPM;
     }
 
     public boolean getCanShoot() {
@@ -346,6 +370,15 @@ public class Shooter extends SubsystemBase {
         updateHood = enabled;
     }
 
+    public void disable() {
+        disabled = true;
+        flywheel.stopMotor();
+    }
+
+    public void enable() {
+        disabled = false;
+    }
+
     public void setTargetPose(Pose pose) {
         currentPose = pose;
     }
@@ -387,43 +420,48 @@ public class Shooter extends SubsystemBase {
     }
 
     public void calculateGoalPose() {
-        double rx = poseTracker.getPose().getX();
-        double ry = poseTracker.getPose().getY();
+        Pose referencePose = (currentPose == null) ? poseTracker.getPose() : currentPose;
+        double rx = referencePose.getX();
+        double ry = referencePose.getY();
 
-        // The "Static" Centroid (the middle of the blue triangle)
-        double centroidX = (GoalPositions.BLUE_GOAL_TOP.getX() + GoalPositions.BLUE_GOAL_BUTTOM.getX() + GoalPositions.BLUE_GOAL_CORNER.getX()) / 3.0;
-        double centroidY = (GoalPositions.BLUE_GOAL_TOP.getY() + GoalPositions.BLUE_GOAL_BUTTOM.getY() + GoalPositions.BLUE_GOAL_CORNER.getY()) / 3.0;
+        // 1. Calculate the Static Centroid (The geometric center of the triangle)
+        // Formula: (x1 + x2 + x3) / 3
+        double blueCentroidX = (GoalPositions.BLUE_GOAL_TOP.getX() + GoalPositions.BLUE_GOAL_BUTTOM.getX() + GoalPositions.BLUE_GOAL_CORNER.getX()) / 3.0;
+        double blueCentroidY = (GoalPositions.BLUE_GOAL_TOP.getY() + GoalPositions.BLUE_GOAL_BUTTOM.getY() + GoalPositions.BLUE_GOAL_CORNER.getY()) / 3.0;
+
+        double redCentroidX = (GoalPositions.RED_GOAL_TOP.getX() + GoalPositions.RED_GOAL_BUTTOM.getX() + GoalPositions.RED_GOAL_CORNER.getX()) / 3.0;
+        double redCentroidY = (GoalPositions.RED_GOAL_TOP.getY() + GoalPositions.RED_GOAL_BUTTOM.getY() + GoalPositions.RED_GOAL_CORNER.getY()) / 3.0;
 
         if (alliance == Alliance.BLUE) {
-        /* DYNAMIC SHIFT:
-           If the robot is near the left wall (low X),
-           the "Ideal X" should track the robot's X to keep the shot straight.
-        */
-            double idealX = Math.max(4.0, Math.min(rx, 24.0)); // Keeps target within the goal's width
-
-            // Calculate distance to the corner to determine how much to "slide" the target
+            // Find how close we are to the corner to decide if we should "slide" the target
             double distToCorner = Math.hypot(rx - GoalPositions.BLUE_GOAL_CORNER.getX(), ry - GoalPositions.BLUE_GOAL_CORNER.getY());
 
-            // Interpolation factor (t): 1.0 when far away (use centroid), 0.0 when close (use idealX)
-            double t = Math.max(0, Math.min((distToCorner - 15.0) / 30.0, 1.0));
+            // t = 1.0 when far (use centroid), t = 0.0 when close (use ideal wall point)
+            // Adjust 15.0 (start sliding) and 40.0 (stop sliding) to tune the feel
+            double t = Math.max(0, Math.min((distToCorner - 15.0) / 25.0, 1.0));
 
-            // Set the Absolute Field Coordinates
-            goalPose = new Pose(
-                    (idealX * (1 - t)) + (centroidX * t),
-                    (142.0 * (1 - t)) + (centroidY * t) // Slide Y closer to the back wall as you get near
+            // When close to the wall, we want the turret to aim at the robot's own X
+            // to keep the shot parallel to the wall (straight on).
+            double idealX = Math.max(GoalPositions.BLUE_GOAL_CORNER.getX(), Math.min(rx, GoalPositions.BLUE_GOAL_TOP.getX()));
+            double idealY = GoalPositions.BLUE_GOAL_CORNER.getY() - 2.0; // Stay 2 inches off the back wall
+
+            turretGoalPose = new Pose(
+                    (idealX * (1 - t)) + (blueCentroidX * t),
+                    (idealY * (1 - t)) + (blueCentroidY * t)
             );
         }
         else if (alliance == Alliance.RED) {
-            // Mirror the logic for the Red side (High X)
-            double idealX = Math.max(120.0, Math.min(rx, 140.0));
             double distToCorner = Math.hypot(rx - GoalPositions.RED_GOAL_CORNER.getX(), ry - GoalPositions.RED_GOAL_CORNER.getY());
-            double t = Math.max(0, Math.min((distToCorner - 15.0) / 30.0, 1.0));
+            double t = Math.max(0, Math.min((distToCorner - 15.0) / 25.0, 1.0));
 
-            goalPose = new Pose(
-                    (idealX * (1 - t)) + (centroidX * t),
-                    (142.0 * (1 - t)) + (centroidY * t)
+            // For RED, X is on the right side (high numbers)
+            double idealX = Math.max(GoalPositions.RED_GOAL_TOP.getX(), Math.min(rx, GoalPositions.RED_GOAL_CORNER.getX()));
+            double idealY = GoalPositions.RED_GOAL_CORNER.getY() - 2.0;
+
+            turretGoalPose = new Pose(
+                    (idealX * (1 - t)) + (redCentroidX * t),
+                    (idealY * (1 - t)) + (redCentroidY * t)
             );
         }
     }
-
 }

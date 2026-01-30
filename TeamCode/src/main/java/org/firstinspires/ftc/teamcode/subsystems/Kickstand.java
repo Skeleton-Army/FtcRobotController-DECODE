@@ -11,6 +11,7 @@ public class Kickstand extends SubsystemBase {
 
     public Kickstand(final HardwareMap hardwareMap) {
         servo = new ServoEx(hardwareMap, SERVO_NAME);
+        drop();
     }
 
     public void raise() {
