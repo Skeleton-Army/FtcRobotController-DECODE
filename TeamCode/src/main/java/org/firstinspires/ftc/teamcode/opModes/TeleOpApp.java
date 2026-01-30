@@ -277,6 +277,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
         telemetry.addData("Flywheel RPM", shooter.getRPM());
+        telemetry.addData("Flywheel RPM corrected timing ", shooter.getRPMCorrectedTiming());
+        telemetry.addData("rpm raw prediction error ", shooter.getRPM() - shooter.getRPMCorrectedTiming());
         telemetry.addData("Filtered Flywheel RPM", shooter.getFilteredRPM());
         telemetry.addData("Target RPM", shooter.solution.getRPM());
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));

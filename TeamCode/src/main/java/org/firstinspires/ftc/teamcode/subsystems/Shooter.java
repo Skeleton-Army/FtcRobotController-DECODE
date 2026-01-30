@@ -218,6 +218,12 @@ public class Shooter extends SubsystemBase {
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
+    public double getRPMCorrectedTiming() {
+        double motorTPS = flywheel.getVelocity() + flywheel.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
+        return (motorTPS * 60.0) / flywheel.getCPR();
+    }
+
+
     public double getTargetRPM() {
         return (targetTPS * 60.0) / flywheel.getCPR();
     }

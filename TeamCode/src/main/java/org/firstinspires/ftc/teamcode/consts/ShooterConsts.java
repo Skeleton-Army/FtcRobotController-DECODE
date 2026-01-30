@@ -22,4 +22,8 @@ public class ShooterConsts {
     public static double FAR_SHOOTER_MIN_VELOCITY = 8;
     public static double FAR_SHOOTER_MAX_VELOCITY = 8;
     public static double MOVEMENT_COMPENSATION = 0.0;
+
+    public static double PASS_THROUGH_POINT_RADIUS = 5;
+    public static double SCORE_HEIGHT = 29;
+    public static double SCORE_ANGLE = Math.toRadians(-30);
 }
