@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
@@ -112,7 +113,7 @@ public class AutonomousApp extends ComplexOpMode {
         nearStartingPose = getRelative(new Pose(19.623, 120.368, Math.toRadians(143)));
         pushStartingPose = getRelative(new Pose(57.85,8.5, Math.toRadians(180)));
 
-        Pose spike1End = getRelative(new Pose(9.330697624190067, 8.708060475161995));
+        Pose spike1End = getRelative(new Pose(9.330697624190067, 9.708060475161995));
         Pose spike2End = getRelative(new Pose(15.550755939524837, 35.76673866090713));
         Pose spike3End = getRelative(new Pose(17.263, 58.026));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
@@ -123,6 +124,24 @@ public class AutonomousApp extends ComplexOpMode {
 
         farPaths[0] = follower
                 .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                spike1End
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                getRelative(new Pose(13.330697624190067, 9.708060475161995))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .addPath(
                         new BezierLine(
                                 follower::getPose,
@@ -358,7 +377,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .prompt("push",
                         () -> {
                             if (prompter.get("starting_position").equals(StartingPosition.FAR)) {
-                                new BooleanPrompt("PUSH OTHER ROBOT?", false);
+                                return new BooleanPrompt("PUSH OTHER ROBOT?", false);
                             }
                             return null;
                         }

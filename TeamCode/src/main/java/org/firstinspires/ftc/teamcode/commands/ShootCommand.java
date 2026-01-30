@@ -44,7 +44,7 @@ public class ShootCommand extends SequentialCommandGroup {
         this.drive = drive;
 
         addCommands(
-                waitUntilCanShoot(),
+//                waitUntilCanShoot(),
                 new InstantCommand(this::recordShot),
                 new InstantCommand(() -> drive.setShootingMode(true)),
                 new InstantCommand(() -> intake.setIntakeSpeed(SHOOTING_POWER)),

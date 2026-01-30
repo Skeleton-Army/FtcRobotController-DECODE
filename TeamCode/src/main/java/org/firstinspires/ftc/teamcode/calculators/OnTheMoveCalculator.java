@@ -43,15 +43,15 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
         double r  = Math.hypot(dx, dy);
 
         // Predict where robot will be at firing time
-        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
-        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
+        double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY * r;
+        double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY * r;
         double predHeading = robotPoseMeters.getHeading();
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
         // Compute distance/angles from predicted pose
         double distance = predictedPose.distanceFrom(goalPoseMeters);
         double verticalAngle = calculateVerticalAngle(distance);
-        double horizontalAngle = calculateTurretAngle(turretGoalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
+        double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
 
         // Compute stationary launch vector in field coordinates
         double speed = shooterVelocity(distance);

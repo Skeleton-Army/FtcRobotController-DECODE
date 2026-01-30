@@ -8,8 +8,8 @@ public class ShooterConfig {
     public static String FLYWHEEL1_NAME = "flywheel1";
     public static String FLYWHEEL2_NAME = "flywheel2";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
-    public static boolean FLYWHEEL1_INVERTED = true;
-    public static boolean FLYWHEEL2_INVERTED = false;
+    public static boolean FLYWHEEL1_INVERTED = false;
+    public static boolean FLYWHEEL2_INVERTED = true;
     public static int RPM_REACHED_THRESHOLD = 200;
     public static double FLYWHEEL_KP = 5;
     public static double FLYWHEEL_KI = 0;
@@ -29,7 +29,7 @@ public class ShooterConfig {
     public static double TURRET_KP = 0.5;
     public static double TURRET_KI = 0.2;
     public static double TURRET_KD = 0;
-    public static double TURRET_KS = 0.165;
+    public static double TURRET_KS = 0.14;
     public static double TURRET_KV = 0.09;
     public static double TURRET_KA = 0.012;
     public static double TURRET_MIN = Math.toRadians(-180); // Clockwise

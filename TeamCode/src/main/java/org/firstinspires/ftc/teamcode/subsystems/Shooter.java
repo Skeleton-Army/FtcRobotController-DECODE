@@ -116,7 +116,7 @@ public class Shooter extends SubsystemBase {
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
-        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
+        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL_FAR : GoalPositions.RED_GOAL_FAR;
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);
@@ -140,7 +140,7 @@ public class Shooter extends SubsystemBase {
         }
         // --------------------
 
-        calculateGoalPose(); // calculates the current goalpose by the robot pose
+        //calculateGoalPose(); // calculates the current goalpose by the robot pose
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
