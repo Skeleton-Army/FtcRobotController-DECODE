@@ -306,7 +306,7 @@ public class TeleOpApp extends ComplexOpMode {
         if (alliance == Alliance.RED) {
             newPose = new Pose(X_OFFSET, Y_OFFSET);
         } else {
-            newPose = new Pose(144 - X_OFFSET, Y_OFFSET);
+            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET);
         }
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), currentPose.getHeading()));
