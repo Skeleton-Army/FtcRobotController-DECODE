@@ -146,7 +146,7 @@ public class Drive extends SubsystemBase {
     }
 
     public void teleOpDrive(Gamepad gamepad) {
-        if (tabletopMode|| !enabled) return;
+        if (tabletopMode || !enabled) return;
 
         double leftY = -gamepad.left_stick_y;
         double leftX = -gamepad.left_stick_x;
@@ -188,10 +188,13 @@ public class Drive extends SubsystemBase {
     public void disable() {
         this.enabled = false;
         follower.setTeleOpDrive(0, 0, 0);
+        follower.breakFollowing();
+        follower.setMaxPower(0);
     }
 
     public void enable() {
         this.enabled = true;
+        follower.setMaxPower(1);
     }
 
     public boolean isEnabled() {
