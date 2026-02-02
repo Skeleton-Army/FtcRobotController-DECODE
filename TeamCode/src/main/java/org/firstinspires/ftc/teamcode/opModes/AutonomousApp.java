@@ -12,10 +12,8 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
-import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
@@ -25,9 +23,7 @@ import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
-import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
-import org.firstinspires.ftc.teamcode.calculators.TwoZonesCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
@@ -353,8 +349,6 @@ public class AutonomousApp extends ComplexOpMode {
 
         follower.setStartingPose(startingPose);
         Settings.set("pose", startingPose, false);
-
-//        shooter.setTargetPose(startingPosition == StartingPosition.FAR ? farDriveBack.withHeading(getRelative(Math.toRadians(180))) : nearDriveBack.withHeading(getRelative(Math.toRadians(180))));
     }
 
     @Override
@@ -364,11 +358,23 @@ public class AutonomousApp extends ComplexOpMode {
 
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
-                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
-                .prompt("open_gate", new BooleanPrompt("OPEN GATE?", false))
+                .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
+                .prompt("pickup_order",
+                        () -> {
+                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
+                            return new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4);
+                        }
+                )
+                .prompt("open_gate",
+                        () -> {
+                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
+                            return new BooleanPrompt("OPEN GATE?", false);
+                        }
+                )
                 .prompt("gate_spike",
                         () -> {
-                            if (prompter.get("open_gate").equals(true)) {
+                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
+                            if (Boolean.TRUE.equals(prompter.get("open_gate"))) {
                                 return new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4);
                             }
                             return null;
@@ -376,6 +382,7 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .prompt("push",
                         () -> {
+                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
                             if (prompter.get("starting_position").equals(StartingPosition.FAR)) {
                                 return new BooleanPrompt("PUSH OTHER ROBOT?", false);
                             }
@@ -389,91 +396,23 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void onStart() {
+        boolean doCycle = prompter.get("cycle");
+        Command autonomousRoutine;
+
+        if (doCycle) {
+            autonomousRoutine = (startingPosition == StartingPosition.CLOSE)
+                    ? closeCycleRoutine()
+                    : farCycleRoutine();
+        } else {
+            autonomousRoutine = standardRoutine();
+        }
+
         schedule(
                 new SequentialCommandGroup(
-                        pushRoutine(),
-                        initialScore(),
-                        pickupSequence(),
-                        parkRoutine(),
+                        autonomousRoutine,
                         new InstantCommand(this::requestOpModeStop)
                 )
         );
-    }
-
-    private Command pushRoutine() {
-        return push ? new FollowPathCommand(follower, pushPath) : new InstantCommand();
-    }
-
-    private Command initialScore() {
-        return new SequentialCommandGroup(
-                new FollowPathCommand(follower, getBackPath()),
-                new WaitCommand(2000),
-                shoot()
-        );
-    }
-
-    private Command pickupSequence() {
-        SequentialCommandGroup sequence = new SequentialCommandGroup();
-
-        for (int i = 0; i < pickupOrder.size(); i++) {
-            int spike = pickupOrder.get(i);
-            boolean isLast = i == (pickupOrder.size() - 1);
-
-            sequence.addCommands(
-                    collect(spike),
-                    openGate(spike),
-                    scoreReturn(isLast)
-            );
-        }
-
-        return sequence;
-    }
-
-    private Command collect(int spike) {
-        PathChain[] paths = (startingPosition == StartingPosition.FAR) ? farPaths : nearPaths;
-        return new SequentialCommandGroup(
-                new InstantCommand(intake::collect),
-                new FollowPathCommand(follower, paths[spike - 1]),
-                new InstantCommand(intake::stop)
-        );
-    }
-
-    private Command openGate(int spike) {
-        if (spike != gateSpike) return new InstantCommand();
-
-        return new SequentialCommandGroup(
-                new FollowPathCommand(follower, spike == 3 ? spike3Open : spike4Open),
-                new WaitCommand(100)
-        );
-    }
-
-    private Command scoreReturn(boolean isLast) {
-        Supplier<PathChain> path = isLast ? this::getFinalPath : this::getBackPath;
-        return new SequentialCommandGroup(
-                new DeferredCommand(() -> new FollowPathCommand(follower, path.get()), null),
-                shoot()
-        );
-    }
-
-    private Command parkRoutine() {
-        return (startingPosition == StartingPosition.FAR)
-                ? new FollowPathCommand(follower, farDriveBackEnd)
-                : new InstantCommand();
-    }
-
-    private Command shoot() {
-        return new ShootCommand(
-                shooter, intake, transfer, drive,
-                () -> startingPosition == StartingPosition.FAR
-        ).asProxy();
-    }
-
-    private PathChain getBackPath() {
-        return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBack();
-    }
-
-    private PathChain getFinalPath() {
-        return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBackEnd;
     }
 
     @Override
@@ -520,5 +459,121 @@ public class AutonomousApp extends ComplexOpMode {
         }
 
         return headingRad;
+    }
+
+    // ---- ROUTINES ----
+
+    private Command standardRoutine() {
+        return new SequentialCommandGroup(
+                pushRoutine(),
+                initialScore(),
+                pickupSequence(),
+                parkRoutine()
+        );
+    }
+
+    private Command closeCycleRoutine() {
+        return new SequentialCommandGroup(
+                // Score first 3 artifacts
+                // Collect spike 4 and shoot
+                // Cycle from gate X times (use closeCycle())
+                // Collect spike 3 and shoot from parking point
+        );
+    }
+
+    private Command farCycleRoutine() {
+        return new SequentialCommandGroup(
+                // Score first 3 artifacts
+                // Cycle from LOADING ZONE X times (use farCycle())
+                // Park
+        );
+    }
+
+    private Command closeCycle() {
+        return new SequentialCommandGroup(
+                // Open gate, collect, and go back to shoot
+        );
+    }
+
+    private Command farCycle() {
+        return new SequentialCommandGroup(
+                // Go to LOADING ZONE, collect, and go back to shoot
+        );
+    }
+
+    private Command pushRoutine() {
+        return push ? new FollowPathCommand(follower, pushPath) : new InstantCommand();
+    }
+
+    private Command initialScore() {
+        return new SequentialCommandGroup(
+                new FollowPathCommand(follower, getBackPath()),
+                new WaitCommand(2000),
+                shoot()
+        );
+    }
+
+    private Command pickupSequence() {
+        SequentialCommandGroup sequence = new SequentialCommandGroup();
+
+        for (int i = 0; i < pickupOrder.size(); i++) {
+            int spike = pickupOrder.get(i);
+            boolean isLast = i == (pickupOrder.size() - 1);
+
+            sequence.addCommands(
+                    collect(spike),
+                    openGate(spike),
+                    returnAndScore(isLast)
+            );
+        }
+
+        return sequence;
+    }
+
+    private Command collect(int spike) {
+        PathChain[] paths = (startingPosition == StartingPosition.FAR) ? farPaths : nearPaths;
+        return new SequentialCommandGroup(
+                new InstantCommand(intake::collect),
+                new FollowPathCommand(follower, paths[spike - 1]),
+                new InstantCommand(intake::stop)
+        );
+    }
+
+    private Command openGate(int spike) {
+        if (spike != gateSpike) return new InstantCommand();
+
+        return new SequentialCommandGroup(
+                new FollowPathCommand(follower, spike == 3 ? spike3Open : spike4Open),
+                new WaitCommand(100)
+        );
+    }
+
+    private Command returnAndScore(boolean isLast) {
+        Supplier<PathChain> path = isLast ? this::getFinalPath : this::getBackPath;
+        return new SequentialCommandGroup(
+                new DeferredCommand(() -> new FollowPathCommand(follower, path.get()), null),
+                shoot()
+        );
+    }
+
+    private Command parkRoutine() {
+        return (startingPosition == StartingPosition.FAR)
+                ? new FollowPathCommand(follower, farDriveBackEnd)
+                : new InstantCommand();
+    }
+
+    private Command shoot() {
+        return new ShootCommand(
+                shooter, intake, transfer, drive,
+                () -> startingPosition == StartingPosition.FAR
+        ).asProxy();
+    }
+
+    private PathChain getBackPath() {
+        return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBack();
+    }
+
+    private PathChain getFinalPath() {
+        return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBackEnd;
     }
 }
