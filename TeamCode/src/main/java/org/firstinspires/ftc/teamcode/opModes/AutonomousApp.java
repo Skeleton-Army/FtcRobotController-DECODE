@@ -57,6 +57,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     private final PathChain[] farPaths = new PathChain[4];
     private final PathChain[] nearPaths = new PathChain[4];
+    private final Supplier<PathChain>[] nearPathsReturn = new Supplier[4];
+    private final Supplier<PathChain>[] farPathsReturn = new Supplier[4];
     private PathChain farDriveBackEnd;
     private PathChain nearDriveBackEnd;
     private PathChain spike3Open;
@@ -104,6 +106,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
+
+
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(56.6,8.5, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(19.623, 120.368, Math.toRadians(143)));
@@ -117,6 +121,29 @@ public class AutonomousApp extends ComplexOpMode {
 
         farDriveBack = getRelative(new Pose(56.6, 15.862));
         nearDriveBack = getRelative(new Pose(56.605, 91.127));
+
+        nearPathsReturn[0] = this::nearDriveBack;
+        nearPathsReturn[1] = this::nearDriveBack;
+        nearPathsReturn[2] = () -> follower
+                                .pathBuilder()
+                                .addPath(
+                                        new BezierCurve(
+                                                follower.getPose(),
+                                                getRelative(new Pose(30.655, 54.544)),
+                                                getRelative(new Pose(49.264, 66.136)),
+                                                nearDriveBack
+                                        )
+                                )
+                                .setConstantHeadingInterpolation(
+                                        getRelative(Math.toRadians(180))
+                                )
+                                .build();
+        nearPathsReturn[3] = this::nearDriveBack;
+
+        farPathsReturn[0] = this::farDriveBack;
+        farPathsReturn[1] = this::farDriveBack;
+        farPathsReturn[2] = this::farDriveBack;
+        farPathsReturn[3] = this::farDriveBack;
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -507,7 +534,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command initialScore() {
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, getBackPath()),
+                new FollowPathCommand(follower, getBackPath(0)),
                 new WaitCommand(2000),
                 shoot()
         );
@@ -523,7 +550,7 @@ public class AutonomousApp extends ComplexOpMode {
             sequence.addCommands(
                     collect(spike),
                     openGate(spike),
-                    returnAndScore(isLast)
+                    returnAndScore(spike, isLast)
             );
         }
 
@@ -548,8 +575,8 @@ public class AutonomousApp extends ComplexOpMode {
         );
     }
 
-    private Command returnAndScore(boolean isLast) {
-        Supplier<PathChain> path = isLast ? this::getFinalPath : this::getBackPath;
+    private Command returnAndScore(int spike, boolean isLast) {
+        Supplier<PathChain> path = isLast ? this::getFinalPath : () -> getBackPath(spike);
         return new SequentialCommandGroup(
                 new DeferredCommand(() -> new FollowPathCommand(follower, path.get()), null),
                 shoot()
@@ -569,8 +596,8 @@ public class AutonomousApp extends ComplexOpMode {
         ).asProxy();
     }
 
-    private PathChain getBackPath() {
-        return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBack();
+    private PathChain getBackPath(int spike) {
+        return (startingPosition == StartingPosition.FAR) ? farPathsReturn[spike].get() : nearPathsReturn[spike].get();
     }
 
     private PathChain getFinalPath() {
