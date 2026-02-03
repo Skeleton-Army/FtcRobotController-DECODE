@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
@@ -76,6 +77,8 @@ public class AutonomousApp extends ComplexOpMode {
     private Pose farDriveBack;
     private Pose nearDriveBack;
 
+    private Pose gateOpenPose;
+
     public PathChain farDriveBack() {
         return follower
                 .pathBuilder()
@@ -106,6 +109,39 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
+    public PathChain collectFromGate() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower.getPose(),
+                                getRelative(new Pose(46.462, 64.985)),
+                                gateOpenPose
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        follower.getHeading(),
+                        getRelative(Math.toRadians(140))
+                )
+                .build();
+    }
+
+    public PathChain backFromGateCollection() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower.getPose(),
+                                getRelative(new Pose(46.462, 64.985)),
+                                farDriveBack
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        follower.getHeading(),
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+    }
 
 
     public void setupPaths() {
@@ -121,6 +157,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         farDriveBack = getRelative(new Pose(56.6, 15.862));
         nearDriveBack = getRelative(new Pose(56.605, 91.127));
+        gateOpenPose = getRelative(new Pose(13.702, 62.125));
 
         nearPathsReturn[0] = this::nearDriveBack;
         nearPathsReturn[1] = this::nearDriveBack;
@@ -501,30 +538,48 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
-                // Score first 3 artifacts
-                // Collect spike 4 and shoot
-                // Cycle from gate X times (use closeCycle())
-                // Collect spike 3 and shoot from parking point
+                initialScore(), // Score first 3 artifacts
+                collect(3), // Collect spike 3 and shoot
+                returnAndScore(3, false),
+                new RepeatCommand(
+                        closeCycle(),
+                        2
+                ), // Cycle from gate 2 times
+                collect(4), // Collect spike 4 & 2 and shoot from parking point
+                returnAndScore(4, false),
+                collect(2),
+                returnAndScore(2, true)
         );
     }
 
     private Command farCycleRoutine() {
         return new SequentialCommandGroup(
-                // Score first 3 artifacts
-                // Cycle from LOADING ZONE X times (use farCycle())
-                // Park
+                initialScore(), // Score first 3 artifacts
+                new RepeatCommand(
+                        farCycle(),
+                        3
+                ), // Cycle from LOADING ZONE 3 times
+                parkRoutine() // Park
         );
     }
 
     private Command closeCycle() {
         return new SequentialCommandGroup(
                 // Open gate, collect, and go back to shoot
+                new InstantCommand(intake::collect),
+                new DeferredCommand(() -> new FollowPathCommand(follower, collectFromGate()), null),
+                new WaitCommand(3000),
+                new InstantCommand(intake::stop),
+                new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
+                shoot()
         );
     }
 
     private Command farCycle() {
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
+                collect(0),
+                returnAndScore(0, false)
         );
     }
 
