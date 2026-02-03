@@ -22,6 +22,8 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
+import org.firstinspires.ftc.teamcode.calculators.NoAirCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -70,7 +72,7 @@ public class TeleOpApp extends ComplexOpMode {
     public static final double HEIGHT = 16.53;
     public static final double X_OFFSET = WIDTH / 2.0;
     public static final double Y_OFFSET = HEIGHT / 2.0;
-
+    IShooterCalculator shooterCalc;
     @Override
     public void initialize() {
         matchTime = new TimerEx(120);
@@ -81,6 +83,7 @@ public class TeleOpApp extends ComplexOpMode {
         Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         if (!debugMode) startPose = Settings.get("pose", new Pose(X_OFFSET, Y_OFFSET));
 
+        //startPose = new Pose(72,72,0);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         follower = Constants.createFollower(hardwareMap);
@@ -90,7 +93,8 @@ public class TeleOpApp extends ComplexOpMode {
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
+        //shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
+        shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
@@ -174,6 +178,19 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 )
         );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_STICK_BUTTON)
+                .toggleWhenPressed(
+                        new InstantCommand(() -> shooter.disable()),
+                        new InstantCommand(() -> shooter.enable())
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
+                .toggleWhenPressed(
+                        new InstantCommand(() -> shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS)),
+                        new InstantCommand(() -> shooterCalc = new NoAirCalculator())
+                );
+
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
                 .toggleWhenActive(
@@ -265,7 +282,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
         telemetry.addData("Robot x", rotatedPose.getX());
-        telemetry.addData("Robot y", robotPose.getY());
+        telemetry.addData("Robot y", rotatedPose.getY());
         telemetry.addData("Robot heading", rotatedPose.getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
         telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL_FAR : GoalPositions.BLUE_GOAL_FAR) / INCHES_TO_METERS);
@@ -277,8 +294,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("hood pos", shooter.getRawHoodPosition());
         telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
         telemetry.addData("Flywheel RPM", shooter.getRPM());
-        //telemetry.addData("Flywheel RPM corrected timing ", shooter.getRPMCorrectedTiming());
-        //telemetry.addData("rpm raw prediction error ", shooter.getRPM() - shooter.getRPMCorrectedTiming());
+        telemetry.addData("Flywheel RPM corrected timing ", shooter.getRPMCorrectedTiming());
+        telemetry.addData("rpm raw prediction error ", shooter.getRPM() - shooter.getRPMCorrectedTiming());
         telemetry.addData("Filtered Flywheel RPM", shooter.getFilteredRPM());
         telemetry.addData("Target RPM", shooter.solution.getRPM());
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
@@ -299,15 +316,15 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Can Shoot", shooter.getCanShoot());
         Logger.recordOutput("Goal Pose", goalPose);
         Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL_FAR : GoalPositions.BLUE_GOAL_FAR) / INCHES_TO_METERS);
-        Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
-        Logger.recordOutput("Shooter/Flywheel Filtered RPM", shooter.getFilteredRPM());
-        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
-        Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
-        Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
-        Logger.recordOutput("Shooter/Hood Angle (deg)", shooter.getHoodAngleDegrees());
-        Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-        Logger.recordOutput("Turret/Turret Angle Target (deg)", Math.toDegrees(shooter.wrapped));
-        Logger.recordOutput("Turret/Turret Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+        Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
+        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.getFilteredRPM());
+        Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
+        Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
+        Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
+        Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
+        Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+        Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
     }
 
     @Override

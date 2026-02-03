@@ -38,7 +38,7 @@ public class Shooter extends SubsystemBase {
 
     private final ModifiedMotorEx flywheel1;
     private final ModifiedMotorEx flywheel2;
-    private final ModifiedMotorGroup flywheel;
+    public final ModifiedMotorGroup flywheel;
     private final ModifiedMotorEx turret;
     private final ServoEx hood;
 
@@ -77,7 +77,7 @@ public class Shooter extends SubsystemBase {
 
     private boolean emergencyStop = false;
     private boolean updateHood = true;
-    private boolean disabled = false;
+    public boolean disabled = false;
 
     private Pose currentPose;
 
@@ -179,7 +179,8 @@ public class Shooter extends SubsystemBase {
         double feedforward = staticComp + (-robotVel * TURRET_KV) + (-robotAcc * TURRET_KA);
         double result = pid + feedforward;
 
-        turret.set(result, voltage);
+
+        if (!disabled) turret.set(result, voltage);
     }
 
     public boolean isFlywheelDamaged() {
@@ -214,12 +215,19 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getRPM() {
-        double motorTPS = flywheel.getVelocity();
-        return (motorTPS * 60.0) / flywheel.getCPR();
+        /*double motorTPS = flywheel.getVelocity();
+        return (motorTPS * 60.0) / flywheel.getCPR();*/
+
+        return getRPMCorrectedTiming();
     }
 
     public double getRPMCorrectedTiming() {
-        double motorTPS = flywheel.getVelocity() + flywheel.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
+        double motorTPS = flywheel.getVelocity();
+        if (!Double.isNaN(flywheel1.getAcceleration())) {
+             motorTPS += flywheel1.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
+            return (motorTPS * 60.0) / flywheel.getCPR();
+        }
+
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
