@@ -84,6 +84,9 @@ public class Shooter extends SubsystemBase {
     private final double[] rpmBuffer = new double[RPM_WINDOW_SIZE];
     private int bufferIndex = 0;
     private double runningRpmSum = 0;
+    public double filteredRPM;
+    public double filteredRPMPredicted;
+
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -144,7 +147,9 @@ public class Shooter extends SubsystemBase {
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
-        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)getFilteredRPM());
+        filteredRPM = getFilteredRPM(getRPM());
+        filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
+        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
         canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
@@ -215,10 +220,9 @@ public class Shooter extends SubsystemBase {
     }
 
     public double getRPM() {
-        /*double motorTPS = flywheel.getVelocity();
-        return (motorTPS * 60.0) / flywheel.getCPR();*/
+        double motorTPS = flywheel.getVelocity();
 
-        return getRPMCorrectedTiming();
+        return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
     public double getRPMCorrectedTiming() {
@@ -236,8 +240,9 @@ public class Shooter extends SubsystemBase {
         return (targetTPS * 60.0) / flywheel.getCPR();
     }
 
-    public double getFilteredRPM() {
-        double currentRPM = getRPM();
+    private double getFilteredRPM(double currentRPM) {
+        //double currentRPM = getRPM();
+//        double currentRPM = getRPMCorrectedTiming();
 
         // Subtract the oldest sample from the sum
         runningRpmSum -= rpmBuffer[bufferIndex];

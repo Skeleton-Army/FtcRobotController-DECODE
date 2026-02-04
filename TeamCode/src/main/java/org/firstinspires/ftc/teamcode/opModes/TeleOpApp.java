@@ -295,9 +295,10 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
         telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Flywheel RPM corrected timing ", shooter.getRPMCorrectedTiming());
-        telemetry.addData("rpm raw prediction error ", shooter.getRPM() - shooter.getRPMCorrectedTiming());
-        telemetry.addData("Filtered Flywheel RPM", shooter.getFilteredRPM());
-        telemetry.addData("Target RPM", shooter.solution.getRPM());
+        telemetry.addData("rpm raw prediction error ", shooter.filteredRPM - shooter.filteredRPMPredicted);
+        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
+        telemetry.addData("Filtered Flywheel RPM predicted", shooter.filteredRPMPredicted);
+        telemetry.addData("Target solution RPM", shooter.solution.getRPM());
         telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
@@ -317,7 +318,8 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Goal Pose", goalPose);
         Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL_FAR : GoalPositions.BLUE_GOAL_FAR) / INCHES_TO_METERS);
         Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
-        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.getFilteredRPM());
+        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
+        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM Predicted", shooter.filteredRPMPredicted);
         Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
         Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
