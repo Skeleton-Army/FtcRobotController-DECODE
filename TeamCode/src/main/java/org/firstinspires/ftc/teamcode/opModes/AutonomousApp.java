@@ -423,12 +423,7 @@ public class AutonomousApp extends ComplexOpMode {
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
                 .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
-                .prompt("pickup_order",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
-                            return new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4);
-                        }
-                )
+                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
                 .prompt("open_gate",
                         () -> {
                             if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
@@ -545,16 +540,14 @@ public class AutonomousApp extends ComplexOpMode {
                         closeCycle(),
                         2
                 ), // Cycle from gate 2 times
-                collect(4), // Collect spike 4 & 2 and shoot from parking point
-                returnAndScore(4, false),
-                collect(2),
-                returnAndScore(2, true)
+                pickupSequence()
         );
     }
 
     private Command farCycleRoutine() {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
+                pickupSequence(),
                 new RepeatCommand(
                         farCycle(),
                         3
