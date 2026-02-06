@@ -149,7 +149,7 @@ public class Shooter extends SubsystemBase {
 
         filteredRPM = getFilteredRPM(getRPM());
         filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
-        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
+        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         canShoot = solution.getCanShoot();
 
         if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);

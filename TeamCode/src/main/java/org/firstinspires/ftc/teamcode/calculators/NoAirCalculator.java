@@ -14,7 +14,7 @@ public class NoAirCalculator implements IShooterCalculator{
     double goalXOffset = 0;
     double goalYOffset = 0;
     protected int velocityToRPM(double velocity) {
-        double[] velCoeffs = ShooterCoefficients.VEL_COEFFS;
+        double[] velCoeffs = ShooterCoefficients.RPM_INTERPOLATION;
         double result = 0.0;
         for (int exponent = 0; exponent < velCoeffs.length; exponent++) {
             result += velCoeffs[exponent] * Math.pow(velocity, velCoeffs.length - exponent - 1);
