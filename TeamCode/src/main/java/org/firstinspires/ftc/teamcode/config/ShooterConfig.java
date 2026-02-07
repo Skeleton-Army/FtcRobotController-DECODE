@@ -5,13 +5,6 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor.GoBILDA;
 
 @Config
 public class ShooterConfig {
-    public static double DIST_CLOSE = 30; // Inches
-    public static double DIST_FAR = 160; // Inches
-    public static double WINDOW_CLOSE = Math.toRadians(6.0); // Max error allowed when close
-    public static double WINDOW_FAR = Math.toRadians(1.0); // Max error allowed when far
-    public static double TURRET_VELOCITY_WINDOW = Math.toRadians(40); // Max velocity error threshold
-    public static double VELOCITY_WINDOW_GAIN = Math.toRadians(0.05); // Window growth per inch/sec of speed
-    public static double MAX_WINDOW_SIZE = Math.toRadians(6.0); // Absolute limit for the window
 
     public static String FLYWHEEL1_NAME = "flywheel1";
     public static String FLYWHEEL2_NAME = "flywheel2";
@@ -47,6 +40,14 @@ public class ShooterConfig {
     public static double TURRET_OFFSET_X = 0; // Positive = Front
     public static double TURRET_OFFSET_Y = 0; // Positive = Left
     public static boolean TURRET_WRAP = true;
+
+    public static double DIST_CLOSE = 30; // Inches
+    public static double DIST_FAR = 160; // Inches
+    public static double WINDOW_CLOSE = Math.toRadians(6.0); // Max error allowed when close
+    public static double WINDOW_FAR = Math.toRadians(1.0); // Max error allowed when far
+    public static double TURRET_VELOCITY_WINDOW = Math.toRadians(40); // Max velocity error threshold
+    public static double VELOCITY_WINDOW_GAIN = Math.toRadians(0.05); // Window growth per inch/sec of speed
+    public static double MAX_WINDOW_SIZE = Math.toRadians(6.0); // Absolute limit for the window
 
     public static String HOOD_NAME = "hood";
     public static boolean HOOD_INVERTED = false;
