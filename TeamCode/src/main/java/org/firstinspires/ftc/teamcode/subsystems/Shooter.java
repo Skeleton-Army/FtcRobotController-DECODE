@@ -130,6 +130,7 @@ public class Shooter extends SubsystemBase {
     @Override
     public void periodic() {
         if (poseTracker == null) return;
+        currentPose = poseTracker.getPose();
 
         // --- SAFETY CHECK ---
         if (emergencyStop) return;
