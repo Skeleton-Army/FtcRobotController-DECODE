@@ -267,8 +267,29 @@ public class Shooter extends SubsystemBase {
         return Math.abs(getTargetRPM() - getRPM()) <= RPM_REACHED_THRESHOLD;
     }
 
+    public double getTurretWindow() {
+        // Map distance to a tolerance: closer is wider, farther is tighter
+        double distance = poseTracker.getPose().distanceFrom(goalPose);
+        double t = (distance - DIST_CLOSE) / (DIST_FAR - DIST_CLOSE);
+        t = MathUtils.clamp(t, 0.0, 1.0);
+
+        double baseWindow = WINDOW_CLOSE + t * (WINDOW_FAR - WINDOW_CLOSE);
+
+        // If we are moving, we open the window slightly to account for latency
+        double robotVel = poseTracker.getVelocity().getMagnitude();
+        double velocityGrace = robotVel * VELOCITY_WINDOW_GAIN;
+
+        return Math.min(baseWindow + velocityGrace, MAX_WINDOW_SIZE);
+    }
+
     public boolean reachedAngle() {
-        return turretPID.atSetPoint();
+        double posError = Math.abs(turretPID.getPositionError());
+        boolean posReached = posError <= getTurretWindow();
+
+        double velError = Math.abs(turretPID.getVelocityError());
+        boolean velReached = velError <= TURRET_VELOCITY_WINDOW;
+
+        return posReached && velReached;
     }
 
     public double getRawHoodPosition() {
