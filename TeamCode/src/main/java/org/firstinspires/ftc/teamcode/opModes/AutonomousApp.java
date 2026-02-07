@@ -42,7 +42,7 @@ import org.psilynx.psikit.core.wpi.math.Pose2d;
 import java.util.List;
 import java.util.function.Supplier;
 
-@Autonomous
+@Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
 public class AutonomousApp extends ComplexOpMode {
     private final Prompter prompter = new Prompter(this);
 
