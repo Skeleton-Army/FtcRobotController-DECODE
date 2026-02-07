@@ -67,7 +67,8 @@ public class NoAirCalculator implements IShooterCalculator{
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(turretAngle),
                 hoodAngle,
-                velocityToRPM(flywheelSpeed)
+                velocityToRPM(flywheelSpeed),
+                flywheelSpeed
         );
 
     }

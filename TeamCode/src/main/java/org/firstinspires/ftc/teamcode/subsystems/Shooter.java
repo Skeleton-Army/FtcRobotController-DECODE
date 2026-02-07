@@ -79,7 +79,7 @@ public class Shooter extends SubsystemBase {
     private boolean updateHood = true;
     public boolean disabled = false;
 
-    private Pose currentPose;
+    public Pose currentPose;
 
     private final double[] rpmBuffer = new double[RPM_WINDOW_SIZE];
     private int bufferIndex = 0;
