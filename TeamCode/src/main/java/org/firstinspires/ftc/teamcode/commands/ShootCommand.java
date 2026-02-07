@@ -6,6 +6,9 @@ import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_P
 
 import android.util.Log;
 
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.geometry.PedroCoordinates;
+import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -16,6 +19,7 @@ import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -24,6 +28,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.TrajectoryCalculator;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.mechanism.LoggedMechanism2d;
+import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Translation3d;
 
 import java.util.function.BooleanSupplier;
@@ -90,7 +95,8 @@ public class ShootCommand extends SequentialCommandGroup {
 
         // simulates the ball trajectory accounting for air resistance
         ShootingSolution solution = shooter.solution;
-        Logger.recordOutput("Shot/Trajectory" , TrajectoryCalculator.generateTrajectory(new Translation3d(shooter.currentPose.getX() * inchesToMeters, shooter.currentPose.getY() * inchesToMeters, 0.4), solution.getExitVel(), solution.getVerticalAngle(), solution.getHorizontalAngle(), 2, 0.01));
+        Pose shotPos = shooter.currentPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Logger.recordOutput("Shot/Trajectory" , TrajectoryCalculator.generateTrajectory(new Translation3d(shotPos.getX() * inchesToMeters, shotPos.getY() * inchesToMeters, 0.4), solution.getExitVel(), solution.getVerticalAngle(), solution.getHorizontalAngle() - Math.PI, 2, 0.1));
     }
 
     @Override
