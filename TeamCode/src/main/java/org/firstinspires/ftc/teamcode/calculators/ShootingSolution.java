@@ -5,16 +5,18 @@ public class ShootingSolution {
     private final double verticalAngle;
     private final double flywheelRPM;
     private final boolean canShoot;
+    private final double exitVel;
 
-    public ShootingSolution(double horizontalAngle, double verticalAngle, double flywheelRPM, boolean canShoot) {
+    public ShootingSolution(double horizontalAngle, double verticalAngle, double flywheelRPM, boolean canShoot, double exitVel) {
         this.horizontalAngle = horizontalAngle;
         this.verticalAngle = verticalAngle;
         this.flywheelRPM = flywheelRPM;
         this.canShoot = canShoot;
+        this.exitVel = exitVel;
     }
 
-    public ShootingSolution(double horizontalAngle, double verticalAngle, double flywheelRPM) {
-        this(horizontalAngle, verticalAngle, flywheelRPM, true);
+    public ShootingSolution(double horizontalAngle, double verticalAngle, double flywheelRPM, double exitVel) {
+        this(horizontalAngle, verticalAngle, flywheelRPM, true, exitVel);
     }
 
     public double getHorizontalAngle() {
@@ -25,6 +27,9 @@ public class ShootingSolution {
     }
     public double getRPM() {
         return flywheelRPM;
+    }
+    public double getExitVel() {
+        return exitVel;
     }
     public boolean getCanShoot() {
         return canShoot;

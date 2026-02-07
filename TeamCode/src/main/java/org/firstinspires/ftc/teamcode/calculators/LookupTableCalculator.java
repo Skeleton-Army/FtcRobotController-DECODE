@@ -115,7 +115,8 @@ public class LookupTableCalculator implements IShooterCalculator {
                 MathFunctions.normalizeAngle(newHorizontalAngle),
                 newVerticalAngle,
                 velocityToRPM(shooterVelocity(distance) * (1 - MOVEMENT_COMPENSATION) + newSpeed * MOVEMENT_COMPENSATION, distance),
-                canShoot
+                canShoot,
+                shooterVelocity(distance) * (1 - MOVEMENT_COMPENSATION) + newSpeed * MOVEMENT_COMPENSATION
         );
     }
 }

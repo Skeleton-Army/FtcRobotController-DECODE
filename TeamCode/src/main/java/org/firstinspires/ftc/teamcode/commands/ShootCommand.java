@@ -16,12 +16,15 @@ import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.utilities.TrajectoryCalculator;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.mechanism.LoggedMechanism2d;
+import org.psilynx.psikit.core.wpi.math.Translation3d;
 
 import java.util.function.BooleanSupplier;
 
@@ -31,6 +34,7 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Transfer transfer;
     private final Drive drive;
 
+    private final double inchesToMeters = 0.0254;
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
         this(shooter, intake, transfer, drive, () -> false);
     }
@@ -82,6 +86,11 @@ public class ShootCommand extends SequentialCommandGroup {
         Logger.recordOutput("Shot/RPM: ", shooter.getRPM());
         Logger.recordOutput("Shot/Angle hood: ", shooter.getHoodAngleDegrees());
         Logger.recordOutput("Shot/Turret angle error (deg): ", shooter.wrapped - shooter.getTurretAngle(AngleUnit.DEGREES));
+
+
+        // simulates the ball trajectory accounting for air resistance
+        ShootingSolution solution = shooter.solution;
+        Logger.recordOutput("Shot/Trajectory" , TrajectoryCalculator.generateTrajectory(new Translation3d(shooter.currentPose.getX() * inchesToMeters, shooter.currentPose.getY() * inchesToMeters, 0.4), solution.getExitVel(), solution.getVerticalAngle(), solution.getHorizontalAngle(), 2, 0.01));
     }
 
     @Override
