@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.controller.PIDController;
+import com.seattlesolvers.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
@@ -87,6 +88,8 @@ public class Shooter extends SubsystemBase {
     public double filteredRPM;
     public double filteredRPMPredicted;
 
+    private final PIDController flywheelPID;
+    private final SimpleMotorFeedforward flywheelFF;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -101,9 +104,12 @@ public class Shooter extends SubsystemBase {
         flywheel = new ModifiedMotorGroup(flywheel1, flywheel2);
         flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
         flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
-        flywheel.setRunMode(MotorEx.RunMode.VelocityControl);
+        flywheel.setRunMode(MotorEx.RunMode.RawPower);
         flywheel.setDelayCompensation(FLYWHEEL_DELAY_SEC);
         flywheel.setCurrentAlert(CURRENT_THRESHOLD, CurrentUnit.AMPS);
+
+        flywheelPID = new PIDController(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+        flywheelFF = new SimpleMotorFeedforward(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
 
         turret = new ModifiedMotorEx(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
         turret.setRunMode(Motor.RunMode.RawPower);
@@ -160,9 +166,35 @@ public class Shooter extends SubsystemBase {
         //calculateRecovery();
 
         double voltage = voltageSensor.getVoltage();
-        if (!disabled) flywheel.setVelocity(targetTPS, voltage);
+        updateFlywheelPID(voltage);
+        updateTurretPID(voltage);
+    }
 
-        // ----- TURRET PIDF -----
+    public void updateFlywheelPID(double voltage) {
+        if (disabled || emergencyStop) {
+            flywheel.set(0);
+            return;
+        }
+
+        double filteredTPS = (filteredRPM * flywheel.getCPR()) / 60.0;
+        double predictedTPS = filteredTPS + (flywheel1.getAcceleration() * FLYWHEEL_DELAY_SEC);
+        double futureSpeed = targetTPS + (flywheel1.getAcceleration() * FLYWHEEL_DELAY_SEC);
+
+        double pid = flywheelPID.calculate(predictedTPS, targetTPS);
+        double ff = flywheelFF.calculate(futureSpeed, flywheel1.getAcceleration());
+
+        double velocityCmd = pid + ff;
+        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+
+        flywheel.set(finalPower, voltage);
+    }
+
+    public void updateTurretPID(double voltage) {
+        if (disabled || emergencyStop) {
+            turret.set(0);
+            return;
+        }
+
         double pid = turretPID.calculate(turret.getDistance());
         double error = turretPID.getPositionError();
 
@@ -185,8 +217,7 @@ public class Shooter extends SubsystemBase {
         double feedforward = staticComp + (-robotVel * TURRET_KV) + (-robotAcc * TURRET_KA);
         double result = pid + feedforward;
 
-
-        if (!disabled) turret.set(result, voltage);
+        turret.set(result, voltage);
     }
 
     public boolean isFlywheelDamaged() {
@@ -195,7 +226,7 @@ public class Shooter extends SubsystemBase {
         boolean isOverCurrent = flywheel.isOverCurrent();
 
         // 1. Encoder Direction Check
-        if ((getRPM() < -50  && targetRPM > 0) || (getRPM() > 50 && targetRPM < 0)) {
+        if ((getRPM() < -500  && targetRPM > 0) || (getRPM() > 500 && targetRPM < 0)) {
             RobotLog.addGlobalWarningMessage("FLYWHEEL IS SPINNING IN THE WRONG DIRECTION.");
             return true;
         }

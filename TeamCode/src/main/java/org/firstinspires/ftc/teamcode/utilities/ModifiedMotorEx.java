@@ -100,10 +100,6 @@ public class ModifiedMotorEx extends Motor {
 
             double velocityCmd = pid + ff;
 
-            OpModeManager.getTelemetry().addData("Flywheel/PowerCommand", velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND
-                    * (12.0 / voltage));
-
-            OpModeManager.getTelemetry().addData("Flywheel/VoltageCommand", velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND);
             setPower(
                     velocityCmd / ACHIEVABLE_MAX_TICKS_PER_SECOND
                             * (12.0 / voltage)
