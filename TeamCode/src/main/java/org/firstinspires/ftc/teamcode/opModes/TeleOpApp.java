@@ -7,6 +7,8 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
@@ -39,6 +41,8 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
 
+import java.util.Arrays;
+
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
@@ -62,6 +66,7 @@ public class TeleOpApp extends ComplexOpMode {
 
     final double inchesToMeters = 39.37;
 
+    Limelight3A limelight3A;
     @Override
     public void initialize() {
         debugMode = Settings.get("debug_mode", false);
@@ -182,6 +187,9 @@ public class TeleOpApp extends ComplexOpMode {
                         drive
                 )
         );
+        limelight3A = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight3A.pipelineSwitch(1);
+        limelight3A.start();
     }
 
     @Override
@@ -210,6 +218,10 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
+        LLResult llResult = limelight3A.getLatestResult();
+        double[] llPython = llResult.getPythonOutput();
+        telemetry.addData("is valid", llResult.isValid());
+        telemetry.addData("llPython", Arrays.toString(llPython));
         telemetry.addData("!Reached RPM", shooter.reachedRPM());
         telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
         telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());

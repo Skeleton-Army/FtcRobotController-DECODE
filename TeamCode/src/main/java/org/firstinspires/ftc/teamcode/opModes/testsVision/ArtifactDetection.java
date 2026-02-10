@@ -1,4 +1,4 @@
-package org.firstinspires.ftc.teamcode.vision;
+package org.firstinspires.ftc.teamcode.opModes.testsVision;
 
 import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.calculateField;
 import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.getDistance;
@@ -7,10 +7,7 @@ import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.get
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.PathChain;
-import com.pedropathing.util.Timer;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -20,6 +17,7 @@ import com.seattlesolvers.solverslib.command.RunCommand;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
+import org.firstinspires.ftc.teamcode.vision.ArtifactTrackingConfig;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
 @TeleOp
@@ -27,10 +25,7 @@ public class ArtifactDetection extends OpMode {
     Limelight3A limelight;
     Follower follower;
     Drive drive;
-    private Pose2d fieldPos; // Field-relative position of the sample, uhhhh i mean pixel
-
-
-
+    private Pose fieldPos; // Field-relative position of the sample, uhhhh i mean pixel
 
     @Override
     public void init() {
@@ -68,7 +63,7 @@ public class ArtifactDetection extends OpMode {
 
             Pose robotPose = follower.getPose();
             double artifactDistance = getDistance(llPytohn[1]);
-            Pose2d artifactPosition = getRelativePos(artifactDistance,llPytohn[0]);
+            Pose artifactPosition = getRelativePos(artifactDistance,llPytohn[0]);
             fieldPos = calculateField(robotPose, artifactPosition);
 
             telemetry.addData("tx ", llPytohn[0]);
@@ -80,11 +75,7 @@ public class ArtifactDetection extends OpMode {
             telemetry.addData("Artifact Field Pos Y", fieldPos.getY());
             telemetry.addData("Robot X ", follower.getPose().getX());
             telemetry.addData("Robot Y", follower.getPose().getY());
-
-
         }
-
-
         telemetry.update();
     }
 
@@ -100,7 +91,4 @@ public class ArtifactDetection extends OpMode {
             return Alliance.RED;
         }
     }
-    public double getX() { return fieldPos.getX(); }
-    public double getY() { return fieldPos.getY(); }
-
 }

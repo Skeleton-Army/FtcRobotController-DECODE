@@ -1,54 +1,82 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
-import static org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator.calculateField;
-import static org.firstinspires.ftc.teamcode.pedroPathing.Tuning.follower;
-
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.RunCommand;
 
 import org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.vision.ArtifactDetection;
+import org.firstinspires.ftc.teamcode.subsystems.Drive;
+import org.firstinspires.ftc.teamcode.vision.ArtifactTrackingConfig;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
+import org.psilynx.psikit.core.wpi.math.Rotation2d;
+
+import java.util.Arrays;
 
 
 @TeleOp
 public class PickUpArtifact extends OpMode {
     private Follower follower;
-    private Pose2d fieldPos;
-    ArtifactDetection detection;
+    private Pose artifactFieldPos;
+    private Pose relativePose;
     Limelight3A limelight;
+    Drive drive;
 
     @Override
     public void init() {
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(72, 72, 180));
+        follower.setStartingPose(new Pose(72, 72, Math.toRadians(180)));
+        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight.pipelineSwitch(ArtifactTrackingConfig.PIPELINE_INDEX);
 
-
+        drive = new Drive(follower, Alliance.RED);
+        drive.setDefaultCommand(new RunCommand(
+                () -> drive.teleOpDrive(gamepad1), drive
+        ));
+        limelight.start();
     }
 
     @Override
     public void loop() {
-        follower.update(); // Always call this first!
+        follower.update();
+        //CommandScheduler.getInstance().run();
 
 
-        if (limelight.getLatestResult() != null) {
-            // Replace these with your actual vision variables
-            double x = detection.getX();//Artifact field X
-            double y = detection.getY();//Artifact field Y
-
-            updateArtifactFollow(x, y);
-        } else {
-            follower.holdPoint(follower.getPose());
+        LLResult llResult = limelight.getLatestResult();
+        if (llResult != null) {
+            double[] llPython = llResult.getPythonOutput();
+            artifactFieldPos = LimeLightCalculator.getArtifactAbsolutePos(follower.getPose(),llPython);
+            double distance = LimeLightCalculator.getDistance(llPython[1]);
+            relativePose = LimeLightCalculator.getRelativePos(distance, llPython[0]);
+            Path path = new Path(
+                    new BezierLine(
+                            follower.getPose(),
+                            artifactFieldPos
+                    )
+            );
+            //follower.followPath(path);
+            telemetry.addData("llpython", Arrays.toString(llPython));
+            telemetry.addData("Tx", llPython[0]);
+            telemetry.addData("Ty", llPython[1]);
+            telemetry.addData("Distance", distance);
+            telemetry.addData("RelativeX", relativePose.getX());
+            telemetry.addData("RelativeY", relativePose.getY());
+            telemetry.addData("filedX", artifactFieldPos.getX());
+            telemetry.addData("filedY", artifactFieldPos.getY());
         }
     }
-    // Inside your OpMode loop
+
+    /* idk what does this method does
     public void updateArtifactFollow(double artifactX, double artifactY) {
         // 1. Get current robot pose
         Pose currentPose = follower.getPose();
@@ -76,5 +104,5 @@ public class PickUpArtifact extends OpMode {
         // We set isFieldCentric to 'true' because your coordinates are (0-144) field positions.
         follower.holdPoint(targetPose, true);
     }
-
+     */
 }
