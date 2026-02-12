@@ -133,7 +133,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower.getPose(),
                                 getRelative(new Pose(46.462, 64.985)),
-                                farDriveBack
+                                nearDriveBack
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -142,7 +142,6 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .build();
     }
-
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(56.6,8.5, Math.toRadians(90)));
@@ -157,7 +156,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         farDriveBack = getRelative(new Pose(56.6, 15.862));
         nearDriveBack = getRelative(new Pose(56.605, 91.127));
-        gateOpenPose = getRelative(new Pose(13.702, 62.125));
+        gateOpenPose = getRelative(new Pose(12, 59.125));
 
         nearPathsReturn[0] = this::nearDriveBack;
         nearPathsReturn[1] = this::nearDriveBack;
@@ -302,15 +301,6 @@ public class AutonomousApp extends ComplexOpMode {
                                 follower::getPose,
                                 getRelative(new Pose(77.132, 57.538)),
                                 spike3End
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(21.263, 58.026))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -536,10 +526,8 @@ public class AutonomousApp extends ComplexOpMode {
                 initialScore(), // Score first 3 artifacts
                 collect(3), // Collect spike 3 and shoot
                 returnAndScore(3, false),
-                new RepeatCommand(
-                        closeCycle(),
-                        2
-                ), // Cycle from gate 2 times
+                closeCycle(),
+                closeCycle(),
                 pickupSequence()
         );
     }
@@ -548,10 +536,9 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
                 pickupSequence(),
-                new RepeatCommand(
-                        farCycle(),
-                        3
-                ), // Cycle from LOADING ZONE 3 times
+                farCycle(),
+                farCycle(),
+                farCycle(),
                 parkRoutine() // Park
         );
     }
@@ -561,7 +548,7 @@ public class AutonomousApp extends ComplexOpMode {
                 // Open gate, collect, and go back to shoot
                 new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectFromGate()), null),
-                new WaitCommand(3000),
+                new WaitCommand(1000),
                 new InstantCommand(intake::stop),
                 new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
                 shoot()
@@ -582,8 +569,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command initialScore() {
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, getBackPath(0)),
-                new WaitCommand(2000),
+                new FollowPathCommand(follower, getBackPath(1)),
                 shoot()
         );
     }
@@ -645,7 +631,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private PathChain getBackPath(int spike) {
-        return (startingPosition == StartingPosition.FAR) ? farPathsReturn[spike].get() : nearPathsReturn[spike].get();
+        return (startingPosition == StartingPosition.FAR) ? farPathsReturn[spike - 1].get() : nearPathsReturn[spike - 1].get();
     }
 
     private PathChain getFinalPath() {

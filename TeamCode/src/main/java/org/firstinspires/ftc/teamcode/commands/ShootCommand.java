@@ -62,7 +62,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
-                new WaitCommand(2000),
+                new WaitCommand(1000),
                 new ConditionalCommand(
                         transfer.kick(),
                         new InstantCommand(),
@@ -79,7 +79,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
     public Command waitUntilCanShoot() {
         return new SequentialCommandGroup(
-                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode()),
+//                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode()),
                 new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
         );
     }
