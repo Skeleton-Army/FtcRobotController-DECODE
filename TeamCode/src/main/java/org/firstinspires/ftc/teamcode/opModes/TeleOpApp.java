@@ -92,9 +92,8 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setMaxPower(1);
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
-//        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
-        //shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS);
-        shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
+        //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
+        shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
@@ -185,13 +184,6 @@ public class TeleOpApp extends ComplexOpMode {
                         new InstantCommand(() -> shooter.enable())
                 );
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
-                .toggleWhenPressed(
-                        new InstantCommand(() -> shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS, ShooterCoefficients.VEL_COEFFS)),
-                        new InstantCommand(() -> shooterCalc = new NoAirCalculator())
-                );
-
-
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
                 .toggleWhenActive(
                         new InstantCommand(() -> {
@@ -263,7 +255,7 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
-        Pose rotatedGoalPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
 
         telemetry.addData("!Reached RPM", shooter.reachedRPM());
