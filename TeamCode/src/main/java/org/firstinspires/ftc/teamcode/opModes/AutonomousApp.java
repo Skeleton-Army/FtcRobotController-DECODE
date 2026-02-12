@@ -403,6 +403,8 @@ public class AutonomousApp extends ComplexOpMode {
 
         follower.setStartingPose(startingPose);
         Settings.set("pose", startingPose, false);
+
+        follower.update(); // DO NOT DELETE THIS - I have no clue why, but this makes it use the actual PID coefficients. Without it, if the entire PID is set to 0, it will still move. Live Love Pedro XOXO.
     }
 
     @Override
