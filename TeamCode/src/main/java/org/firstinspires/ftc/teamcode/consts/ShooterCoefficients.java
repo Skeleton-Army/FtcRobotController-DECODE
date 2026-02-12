@@ -4,7 +4,7 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class ShooterCoefficients {
-    public static double[] RPM_INTERPOLATION = {415, 0};
+    public static double[] RPM_INTERPOLATION = {420, 0};
     public static double[] VELOCITY_INTERPOLATION = {1.0337, 3.669};
     public static double[] CLOSE_VEL_COEFFS = {415, 100};
     public static double[] FAR_VEL_COEFFS = {415, 100};
