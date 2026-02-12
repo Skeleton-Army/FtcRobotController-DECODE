@@ -4,6 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class ShooterConsts {
+    public static double RANGE_BUFFER = 0.1;
+    public static double INCH_TO_METERS = 0.0254;
     public static double SHOT_LATENCY = 0.1;
     public static double SHOOTER_MIN_VELOCITY = 4.4;
     public static double SHOOTER_MAX_VELOCITY = 8;
