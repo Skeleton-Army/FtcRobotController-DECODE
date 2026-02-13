@@ -21,7 +21,7 @@ public class Constants {
             .lateralZeroPowerAcceleration(-73.28635703737672)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.1,0,0.01,0.025))
             .headingPIDFCoefficients(new PIDFCoefficients(1,0,0.025,0.025))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(1,0,0.01,0.6, 0.025))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.1,0,0.01,0.6, 0.025))
             .centripetalScaling(0.0006);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
@@ -37,7 +37,7 @@ public class Constants {
             .xVelocity(68.00439212829109)
             .yVelocity(48.47157780204232);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1.4, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
             .forwardPodY(-6.904)

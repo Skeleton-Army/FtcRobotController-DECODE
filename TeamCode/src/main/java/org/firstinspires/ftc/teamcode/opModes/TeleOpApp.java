@@ -68,7 +68,7 @@ public class TeleOpApp extends ComplexOpMode {
     private TimerEx matchTime;
 
     public static final double INCHES_TO_METERS = 39.37;
-    public static final double WIDTH = 15.74;
+    public static final double WIDTH = 14.96;
     public static final double HEIGHT = 16.53;
     public static final double X_OFFSET = WIDTH / 2.0;
     public static final double Y_OFFSET = HEIGHT / 2.0;
