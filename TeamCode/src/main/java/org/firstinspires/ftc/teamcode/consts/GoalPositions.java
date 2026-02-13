@@ -3,17 +3,17 @@ package org.firstinspires.ftc.teamcode.consts;
 import com.pedropathing.geometry.Pose;
 
 public class GoalPositions {
-    public final static Pose BLUE_GOAL_CLOSE = new Pose(2, 137);
-    public final static Pose BLUE_GOAL_FAR = new Pose(2, 142);
-    public final static Pose RED_GOAL_CLOSE = new Pose(144 - BLUE_GOAL_CLOSE.getX(), BLUE_GOAL_CLOSE.getY());
-    public final static Pose RED_GOAL_FAR = new Pose(144 - BLUE_GOAL_FAR.getX(), BLUE_GOAL_FAR.getY());
+    private final static double FIELD_LENGTH = 141.5;
 
-    public final static Pose BLUE_GOAL_TOP = new Pose(25,144);
-    public final static Pose BLUE_GOAL_BUTTOM = new Pose(0,119);
-    public final static Pose BLUE_GOAL_CORNER = new Pose(0,144);
-    public final static Pose RED_GOAL_TOP = new Pose( 144 - BLUE_GOAL_TOP.getX(),144);
-    public final static Pose RED_GOAL_BUTTOM = new Pose(144,119);
-    public final static Pose RED_GOAL_CORNER = new Pose(144,144);
+    public final static Pose BLUE_GOAL = new Pose(2, FIELD_LENGTH - 2);
+    public final static Pose RED_GOAL = new Pose(FIELD_LENGTH - BLUE_GOAL.getX(), BLUE_GOAL.getY());
+
+    public final static Pose BLUE_GOAL_TOP = new Pose(25, FIELD_LENGTH);
+    public final static Pose BLUE_GOAL_BUTTOM = new Pose(0, 119);
+    public final static Pose BLUE_GOAL_CORNER = new Pose(0, FIELD_LENGTH);
+    public final static Pose RED_GOAL_TOP = new Pose( FIELD_LENGTH - BLUE_GOAL_TOP.getX(), 141.5);
+    public final static Pose RED_GOAL_BUTTOM = new Pose(FIELD_LENGTH, 119);
+    public final static Pose RED_GOAL_CORNER = new Pose(FIELD_LENGTH, FIELD_LENGTH);
 
 
 }

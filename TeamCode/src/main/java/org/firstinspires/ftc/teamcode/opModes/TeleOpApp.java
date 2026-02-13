@@ -22,8 +22,6 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
-import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
-import org.firstinspires.ftc.teamcode.calculators.NoAirCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -116,11 +114,11 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(getGoalFromZone(getCurrentLaunchZone())) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(getGoalFromZone(getCurrentLaunchZone())) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
@@ -277,7 +275,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot y", rotatedPose.getY());
         telemetry.addData("Robot heading", rotatedPose.getHeading());
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL_FAR : GoalPositions.BLUE_GOAL_FAR) / INCHES_TO_METERS);
+        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
         telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
@@ -309,7 +307,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Can Shoot", shooter.getCanShoot());
         Logger.recordOutput("Goal Pose", goalPose);
-        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL_FAR : GoalPositions.BLUE_GOAL_FAR) / INCHES_TO_METERS);
+        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
         Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
         Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
         Logger.recordOutput("Shooter/Flywheel/ Filtered RPM Predicted", shooter.filteredRPMPredicted);
@@ -347,21 +345,6 @@ public class TeleOpApp extends ComplexOpMode {
 
     }
 
-    public Pose getGoalFromZone(LaunchZone launchZone) {
-        if (launchZone == LaunchZone.CLOSE) {
-            if (alliance == Alliance.RED) {
-                return GoalPositions.RED_GOAL_CLOSE;
-            } else {
-                return GoalPositions.BLUE_GOAL_CLOSE;
-            }
-        } else {
-            if (alliance == Alliance.RED) {
-                return GoalPositions.RED_GOAL_FAR;
-            } else {
-                return GoalPositions.BLUE_GOAL_FAR;
-            }
-        }
-    }
     private void resetPoseToNearestCorner() {
         Pose currentPose = follower.getPose();
 

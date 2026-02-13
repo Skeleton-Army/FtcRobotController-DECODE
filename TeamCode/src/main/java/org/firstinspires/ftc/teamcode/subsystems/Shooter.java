@@ -125,7 +125,7 @@ public class Shooter extends SubsystemBase {
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
-        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL_FAR : GoalPositions.RED_GOAL_FAR;
+        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);
