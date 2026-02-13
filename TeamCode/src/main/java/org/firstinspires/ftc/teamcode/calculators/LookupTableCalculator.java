@@ -63,9 +63,10 @@ public class LookupTableCalculator implements IShooterCalculator {
         return VELOCITY_ARRAY[r0] + (dIdx - r0) * (VELOCITY_ARRAY[r1] - VELOCITY_ARRAY[r0]);
     }
 
-    public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
-        double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
-        double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
+    public double calculateTurretAngle(Pose targetPose, Pose robotPose) {
+        double heading = robotPose.getHeading();
+        double turretX = robotPose.getX() + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
+        double turretY = robotPose.getY() + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
@@ -74,6 +75,7 @@ public class LookupTableCalculator implements IShooterCalculator {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
+        Pose turretGoalPoseMeters = turretGoalPose.scale(INCH_TO_METERS);
 
         double dx = goalPoseMeters.getX() - robotPoseMeters.getX();
         double dy = goalPoseMeters.getY() - robotPoseMeters.getY();
@@ -90,7 +92,7 @@ public class LookupTableCalculator implements IShooterCalculator {
         double speed = RPMToVelocity(flywheelVel, distance);
         HoodSolution hoodSolution = lookup(distance, speed);
         double verticalAngle = hoodSolution.getHoodAngle();
-        double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
+        double horizontalAngle = calculateTurretAngle(turretGoalPoseMeters, predictedPose);
 
         boolean canShoot = hoodSolution.isValid();
 

@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
 import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.RPM_INTERPOLATION;
 import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.VELOCITY_INTERPOLATION;
 import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_LOOKUP;
@@ -94,19 +96,27 @@ public class ShooterCalculator implements IShooterCalculator {
         return y1 + (xVal - x1) * (y2 - y1) / (x2 - x1);
     }
 
+    public double calculateTurretAngle(Pose targetPose, Pose robotPose) {
+        double heading = robotPose.getHeading();
+        double turretX = robotPose.getX() + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
+        double turretY = robotPose.getY() + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
+
+        return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
+    }
+
     public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Pose turretGoalPose, Vector robotVel, double angularVel, int flywheelVel) {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
+        Pose turretGoalPoseMeters = turretGoalPose.scale(INCH_TO_METERS);
 
         double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
         double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
         double predHeading = robotPoseMeters.getHeading();
+        Pose predictedPose = new Pose(predX, predY, predHeading);
 
-        double dx = goalPoseMeters.getX() - predX;
-        double dy = goalPoseMeters.getY() - predY;
-        double distance = Math.hypot(dx, dy);
-        double horizontalAngleToGoal = Math.atan2(dy, dx);
+        double distance = goalPoseMeters.distanceFrom(predictedPose);
+        double horizontalAngleToGoal = calculateTurretAngle(turretGoalPoseMeters, predictedPose);
 
         Vector3D vRobot = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
 

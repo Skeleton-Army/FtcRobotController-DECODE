@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.INCH_TO_METERS;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 
@@ -20,9 +21,10 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
      */
     protected abstract int velocityToRPM(double velocity);
 
-    public double calculateTurretAngle(Pose targetPose, double x, double y, double heading) {
-        double turretX = x + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
-        double turretY = y + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
+    public double calculateTurretAngle(Pose targetPose, Pose robotPose) {
+        double heading = robotPose.getHeading();
+        double turretX = robotPose.getX() + TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
+        double turretY = robotPose.getY() + TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
 
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
@@ -37,6 +39,7 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
+        Pose turretGoalPoseMeters = turretGoalPose.scale(INCH_TO_METERS);
 
         double dx = goalPoseMeters.getX() - robotPoseMeters.getX();
         double dy = goalPoseMeters.getY() - robotPoseMeters.getY();
@@ -51,7 +54,7 @@ public abstract class OnTheMoveCalculator implements IShooterCalculator {
         // Compute distance/angles from predicted pose
         double distance = predictedPose.distanceFrom(goalPoseMeters);
         double verticalAngle = calculateVerticalAngle(distance);
-        double horizontalAngle = calculateTurretAngle(goalPose, predX / INCH_TO_METERS, predY / INCH_TO_METERS, predHeading);
+        double horizontalAngle = calculateTurretAngle(turretGoalPoseMeters, predictedPose);
 
         // Compute stationary launch vector in field coordinates
         double speed = shooterVelocity(distance);
