@@ -165,7 +165,7 @@ public class Shooter extends SubsystemBase {
 
         double voltage = voltageSensor.getVoltage();
         updateFlywheelPID(voltage);
-        updateTurretPID(voltage);
+        updateTurretPID();
     }
 
     public void updateFlywheelPID(double voltage) {
@@ -185,7 +185,7 @@ public class Shooter extends SubsystemBase {
         flywheel.set(finalPower, voltage);
     }
 
-    public void updateTurretPID(double voltage) {
+    public void updateTurretPID() {
         if (disabled || emergencyStop) {
             turret.set(0);
             return;
@@ -213,7 +213,7 @@ public class Shooter extends SubsystemBase {
         double feedforward = staticComp + (-robotVel * TURRET_KV) + (-robotAcc * TURRET_KA);
         double result = pid + feedforward;
 
-        turret.set(result, voltage);
+        turret.set(result);
     }
 
     public boolean isFlywheelDamaged() {
