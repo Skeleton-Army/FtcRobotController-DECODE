@@ -151,8 +151,6 @@ public class Shooter extends SubsystemBase {
         }
         // --------------------
 
-        //calculateGoalPose(); // calculates the current goalpose by the robot pose
-
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
         filteredRPM = getFilteredRPM(getRPM());
@@ -164,8 +162,6 @@ public class Shooter extends SubsystemBase {
         if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
         if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         setRPM(solution.getRPM());
-
-        //calculateRecovery();
 
         double voltage = voltageSensor.getVoltage();
         updateFlywheelPID(voltage);
@@ -273,9 +269,6 @@ public class Shooter extends SubsystemBase {
     }
 
     private double getFilteredRPM(double currentRPM) {
-        //double currentRPM = getRPM();
-//        double currentRPM = getRPMCorrectedTiming();
-
         // Subtract the oldest sample from the sum
         runningRpmSum -= rpmBuffer[bufferIndex];
 
@@ -462,72 +455,5 @@ public class Shooter extends SubsystemBase {
 
         lastshotRPM = getRPM();
         return false;
-    }
-
-    // checks how much time it took for the flywheel to reach the setpoint
-    // NOTE: the setpoint may CHANGE, so this function checks the time it took for the flywheel to follow the targetRPM
-    private void calculateRecovery() {
-        if (wasBallshot()) {
-            if (!calculatedRecovery) {
-                recoveryTimer.restart();
-                recoveryTimer.start();
-                calculatedRecovery = true;
-                shotHoodAngle = Math.toDegrees(solution.getVerticalAngle());
-                shotTurretAngle = Math.toDegrees(solution.getHorizontalAngle());
-                shotFlywheelRPM = getRPM();
-                shotGoalDistance = poseTracker.getPose().distanceFrom(goalPose) / inchesToMeters;
-//                Logger.recordOutput("Shot/trajectory",Debugger.generateTrajectory(new Translation3d(poseTracker.getPose().getX(), poseTracker.getPose().getY(), SHOOT_HEIGHT), solution.getVelocityMetersPerSec() * inchesToMeters, shotHoodAngle, 2, 0.2));
-            }
-        } else if (getTargetRPM() - getRPM() <= RPM_REACHED_THRESHOLD && calculatedRecovery) {
-            recoveryTime = recoveryTimer.getElapsed();
-            recoveryTimer.pause();
-            calculatedRecovery = false;
-        }
-    }
-
-    public void calculateGoalPose() {
-        Pose referencePose = (currentPose == null) ? poseTracker.getPose() : currentPose;
-        double rx = referencePose.getX();
-        double ry = referencePose.getY();
-
-        // 1. Calculate the Static Centroid (The geometric center of the triangle)
-        // Formula: (x1 + x2 + x3) / 3
-        double blueCentroidX = (GoalPositions.BLUE_GOAL_TOP.getX() + GoalPositions.BLUE_GOAL_BUTTOM.getX() + GoalPositions.BLUE_GOAL_CORNER.getX()) / 3.0;
-        double blueCentroidY = (GoalPositions.BLUE_GOAL_TOP.getY() + GoalPositions.BLUE_GOAL_BUTTOM.getY() + GoalPositions.BLUE_GOAL_CORNER.getY()) / 3.0;
-
-        double redCentroidX = (GoalPositions.RED_GOAL_TOP.getX() + GoalPositions.RED_GOAL_BUTTOM.getX() + GoalPositions.RED_GOAL_CORNER.getX()) / 3.0;
-        double redCentroidY = (GoalPositions.RED_GOAL_TOP.getY() + GoalPositions.RED_GOAL_BUTTOM.getY() + GoalPositions.RED_GOAL_CORNER.getY()) / 3.0;
-
-        if (alliance == Alliance.BLUE) {
-            // Find how close we are to the corner to decide if we should "slide" the target
-            double distToCorner = Math.hypot(rx - GoalPositions.BLUE_GOAL_CORNER.getX(), ry - GoalPositions.BLUE_GOAL_CORNER.getY());
-
-            // t = 1.0 when far (use centroid), t = 0.0 when close (use ideal wall point)
-            // Adjust 15.0 (start sliding) and 40.0 (stop sliding) to tune the feel
-            double t = Math.max(0, Math.min((distToCorner - 15.0) / 25.0, 1.0));
-
-            // When close to the wall, we want the turret to aim at the robot's own X
-            // to keep the shot parallel to the wall (straight on).
-            double idealX = Math.max(GoalPositions.BLUE_GOAL_CORNER.getX(), Math.min(rx, GoalPositions.BLUE_GOAL_TOP.getX()));
-            double idealY = GoalPositions.BLUE_GOAL_CORNER.getY() - 2.0; // Stay 2 inches off the back wall
-
-            turretGoalPose = new Pose(
-                    (idealX * (1 - t)) + (blueCentroidX * t),
-                    (idealY * (1 - t)) + (blueCentroidY * t)
-            );
-        }
-        else if (alliance == Alliance.RED) {
-            double distToCorner = Math.hypot(rx - GoalPositions.RED_GOAL_CORNER.getX(), ry - GoalPositions.RED_GOAL_CORNER.getY());
-            double t = Math.max(0, Math.min((distToCorner - 15.0) / 25.0, 1.0));
-
-            // For RED, X is on the right side (high numbers)
-            double idealX = Math.max(GoalPositions.RED_GOAL_TOP.getX(), Math.min(rx, GoalPositions.RED_GOAL_CORNER.getX()));
-            double idealY = GoalPositions.RED_GOAL_CORNER.getY() - 2.0;
-
-            turretGoalPose = new Pose(
-                    (idealX * (1 - t)) + (redCentroidX * t),
-                    (idealY * (1 - t)) + (redCentroidY * t)
-            );
-        }
     }
 }
