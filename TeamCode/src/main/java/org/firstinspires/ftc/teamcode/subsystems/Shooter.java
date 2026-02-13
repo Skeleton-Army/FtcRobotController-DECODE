@@ -177,12 +177,10 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
-        double filteredTPS = (filteredRPM * flywheel.getCPR()) / 60.0;
-        double predictedTPS = filteredTPS + (flywheel1.getAcceleration() * FLYWHEEL_DELAY_SEC);
-        double futureSpeed = targetTPS + (flywheel1.getAcceleration() * FLYWHEEL_DELAY_SEC);
+        double speed = 0.9 * targetTPS;
 
-        double pid = flywheelPID.calculate(predictedTPS, targetTPS);
-        double ff = flywheelFF.calculate(futureSpeed, flywheel1.getAcceleration());
+        double pid = flywheelPID.calculate(flywheel.getCorrectedVelocity(), speed);
+        double ff = flywheelFF.calculate(speed, flywheel1.getAcceleration());
 
         double velocityCmd = pid + ff;
         double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
