@@ -230,12 +230,20 @@ public class Shooter extends SubsystemBase {
         double netTargetVelocity = filteredTargetVel - robotVel;
         double baseRequest = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
 
+        // Map the friction profile using a Sine Wave
+        // Due to hardware constraints, the friction is lower at -45 deg and 135 deg.
+        // Math.sin(2 * currentAngle) returns -1 at -45 deg and 135 deg.
+        // Adding 1.0 and dividing by 2.0 scales 't' to be exactly between 0.0 and 1.0
+        double currentAngle = turret.getDistance();
+        double t = (Math.sin(2 * currentAngle) + 1.0) / 2.0;
+        double interpolatedKS = TURRET_KS_LOW + t * (TURRET_KS_HIGH - TURRET_KS_LOW);
+
         // Only apply kS if the baseRequest is actually trying to move the motor
         // and apply it in the direction of that motion.
         double staticComp = 0;
 
         if (Math.abs(baseRequest) > 0.01) {
-            staticComp = Math.signum(baseRequest) * TURRET_KS;
+            staticComp = Math.signum(baseRequest) * interpolatedKS;
         }
 
         double voltageScale = 12.0 / voltageSensor.getVoltage();
