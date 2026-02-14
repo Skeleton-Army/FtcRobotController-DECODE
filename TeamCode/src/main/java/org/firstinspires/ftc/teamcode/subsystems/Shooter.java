@@ -213,12 +213,6 @@ public class Shooter extends SubsystemBase {
         double pid = turretPID.calculate(turret.getDistance());
         double error = turretPID.getPositionError();
 
-        // Only apply kS if we aren't at the target to prevent high-frequency oscillation
-        double staticComp = 0;
-        if (!turretPID.atSetPoint()) {
-            staticComp = Math.signum(error) * TURRET_KS;
-        }
-
         // If we are more than X degrees away, clear the integral sum
         // This prevents it from building up during the high-speed part of the move
         if (Math.abs(error) > TURRET_IZONE) {
@@ -234,10 +228,20 @@ public class Shooter extends SubsystemBase {
         double robotAcc = kinematics.getAngularAcceleration();
 
         double netTargetVelocity = filteredTargetVel - robotVel;
-        double feedforward = staticComp + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
+        double baseRequest = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
 
-        double result = pid + feedforward;
+        // Only apply kS if the baseRequest is actually trying to move the motor
+        // and apply it in the direction of that motion.
+        double staticComp = 0;
 
+        if (Math.abs(baseRequest) > 0.01) {
+            staticComp = Math.signum(baseRequest) * TURRET_KS;
+        }
+
+        double voltageScale = 12.0 / voltageSensor.getVoltage();
+        double finalFF = (staticComp + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA)) * voltageScale;
+
+        double result = pid + finalFF;
         turret.set(result);
     }
 
