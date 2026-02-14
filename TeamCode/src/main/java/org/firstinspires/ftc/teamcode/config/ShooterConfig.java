@@ -28,6 +28,7 @@ public class ShooterConfig {
     public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(30);
     public static double TURRET_IZONE = Math.toRadians(10);
     public static double ACCELERATION_SMOOTHING_GAIN = 1;
+    public static double TURRET_VEL_GAIN = 0.5; // 1.0 = no filter, 0.1 = very smooth/slow
     public static double TURRET_KP = 2;
     public static double TURRET_KI = 0.5;
     public static double TURRET_KD = 0.03;

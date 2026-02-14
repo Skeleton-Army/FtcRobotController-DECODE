@@ -91,6 +91,10 @@ public class Shooter extends SubsystemBase {
     private final PIDController flywheelPID;
     private final SimpleMotorFeedforward flywheelFF;
 
+    private double lastTargetAngle = 0;
+    private double lastTime = 0;
+    private double filteredTargetVel = 0;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
@@ -191,6 +195,21 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
+        // 1. Calculate Target Velocity
+        double currentTime = System.nanoTime() / 1e9;
+        double dt = currentTime - lastTime;
+        if (dt == 0) dt = 0.02; // Avoid divide by zero on first loop
+
+        // Calculate how fast the goal is moving relative to the robot
+        double delta = MathFunctions.normalizeAngle(turretPID.getSetPoint() - lastTargetAngle);
+        double targetVel = delta / dt;
+
+        filteredTargetVel = (TURRET_VEL_GAIN * targetVel) + ((1 - TURRET_VEL_GAIN) * filteredTargetVel);
+
+        lastTime = currentTime;
+        lastTargetAngle = turretPID.getSetPoint();
+
+        // 2. PID Calculation
         double pid = turretPID.calculate(turret.getDistance());
         double error = turretPID.getPositionError();
 
@@ -206,11 +225,17 @@ public class Shooter extends SubsystemBase {
             turretPID.clearTotalError();
         }
 
-        // Robot rotation compensation
+        // 3. Robot Motion Compensation
+        // targetVel: The speed the turret SHOULD move to follow the goal.
+        // -robotVel: The correction to cancel out robot body rotation.
+        // We combine them: (filteredTargetVel - robotVel) is the net speed the motor needs to achieve.
+
         double robotVel = poseTracker.getAngularVelocity();
         double robotAcc = kinematics.getAngularAcceleration();
 
-        double feedforward = staticComp + (-robotVel * TURRET_KV) + (-robotAcc * TURRET_KA);
+        double netTargetVelocity = filteredTargetVel - robotVel;
+        double feedforward = staticComp + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
+
         double result = pid + feedforward;
 
         turret.set(result);
