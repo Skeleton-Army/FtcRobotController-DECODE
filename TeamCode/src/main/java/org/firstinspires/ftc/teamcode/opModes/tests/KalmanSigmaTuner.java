@@ -41,7 +41,7 @@ public class KalmanSigmaTuner extends LinearOpMode {
     TimerEx timer;
 
     private List<Pose> timeSamples = new ArrayList<>();
-    private final int SAMPLE_COUNT = 200; // 100 seconds of data
+    private final int SAMPLE_COUNT = 500; // 100 seconds of data
 
     IShooterCalculator shooterCalc;
 
@@ -92,7 +92,7 @@ public class KalmanSigmaTuner extends LinearOpMode {
             while (timer.getElapsedTimeSeconds() - loopStartTime < 1.0 && opModeIsActive()) {
                 follower.update();
                 Pose current = follower.getPose();
-                shooter.flywheel.set(1); // running the flywheel! whoeee
+                shooter.flywheel.set(0.5); // running the flywheel! whoeee
 
                 sumX += current.getX();
                 sumY += current.getY();

@@ -24,13 +24,15 @@ import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 public class KalmanPinpointLocalizer extends PinpointLocalizer {
 
     // --- TUNING VALUES ---
-    public static double ODOMETRY_SIGMA_X = 0.02; // Drift per inch
-    public static double ODOMETRY_SIGMA_Y = 0.02;
+    public static double ODOMETRY_SIGMA_X = 0.02; // 0.00572 0.00846
+    // Drift per inch
+
+    public static double ODOMETRY_SIGMA_Y = 0.02; // 0.00008 0.00009
     public static double ODOMETRY_SIGMA_H = 0.005;
 
-    public static double STATIC_SIGMA_X = 0.005; // Drift per sqrt(second)
-    public static double STATIC_SIGMA_Y = 0.005;
-    public static double STATIC_SIGMA_H = 0.001;
+    public static double STATIC_SIGMA_X = 0.00846; // Drift per sqrt(second)
+    public static double STATIC_SIGMA_Y = 0.00009 ;
+    public static double STATIC_SIGMA_H = 0.0001;
 
     public static double VISION_VARIANCE_X = 2.0; // Vision Uncertainty (Inches)
     public static double VISION_VARIANCE_Y = 2.0;
