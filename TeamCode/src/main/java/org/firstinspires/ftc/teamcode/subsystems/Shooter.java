@@ -156,7 +156,7 @@ public class Shooter extends SubsystemBase {
         // --------------------
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
-
+        OpModeManager.getTelemetry().addData("turret goal pose", turretGoalPose);
         filteredRPM = getFilteredRPM(getRPM());
         filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
@@ -195,21 +195,7 @@ public class Shooter extends SubsystemBase {
             return;
         }
 
-        // 1. Calculate Target Velocity
-        double currentTime = System.nanoTime() / 1e9;
-        double dt = currentTime - lastTime;
-        if (dt == 0) dt = 0.02; // Avoid divide by zero on first loop
-
-        // Calculate how fast the goal is moving relative to the robot
-        double delta = MathFunctions.normalizeAngle(turretPID.getSetPoint() - lastTargetAngle);
-        double targetVel = delta / dt;
-
-        filteredTargetVel = (TURRET_VEL_GAIN * targetVel) + ((1 - TURRET_VEL_GAIN) * filteredTargetVel);
-
-        lastTime = currentTime;
-        lastTargetAngle = turretPID.getSetPoint();
-
-        // 2. PID Calculation
+        // 1. PID Calculation
         double pid = turretPID.calculate(turret.getDistance());
         double error = turretPID.getPositionError();
 
@@ -219,15 +205,11 @@ public class Shooter extends SubsystemBase {
             turretPID.clearTotalError();
         }
 
-        // 3. Robot Motion Compensation
-        // targetVel: The speed the turret SHOULD move to follow the goal.
-        // -robotVel: The correction to cancel out robot body rotation.
-        // We combine them: (filteredTargetVel - robotVel) is the net speed the motor needs to achieve.
-
+        // 2. Robot Motion Compensation
         double robotVel = poseTracker.getAngularVelocity();
         double robotAcc = kinematics.getAngularAcceleration();
 
-        double netTargetVelocity = filteredTargetVel - robotVel;
+        double netTargetVelocity = -robotVel;
         double baseRequest = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
 
         // Map the friction profile using a Sine Wave
