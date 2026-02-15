@@ -29,6 +29,7 @@ public class ShooterConfig {
     public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(30);
     public static double TURRET_IZONE = Math.toRadians(10);
     public static double ACCELERATION_SMOOTHING_GAIN = 1;
+    public static double TURRET_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_KP = 1.5;
     public static double TURRET_KI = 0.01;
     public static double TURRET_KD = 0.01;

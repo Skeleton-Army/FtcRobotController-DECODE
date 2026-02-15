@@ -92,6 +92,13 @@ public class Shooter extends SubsystemBase {
     private final PIDController flywheelPID;
     private final SimpleMotorFeedforward flywheelFF;
 
+    private double lastTargetAngle = 0;
+    private long lastTargetUpdateTime = 0;
+    private double targetVel = 0;
+    private double targetAccel = 0;
+    private double filteredTargetVel = 0;
+    private double filteredTargetAccel = 0;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
@@ -155,7 +162,7 @@ public class Shooter extends SubsystemBase {
         // --------------------
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
-        OpModeManager.getTelemetry().addData("turret goal pose", turretGoalPose);
+
         filteredRPM = getFilteredRPM(getRPM());
         filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
@@ -210,12 +217,12 @@ public class Shooter extends SubsystemBase {
         }
 
         // 2. Robot Motion Compensation
-        double pursuitVelocity = getPursuitVelocity();
-        double robotVel = poseTracker.getAngularVelocity();
-        double robotAcc = kinematics.getAngularAcceleration();
+        double[] netKinematics = getNetTargetKinematics();
+        double netVel = netKinematics[0];
+        double netAccel = netKinematics[1];
 
-        double netTargetVelocity = pursuitVelocity - robotVel;
-        double baseRequest = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
+        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
+        double totalRequest = pid + ffBase;
 
         // Map the friction profile using a Sine Wave
         // Due to hardware constraints, the friction is lower at -45 deg and 135 deg.
@@ -229,36 +236,50 @@ public class Shooter extends SubsystemBase {
         // and apply it in the direction of that motion.
         double staticComp = 0;
 
-        if (Math.abs(baseRequest) > 0.01) {
-            staticComp = Math.signum(baseRequest) * interpolatedKS;
+        if (Math.abs(totalRequest) > 0.01) {
+            staticComp = Math.signum(totalRequest) * interpolatedKS;
         }
 
         double voltageScale = 12.0 / voltageSensor.getVoltage();
-        double finalFF = (staticComp + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA)) * voltageScale;
+        double finalOutput = (totalRequest + staticComp) * voltageScale;
 
-        double result = pid + finalFF;
-        turret.set(result);
+        turret.set(finalOutput);
     }
 
-    private double getPursuitVelocity() {
-        double dx = goalPose.getX() - currentPose.getX();
-        double dy = goalPose.getY() - currentPose.getY();
-        double distanceSq = (dx * dx) + (dy * dy);
-        double pursuitVelocity;
+    /**
+     * Calculates the required velocity and acceleration for the turret to track the moving target.
+     * @return an array where [0] is Net Velocity and [1] is Net Acceleration
+     */
+    private double[] getNetTargetKinematics() {
+        long currentTime = System.nanoTime();
+        double currentTargetAngle = solution.getHorizontalAngle() + horizontalOffset;
 
-        if (distanceSq > 0.1) { // Avoid division by zero
-            // The cross product of relative position and robot velocity
-            // gives us the 'orbital' velocity component.
-            double robotVx = poseTracker.getVelocity().getXComponent();
-            double robotVy = poseTracker.getVelocity().getYComponent();
-
-            // This is the angular velocity of the goal relative to the robot's center
-            // caused by the robot's translation through space.
-            pursuitVelocity = (dx * robotVy - dy * robotVx) / distanceSq;
-        } else {
-            pursuitVelocity = 0;
+        if (lastTargetUpdateTime == 0) {
+            lastTargetUpdateTime = currentTime;
+            lastTargetAngle = currentTargetAngle;
+            return new double[] {0, 0};
         }
-        return pursuitVelocity;
+
+        double dt = (currentTime - lastTargetUpdateTime) / 1e9;
+        if (dt <= 1e-6) return new double[] {filteredTargetVel - poseTracker.getAngularVelocity(), filteredTargetAccel - kinematics.getAngularAcceleration()};
+
+        // 1. Calculate Raw Derivatives
+        double rawTargetVel = (currentTargetAngle - lastTargetAngle) / dt;
+        double rawTargetAccel = (rawTargetVel - targetVel) / dt;
+
+        // 2. Apply Low Pass Filter using your Kinematics utility
+        filteredTargetVel = Kinematics.lowPassFilter(rawTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
+        filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_DERIVATIVE_GAIN);
+
+        targetVel = rawTargetVel;
+        lastTargetAngle = currentTargetAngle;
+        lastTargetUpdateTime = currentTime;
+
+        // 3. Compute Net Motion (Filtered Target - Filtered/Measured Robot)
+        double netVel = filteredTargetVel - poseTracker.getAngularVelocity();
+        double netAccel = filteredTargetAccel - kinematics.getAngularAcceleration();
+
+        return new double[] {netVel, netAccel};
     }
 
     public boolean isFlywheelDamaged() {
