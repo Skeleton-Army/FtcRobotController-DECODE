@@ -56,6 +56,7 @@ public class Shooter extends SubsystemBase {
 
     private final TimerEx recoveryTimer;
     private final TimerEx stallTimer;
+    private final TimerEx rampTimer;
     private final Kinematics kinematics;
 
     public boolean calculatedRecovery = false;
@@ -90,10 +91,6 @@ public class Shooter extends SubsystemBase {
 
     private final PIDController flywheelPID;
     private final SimpleMotorFeedforward flywheelFF;
-
-    private double lastTargetAngle = 0;
-    private double lastTime = 0;
-    private double filteredTargetVel = 0;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -134,6 +131,8 @@ public class Shooter extends SubsystemBase {
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);
+        rampTimer = new TimerEx(TimeUnit.SECONDS);
+        rampTimer.start();
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
@@ -175,10 +174,15 @@ public class Shooter extends SubsystemBase {
     public void updateFlywheelPID(double voltage) {
         if (disabled || emergencyStop) {
             flywheel.set(0);
+            rampTimer.restart();
+            rampTimer.pause();
             return;
         }
 
-        double speed = 0.9 * targetTPS;
+        if (!rampTimer.isOn()) rampTimer.resume();
+        double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
+
+        double speed = (0.9 * targetTPS) * rampMultiplier;
 
         double pid = flywheelPID.calculate(flywheel.getCorrectedVelocity(), speed);
         double ff = flywheelFF.calculate(speed, flywheel1.getAcceleration());
