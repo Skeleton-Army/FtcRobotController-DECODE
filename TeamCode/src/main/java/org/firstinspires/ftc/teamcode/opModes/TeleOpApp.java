@@ -70,7 +70,7 @@ public class TeleOpApp extends ComplexOpMode {
     public static final double HEIGHT = 16.53;
     public static final double X_OFFSET = WIDTH / 2.0;
     public static final double Y_OFFSET = HEIGHT / 2.0;
-    IShooterCalculator shooterCalc;
+
     @Override
     public void initialize() {
         matchTime = new TimerEx(120);
@@ -91,7 +91,7 @@ public class TeleOpApp extends ComplexOpMode {
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
         //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
-        shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
+        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
@@ -267,6 +267,12 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Goal x", rotatedGoalPose.getX());
         telemetry.addData("Goal y", rotatedGoalPose.getY());
         telemetry.addData("Goal heading", 0);
+
+        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
+        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        telemetry.addData("Drift x", driftX);
+        telemetry.addData("Drift y", driftY);
+        telemetry.addData("Drift total", driftX + driftY);
 
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
