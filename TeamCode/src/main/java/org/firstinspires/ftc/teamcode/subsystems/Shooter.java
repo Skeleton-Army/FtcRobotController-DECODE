@@ -214,7 +214,8 @@ public class Shooter extends SubsystemBase {
         double robotAcc = kinematics.getAngularAcceleration();
 
         double netTargetVelocity = -robotVel;
-        double baseRequest = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
+        double ffBase = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
+        double totalRequest = pid + ffBase;
 
         // Map the friction profile using a Sine Wave
         // Due to hardware constraints, the friction is lower at -45 deg and 135 deg.
@@ -228,12 +229,12 @@ public class Shooter extends SubsystemBase {
         // and apply it in the direction of that motion.
         double staticComp = 0;
 
-        if (Math.abs(baseRequest) > 0.01) {
-            staticComp = Math.signum(baseRequest) * interpolatedKS;
+        if (Math.abs(totalRequest) > 0.01) {
+            staticComp = Math.signum(totalRequest) * interpolatedKS;
         }
 
         double voltageScale = 12.0 / voltageSensor.getVoltage();
-        double finalFF = (staticComp + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA)) * voltageScale;
+        double finalFF = (totalRequest + staticComp) * voltageScale;
 
         double result = pid + finalFF;
         turret.set(result);
