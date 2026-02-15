@@ -210,10 +210,11 @@ public class Shooter extends SubsystemBase {
         }
 
         // 2. Robot Motion Compensation
+        double pursuitVelocity = getPursuitVelocity();
         double robotVel = poseTracker.getAngularVelocity();
         double robotAcc = kinematics.getAngularAcceleration();
 
-        double netTargetVelocity = -robotVel;
+        double netTargetVelocity = pursuitVelocity - robotVel;
         double baseRequest = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
 
         // Map the friction profile using a Sine Wave
@@ -237,6 +238,27 @@ public class Shooter extends SubsystemBase {
 
         double result = pid + finalFF;
         turret.set(result);
+    }
+
+    private double getPursuitVelocity() {
+        double dx = goalPose.getX() - currentPose.getX();
+        double dy = goalPose.getY() - currentPose.getY();
+        double distanceSq = (dx * dx) + (dy * dy);
+        double pursuitVelocity;
+
+        if (distanceSq > 0.1) { // Avoid division by zero
+            // The cross product of relative position and robot velocity
+            // gives us the 'orbital' velocity component.
+            double robotVx = poseTracker.getVelocity().getXComponent();
+            double robotVy = poseTracker.getVelocity().getYComponent();
+
+            // This is the angular velocity of the goal relative to the robot's center
+            // caused by the robot's translation through space.
+            pursuitVelocity = (dx * robotVy - dy * robotVx) / distanceSq;
+        } else {
+            pursuitVelocity = 0;
+        }
+        return pursuitVelocity;
     }
 
     public boolean isFlywheelDamaged() {
