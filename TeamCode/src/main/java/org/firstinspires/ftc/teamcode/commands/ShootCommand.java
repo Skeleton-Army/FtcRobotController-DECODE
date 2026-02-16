@@ -63,11 +63,11 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
                 new WaitCommand(1000),
-                new ConditionalCommand(
-                        transfer.kick(),
-                        new InstantCommand(),
-                        transfer::isArtifactDetected
-                ),
+//                new ConditionalCommand(
+//                        transfer.kick(),
+//                        new InstantCommand(),
+//                        transfer::isArtifactDetected
+//                ),
                 new InstantCommand(transfer::block),
                 new InstantCommand(intake::stop),
 
