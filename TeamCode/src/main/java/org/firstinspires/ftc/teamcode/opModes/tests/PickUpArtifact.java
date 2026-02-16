@@ -1,34 +1,21 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.Path;
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotorEx;
-import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.RunCommand;
 
-import org.firstinspires.ftc.teamcode.calculators.LimeLightCalculator;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
-import org.firstinspires.ftc.teamcode.vision.ArtifactTrackingConfig;
-import org.psilynx.psikit.core.wpi.math.Pose2d;
-import org.psilynx.psikit.core.wpi.math.Rotation2d;
-
-import java.util.Arrays;
+import org.firstinspires.ftc.teamcode.vision.LimelightArtifact;
 
 
 @TeleOp
 public class PickUpArtifact extends OpMode {
     private Follower follower;
-    private Pose artifactFieldPos;
-    private Pose relativePose;
-    Limelight3A limelight;
+    LimelightArtifact limeLightArtifact;
     Drive drive;
 
     @Override
@@ -36,44 +23,27 @@ public class PickUpArtifact extends OpMode {
 
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose(72, 72, Math.toRadians(180)));
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
-        limelight.pipelineSwitch(ArtifactTrackingConfig.PIPELINE_INDEX);
+
+        limeLightArtifact = new LimelightArtifact(hardwareMap, follower);
 
         drive = new Drive(follower, Alliance.RED);
         drive.setDefaultCommand(new RunCommand(
                 () -> drive.teleOpDrive(gamepad1), drive
         ));
-        limelight.start();
     }
 
     @Override
     public void loop() {
         follower.update();
         //CommandScheduler.getInstance().run();
+        Pose artifactFieldPos = limeLightArtifact.getClosestArtifact();
+        telemetry.addData("artifact x", artifactFieldPos.getX());
+        telemetry.addData("artifact y", artifactFieldPos.getX());
+        telemetry.addData("robot x", follower.getPose().getX());
+        telemetry.addData("robot y", follower.getPose().getY());
+        telemetry.addData("robot heading", follower.getHeading());
 
-
-        LLResult llResult = limelight.getLatestResult();
-        if (llResult != null) {
-            double[] llPython = llResult.getPythonOutput();
-            artifactFieldPos = LimeLightCalculator.getArtifactAbsolutePos(follower.getPose(),llPython);
-            double distance = LimeLightCalculator.getDistance(llPython[1]);
-            relativePose = LimeLightCalculator.getRelativePos(distance, llPython[0]);
-            Path path = new Path(
-                    new BezierLine(
-                            follower.getPose(),
-                            artifactFieldPos
-                    )
-            );
-            //follower.followPath(path);
-            telemetry.addData("llpython", Arrays.toString(llPython));
-            telemetry.addData("Tx", llPython[0]);
-            telemetry.addData("Ty", llPython[1]);
-            telemetry.addData("Distance", distance);
-            telemetry.addData("RelativeX", relativePose.getX());
-            telemetry.addData("RelativeY", relativePose.getY());
-            telemetry.addData("filedX", artifactFieldPos.getX());
-            telemetry.addData("filedY", artifactFieldPos.getY());
-        }
+        // idk implement going to it ig
     }
 
     /* idk what does this method does
