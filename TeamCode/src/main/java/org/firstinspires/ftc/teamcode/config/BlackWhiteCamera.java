@@ -7,6 +7,9 @@ public class BlackWhiteCamera {
     public static double offsetZ = 12.38189; //314.5 mm
     public static double pitchAngle = 60;
 
+    public static int WIDTH = 640;
+    public static int HEIGHT = 480;
+
     /*public static final double[] cameraMatrix = {
             688.9972, 0, 613.914,  // fx, 0, cx
             0, 688.5173, 397.1161,  // 0, fy, cy

@@ -8,10 +8,15 @@ import android.graphics.Canvas;
 import com.pedropathing.geometry.Pose;
 import com.skeletonarmy.marrow.OpModeManager;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibrationHelper;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibrationIdentity;
+import org.firstinspires.ftc.teamcode.config.BlackWhiteCamera;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
+import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
@@ -27,9 +32,33 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     Mat undistored = new Mat();
     MatOfDouble dist = new MatOfDouble(distCoeffs[0], distCoeffs[1], distCoeffs[2], distCoeffs[3], distCoeffs[4]);
     Mat matrix = new Mat(3, 3, CvType.CV_64F);
-    public AprilTagPipeline(AprilTagProcessor processor)
+    public AprilTagPipeline()
     {
-        this.processor = processor;
+        this.processor = new AprilTagProcessor.Builder()
+
+                // The following default settings are available to un-comment and edit as needed.
+                .setDrawAxes(true)
+                .setDrawCubeProjection(true)
+                .setDrawTagOutline(true)
+                //.setTagFamily(AprilTagProcessor.TagFamily.TAG_36h11)
+                .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
+                //.setOutputUnits(DistanceUnit.INCH, AngleUnit.DEGREES)
+                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 + BlackWhiteCamera.pitchAngle,0,0))
+                .setLensIntrinsics(
+                        BlackWhiteCamera.cameraMatrix[0],
+                        BlackWhiteCamera.cameraMatrix[4],
+                        BlackWhiteCamera.cameraMatrix[2],
+                        BlackWhiteCamera.cameraMatrix[5]
+                )
+
+                // == CAMERA CALIBRATION ==
+                // If you do not manually specify calibration parameters, the SDK will attempt
+                // to load a predefined calibration for your camera.
+                //.setLensIntrinsics(1413.91, 1413.91, 965.446, 529.378)
+                // ... these parameters are fx, fy, cx, cy.
+
+                .build();
+        processor.setDecimation(5);
 
         matrix.put(0, 0,
                 cameraMatrix[0], cameraMatrix[1], cameraMatrix[2],
@@ -65,36 +94,39 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
     // gives the current relative apriltag position
-    public Pose getRelativePose() {
-        if (!processor.getDetections().isEmpty())  {
+    public Pose getRobotPose(double turretAngle) {
+
+        if (!processor.getDetections().isEmpty()) {
+
             AprilTagDetection detection = processor.getDetections().get(0);
 
-            OpModeManager.getTelemetry().addLine(String.format("XYZ raw %6.1f %6.1f %6.1f  (inch)",
-                    detection.rawPose.x,
-                    detection.rawPose.y,
-                    detection.rawPose.z));
+            double relX = detection.ftcPose.x;
+            double relY = detection.ftcPose.y;
+            double relHeading = Math.toRadians(detection.ftcPose.bearing);
 
-            OpModeManager.getTelemetry().addLine(String.format("XYZ ftcpose %6.1f %6.1f %6.1f  (inch)",
-                    detection.ftcPose.x,
-                    detection.ftcPose.y,
-                    detection.ftcPose.z));
+            double cosT = Math.cos(turretAngle);
+            double sinT = Math.sin(turretAngle);
 
-            OpModeManager.getTelemetry().addLine(String.format("XYZ ftcpose %6.1f %6.1f %6.1f  (inch)",
-                    detection.robotPose.getPosition().x,
-                    detection.robotPose.getPosition().y,
-                    detection.robotPose.getPosition().z));
+            // Rotate measurement into robot frame
+            double rotatedX = relX * cosT - relY * sinT;
+            double rotatedY = relX * sinT + relY * cosT;
 
+            // Camera offset from robot center (inches)
+            double camOffsetX = BlackWhiteCamera.offsetX_turret;
+            double camOffsetY = BlackWhiteCamera.offsetY_turret;
 
+            // Translate to robot center
+            double robotX = rotatedX - camOffsetX;
+            double robotY = rotatedY - camOffsetY;
 
+            double robotHeading = relHeading + turretAngle;
 
-            return new Pose(detection.ftcPose.x, detection.ftcPose.y, detection.ftcPose.bearing);
-            /*Position detectionPos = detection.robotPose.getPosition();
-
-            follower.setPose(new Pose(detectionPos.x, detectionPos.y, Math.toRadians(detection.robotPose.getOrientation().getYaw() + 90)));
-            return new Pose(detectionPos.x, detectionPos.y, Math.toRadians(detection.robotPose.getOrientation().getYaw() + 90));*/
+            return new Pose(robotX, robotY, robotHeading);
         }
+
         return new Pose(0,0,0);
     }
+
 
     public AprilTagDetection getApriltagDetection() {
         if (!processor.getDetections().isEmpty())

@@ -36,6 +36,8 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.utilities.AprilTagPipeline;
+import org.firstinspires.ftc.teamcode.utilities.CameraUtil;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
@@ -71,6 +73,8 @@ public class TeleOpApp extends ComplexOpMode {
     public static final double X_OFFSET = WIDTH / 2.0;
     public static final double Y_OFFSET = HEIGHT / 2.0;
     IShooterCalculator shooterCalc;
+
+    AprilTagPipeline aprilTagPipeline;
     @Override
     public void initialize() {
         matchTime = new TimerEx(120);
@@ -101,6 +105,8 @@ public class TeleOpApp extends ComplexOpMode {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
+        aprilTagPipeline = new AprilTagPipeline();
+        CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
 
@@ -252,9 +258,13 @@ public class TeleOpApp extends ComplexOpMode {
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading() - Math.PI));
+        Pose rotatedApriltagPose = aprilTagPipeline.getRobotPose(shooter.getTurretPosition()).getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose pedroApriltagPose = aprilTagPipeline.getRobotPose(shooter.getTurretPosition()).getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose2d apriltagPose = new Pose2d(-rotatedApriltagPose.getX() / INCHES_TO_METERS, -rotatedApriltagPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedApriltagPose.getHeading() - Math.PI));
 
         Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
+
 
         telemetry.addData("!Reached RPM", shooter.reachedRPM());
         telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
@@ -264,9 +274,10 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
 
-        telemetry.addData("Goal x", rotatedGoalPose.getX());
-        telemetry.addData("Goal y", rotatedGoalPose.getY());
-        telemetry.addData("Goal heading", 0);
+        telemetry.addData("Apriltag x", pedroApriltagPose.getX());
+        telemetry.addData("Apriltag y", pedroApriltagPose.getY());
+        telemetry.addData("Apriltag heading", pedroApriltagPose.getHeading());
+
 
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
@@ -301,6 +312,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.update();
 
         Logger.recordOutput("Robot Pose", robotPose);
+        Logger.recordOutput("Apriltag Pose", apriltagPose);
         Logger.recordOutput("Voltage", voltageSensor.getVoltage());
         Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone());
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
