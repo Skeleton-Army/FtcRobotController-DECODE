@@ -57,6 +57,7 @@ public class Shooter extends SubsystemBase {
     private final TimerEx recoveryTimer;
     private final TimerEx stallTimer;
     private final TimerEx rampTimer;
+    private final TimerEx startupTimer;
     private final Kinematics kinematics;
 
     public boolean calculatedRecovery = false;
@@ -140,6 +141,8 @@ public class Shooter extends SubsystemBase {
         stallTimer = new TimerEx(TimeUnit.SECONDS);
         rampTimer = new TimerEx(TimeUnit.SECONDS);
         rampTimer.start();
+        startupTimer = new TimerEx(TimeUnit.SECONDS);
+        startupTimer.start();
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
@@ -261,11 +264,22 @@ public class Shooter extends SubsystemBase {
         }
 
         double dt = (currentTime - lastTargetUpdateTime) / 1e9;
-        if (dt <= 1e-6) return new double[] {filteredTargetVel - poseTracker.getAngularVelocity(), filteredTargetAccel - kinematics.getAngularAcceleration()};
+
+        // This removes the jitter and jumps at the start of the OpMode
+        if (dt <= 0.005 || startupTimer.getElapsed() < 0.5) {
+            lastTargetAngle = currentTargetAngle;
+            lastTargetUpdateTime = currentTime;
+            targetVel = 0;
+            return new double[] {0, 0};
+        }
 
         // 1. Calculate Raw Derivatives
-        double rawTargetVel = (currentTargetAngle - lastTargetAngle) / dt;
+        double deltaAngle = MathFunctions.normalizeAngleSigned(currentTargetAngle - lastTargetAngle);
+        double rawTargetVel = deltaAngle / dt;
+        rawTargetVel = MathUtils.clamp(rawTargetVel, -20.0, 20.0);
+
         double rawTargetAccel = (rawTargetVel - targetVel) / dt;
+        rawTargetAccel = MathUtils.clamp(rawTargetAccel, -40.0, 40.0);
 
         // 2. Apply Low Pass Filter using your Kinematics utility
         filteredTargetVel = Kinematics.lowPassFilter(rawTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
@@ -276,8 +290,8 @@ public class Shooter extends SubsystemBase {
         lastTargetUpdateTime = currentTime;
 
         // 3. Compute Net Motion (Filtered Target - Filtered/Measured Robot)
-        double netVel = filteredTargetVel - poseTracker.getAngularVelocity();
-        double netAccel = filteredTargetAccel - kinematics.getAngularAcceleration();
+        double netVel = filteredTargetVel;
+        double netAccel = filteredTargetAccel;
 
         return new double[] {netVel, netAccel};
     }
