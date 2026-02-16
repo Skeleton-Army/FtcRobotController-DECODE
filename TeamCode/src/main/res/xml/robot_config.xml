@@ -2,6 +2,7 @@
 
 <Robot type="FirstInspires-FTC">
     <EthernetDevice name="limelight" serialNumber="EthernetOverUsb:eth0:172.29.0.26" port="-1" ipAddress="172.29.0.1" />
+    <Webcam name="Webcam 1" serialNumber="01.00.00" />
 
     <LynxUsbDevice name="Control Hub Portal" serialNumber="(embedded)" parentModuleAddress="173">
         <LynxModule name="Expansion Hub 2" port="2">
