@@ -28,15 +28,16 @@ public class ShooterConfig {
     public static double TURRET_POSITION_TOLERANCE = Math.toRadians(1);
     public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(30);
     public static double TURRET_IZONE = Math.toRadians(10);
-    public static double ACCELERATION_SMOOTHING_GAIN = 1;
-    public static double TURRET_KP = 1;
+    public static double ACCELERATION_SMOOTHING_GAIN = 0.7;
+    public static double TURRET_DERIVATIVE_GAIN = 0.8;
+    public static double TURRET_KP = 0.5;
     public static double TURRET_KI = 0.01;
     public static double TURRET_KD = 0.01;
-    public static double TURRET_KS_LOW = 0.06;
+    public static double TURRET_KS_LOW = 0.08;
     public static double TURRET_KS_HIGH = 0.1;
-    public static double TURRET_KV = 0.09;
-    public static double TURRET_KA = 0.005;
-    public static double TURRET_MIN = Math.toRadians(-180); // Clockwise
+    public static double TURRET_KV = 0.1;
+    public static double TURRET_KA = 0.0035;
+    public static double TURRET_MIN = Math.toRadians(-170); // Clockwise
     public static double TURRET_MAX = Math.toRadians(180); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
     public static double TURRET_OFFSET_X = 0; // Positive = Front

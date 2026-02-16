@@ -57,6 +57,7 @@ public class Shooter extends SubsystemBase {
     private final TimerEx recoveryTimer;
     private final TimerEx stallTimer;
     private final TimerEx rampTimer;
+    private final TimerEx startupTimer;
     private final Kinematics kinematics;
 
     public boolean calculatedRecovery = false;
@@ -95,6 +96,13 @@ public class Shooter extends SubsystemBase {
 
     // Add this as a class variable
     private long lastLoopTime = 0;
+
+    private double lastTargetAngle = 0;
+    private long lastTargetUpdateTime = 0;
+    private double targetVel = 0;
+    private double targetAccel = 0;
+    private double filteredTargetVel = 0;
+    private double filteredTargetAccel = 0;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -137,6 +145,8 @@ public class Shooter extends SubsystemBase {
         stallTimer = new TimerEx(TimeUnit.SECONDS);
         rampTimer = new TimerEx(TimeUnit.SECONDS);
         rampTimer.start();
+        startupTimer = new TimerEx(TimeUnit.SECONDS);
+        startupTimer.start();
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
     }
@@ -159,7 +169,7 @@ public class Shooter extends SubsystemBase {
         // --------------------
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
-        OpModeManager.getTelemetry().addData("turret goal pose", turretGoalPose);
+
         filteredRPM = getFilteredRPM(getRPM());
         filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
@@ -232,11 +242,11 @@ public class Shooter extends SubsystemBase {
         }
 
         // 2. Robot Motion Compensation
-        double robotVel = poseTracker.getAngularVelocity();
-        double robotAcc = kinematics.getAngularAcceleration();
+        double[] netKinematics = getNetTargetKinematics();
+        double netVel = netKinematics[0];
+        double netAccel = netKinematics[1];
 
-        double netTargetVelocity = -robotVel;
-        double ffBase = pid + (netTargetVelocity * TURRET_KV) + (-robotAcc * TURRET_KA);
+        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
         double totalRequest = pid + ffBase;
 
         // Map the friction profile using a Sine Wave
@@ -256,10 +266,56 @@ public class Shooter extends SubsystemBase {
         }
 
         double voltageScale = 12.0 / voltageSensor.getVoltage();
-        double finalFF = (totalRequest + staticComp) * voltageScale;
+        double finalOutput = (totalRequest + staticComp) * voltageScale;
 
-        double result = pid + finalFF;
-        turret.set(result);
+        turret.set(finalOutput);
+    }
+
+    /**
+     * Calculates the required velocity and acceleration for the turret to track the moving target.
+     * @return an array where [0] is Net Velocity and [1] is Net Acceleration
+     */
+    private double[] getNetTargetKinematics() {
+        long currentTime = System.nanoTime();
+        double currentTargetAngle = solution.getHorizontalAngle() + horizontalOffset;
+
+        if (lastTargetUpdateTime == 0) {
+            lastTargetUpdateTime = currentTime;
+            lastTargetAngle = currentTargetAngle;
+            return new double[] {0, 0};
+        }
+
+        double dt = (currentTime - lastTargetUpdateTime) / 1e9;
+
+        // This removes the jitter and jumps at the start of the OpMode
+        if (dt <= 0.005 || startupTimer.getElapsed() < 0.5) {
+            lastTargetAngle = currentTargetAngle;
+            lastTargetUpdateTime = currentTime;
+            targetVel = 0;
+            return new double[] {0, 0};
+        }
+
+        // 1. Calculate Raw Derivatives
+        double deltaAngle = MathFunctions.normalizeAngleSigned(currentTargetAngle - lastTargetAngle);
+        double rawTargetVel = deltaAngle / dt;
+        rawTargetVel = MathUtils.clamp(rawTargetVel, -20.0, 20.0);
+
+        double rawTargetAccel = (rawTargetVel - targetVel) / dt;
+        rawTargetAccel = MathUtils.clamp(rawTargetAccel, -40.0, 40.0);
+
+        // 2. Apply Low Pass Filter using your Kinematics utility
+        filteredTargetVel = Kinematics.lowPassFilter(rawTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
+        filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_DERIVATIVE_GAIN);
+
+        targetVel = rawTargetVel;
+        lastTargetAngle = currentTargetAngle;
+        lastTargetUpdateTime = currentTime;
+
+        // 3. Compute Net Motion (Filtered Target - Filtered/Measured Robot)
+        double netVel = filteredTargetVel;
+        double netAccel = filteredTargetAccel;
+
+        return new double[] {netVel, netAccel};
     }
 
     public boolean isFlywheelDamaged() {
