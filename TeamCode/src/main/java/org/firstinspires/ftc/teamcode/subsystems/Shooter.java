@@ -91,6 +91,10 @@ public class Shooter extends SubsystemBase {
 
     private final PIDController flywheelPID;
     private final SimpleMotorFeedforward flywheelFF;
+    private double lastSpeedFlywheel = 0;
+
+    // Add this as a class variable
+    private long lastLoopTime = 0;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -176,16 +180,34 @@ public class Shooter extends SubsystemBase {
             flywheel.set(0);
             rampTimer.restart();
             rampTimer.pause();
+            lastSpeedFlywheel = 0; // Reset this so we don't get a huge spike on restart
+            lastLoopTime = System.nanoTime(); // Reset time
             return;
         }
+
+        // 1. Calculate real Delta Time (dt) in seconds
+        long currentTime = System.nanoTime();
+        if (lastLoopTime == 0) lastLoopTime = currentTime; // Safety for first run
+        double dt = (currentTime - lastLoopTime) / 1.0e9; // Convert nanoseconds to seconds
+        lastLoopTime = currentTime;
+
+        // Safety: Prevent division by zero if loops run instantly (unlikely but safe)
+        if (dt < 0.001) dt = 0.001;
 
         if (!rampTimer.isOn()) rampTimer.resume();
         double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
 
         double speed = (0.9 * targetTPS) * rampMultiplier;
 
+        // 2. Calculate Acceleration using real dt
+        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
+
         double pid = flywheelPID.calculate(flywheel.getCorrectedVelocity(), speed);
-        double ff = flywheelFF.calculate(speed, flywheel1.getAcceleration());
+
+        // 3. Pass target velocity (speed) and calculated acceleration
+        double ff = flywheelFF.calculate(speed, targetAcceleration);
+
+        lastSpeedFlywheel = speed;
 
         double velocityCmd = pid + ff;
         double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
