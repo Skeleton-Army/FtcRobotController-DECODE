@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.*;
+import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.X_OFFSET;
+import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.Y_OFFSET;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
@@ -31,6 +33,8 @@ public class Drive extends SubsystemBase {
     private boolean shootingMode;
     private boolean isHoldingPosition = false;
 
+    private boolean enabled = true;
+
     public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
         this.alliance = alliance;
@@ -41,6 +45,7 @@ public class Drive extends SubsystemBase {
 
     @Override
     public void periodic() {
+        if (!enabled) return;
         follower.update();
     }
 
@@ -54,12 +59,12 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(127, 70))
+                                            getRelative(new Pose(132, 60.5))
                                     )
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    getGateAngle(follower.getHeading())
+                                    getRelative(Math.toRadians(45))
 
                             )
                             .setTranslationalConstraint(1)
@@ -87,12 +92,12 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(38.5, 33.5))
+                                            getRelative(new Pose(34, 29))
                                     )
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    getClosestRightAngle(follower.getHeading())
+                                    getRelative(Math.toRadians(45))
                             )
                             .setTranslationalConstraint(1)
                             .setBrakingStrength(1)
@@ -119,7 +124,7 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            new Pose(72, 72)
+                                            new Pose(X_OFFSET, Y_OFFSET)
                                     )
                             )
                             .setLinearHeadingInterpolation(
@@ -141,7 +146,7 @@ public class Drive extends SubsystemBase {
     }
 
     public void teleOpDrive(Gamepad gamepad) {
-        if (tabletopMode) return;
+        if (tabletopMode || !enabled) return;
 
         double leftY = -gamepad.left_stick_y;
         double leftX = -gamepad.left_stick_x;
@@ -156,12 +161,14 @@ public class Drive extends SubsystemBase {
                 isHoldingPosition = false;
             }
 
+            double headingOffset = (alliance == Alliance.BLUE && !isRobotCentric) ? Math.PI : 0;
+
             follower.setTeleOpDrive(
                     leftY * (shootingMode ? SHOOTING_FORWARD_SPEED : FORWARD_SPEED),
                     leftX * (shootingMode ? SHOOTING_STRAFE_SPEED : STRAFE_SPEED),
                     rightX * (shootingMode ? SHOOTING_TURN_SPEED : TURN_SPEED),
                     isRobotCentric,
-                    Math.toRadians(alliance == Alliance.RED ? 0 : 180)
+                    headingOffset
             );
         } else {
             // Only lock position if we aren't already holding AND velocity is low enough
@@ -176,6 +183,22 @@ public class Drive extends SubsystemBase {
                 }
             }
         }
+    }
+
+    public void disable() {
+        this.enabled = false;
+        follower.setTeleOpDrive(0, 0, 0);
+        follower.breakFollowing();
+        follower.setMaxPower(0);
+    }
+
+    public void enable() {
+        this.enabled = true;
+        follower.setMaxPower(1);
+    }
+
+    public boolean isEnabled() {
+        return enabled;
     }
 
     public boolean getShootingMode() {
@@ -228,5 +251,13 @@ public class Drive extends SubsystemBase {
         }
 
         return originalPose;
+    }
+
+    private double getRelative(double headingRad) {
+        if (alliance == Alliance.BLUE) {
+            return MathFunctions.normalizeAngle(Math.PI - headingRad);
+        }
+
+        return headingRad;
     }
 }

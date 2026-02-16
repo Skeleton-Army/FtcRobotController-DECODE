@@ -4,7 +4,9 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class ShooterConsts {
-    public static double SHOT_LATENCY = 0.0;
+    public static double RANGE_BUFFER = 0.1;
+    public static double INCH_TO_METERS = 0.0254;
+    public static double SHOT_LATENCY = 0.1;
     public static double SHOOTER_MIN_VELOCITY = 4.4;
     public static double SHOOTER_MAX_VELOCITY = 8;
     public static double MIN_DISTANCE = 0.7;
@@ -21,5 +23,9 @@ public class ShooterConsts {
     public static double CLOSE_SHOOTER_MAX_VELOCITY = 6.4;
     public static double FAR_SHOOTER_MIN_VELOCITY = 8;
     public static double FAR_SHOOTER_MAX_VELOCITY = 8;
-    public static double MOVEMENT_COMPENSATION = 0.4;
+    public static double MOVEMENT_COMPENSATION = 0.0;
+
+    public static double PASS_THROUGH_POINT_RADIUS = 5;
+    public static double SCORE_HEIGHT = 29;
+    public static double SCORE_ANGLE = Math.toRadians(-30);
 }

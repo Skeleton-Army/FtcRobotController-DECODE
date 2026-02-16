@@ -4,18 +4,18 @@ import static org.firstinspires.ftc.teamcode.config.TransferConfig.*;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.Command;
-import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
-import com.seattlesolvers.solverslib.hardware.SensorDistanceEx;
+import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.hardware.SensorRevColorV3;
 import com.seattlesolvers.solverslib.hardware.SensorRevTOFDistance;
-import com.seattlesolvers.solverslib.hardware.motors.CRServoEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+
+import java.util.function.BooleanSupplier;
 
 public class Transfer extends SubsystemBase {
     private final ServoEx kicker;
@@ -54,19 +54,67 @@ public class Transfer extends SubsystemBase {
         stopper.set(STOPPER_MIN);
     }
 
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public boolean isArtifactDetected() {
         return getDistance() <= DISTANCE_THRESHOLD_CM;
     }
 
-    private double getDistance() {
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
+    public double getDistance() {
         return colorSensor.distance(DistanceUnit.CM);
     }
 
-    private double getDistanceIntake() {
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
+    public double getDistanceIntake() {
         return sensorDistance.getDistance(DistanceUnit.CM);
     }
 
-    public boolean isBallDetected()  {
+    /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
+    public boolean isArtifactInIntake()  {
         return getDistanceIntake() <= DISTANCE_INTAKE_CM;
+    }
+
+    public Trigger threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
+        return new Trigger(new BooleanSupplier() {
+            private long localDetectedTime = 0;
+            private long lastEmptyCheckTime = 0;
+            private final long EMPTY_POLL_COOLDOWN = 100;
+
+            @Override
+            public boolean getAsBoolean() {
+                if (!isCollecting.getAsBoolean()) {
+                    localDetectedTime = 0;
+                    return false;
+                }
+
+                long currentTime = System.currentTimeMillis();
+
+                if (localDetectedTime == 0) {
+                    // Only poll I2C if the cooldown has expired
+                    if (currentTime - lastEmptyCheckTime >= EMPTY_POLL_COOLDOWN) {
+                        lastEmptyCheckTime = currentTime;
+
+                        if (isArtifactInIntake() && isArtifactDetected()) {
+                            localDetectedTime = currentTime;
+                        }
+                    }
+                    return false;
+                }
+
+                long elapsed = currentTime - localDetectedTime;
+
+                if (elapsed >= thresholdMs) {
+                    if (isArtifactInIntake() && isArtifactDetected()) {
+                        return true;
+                    } else {
+                        localDetectedTime = 0;
+                        lastEmptyCheckTime = currentTime;
+                        return false;
+                    }
+                }
+
+                return false;
+            }
+        });
     }
 }

@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
+
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -11,6 +13,7 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
@@ -22,6 +25,8 @@ import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
 @TeleOp
 public class ShooterTest extends ComplexOpMode   {
+    private final double INCHES_TO_METERS = 39.37;
+
     private final Pose[] points = new Pose[16];
     private int index = 0;
 
@@ -84,10 +89,10 @@ public class ShooterTest extends ComplexOpMode   {
     @Override
     public void initialize() {
         Alliance alliance = Alliance.RED;
-        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
+        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
 
         follower = Constants.createFollower(hardwareMap);
-        follower.setStartingPose(new Pose(8.5, 8.5, Math.toRadians(0)));
+        follower.setStartingPose(new Pose(7.48, 8.26, Math.toRadians(0)));
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
@@ -97,7 +102,7 @@ public class ShooterTest extends ComplexOpMode   {
         GamepadEx gamepadEx1 = new GamepadEx(gamepad1);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenActive(this::forNextPath);

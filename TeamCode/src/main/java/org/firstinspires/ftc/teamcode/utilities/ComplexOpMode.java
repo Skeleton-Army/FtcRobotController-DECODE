@@ -11,6 +11,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.Robot;
 import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.teamcode.consts.ShooterLookupTable;
 import org.psilynx.psikit.core.Logger;
@@ -18,6 +19,7 @@ import org.psilynx.psikit.core.rlog.RLOGServer;
 import org.psilynx.psikit.core.rlog.RLOGWriter;
 
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 
@@ -56,9 +58,9 @@ public abstract class ComplexOpMode extends LinearOpMode {
             hub.setBulkCachingMode(LynxModule.BulkCachingMode.MANUAL);
         }
 
+        startLogger();
         initCSV();
         initialize();
-        startLogger();
 
         // run the scheduler
         try {
@@ -92,9 +94,10 @@ public abstract class ComplexOpMode extends LinearOpMode {
             }
         } finally {
             try {
-                Logger.end();
-
                 end();
+
+                Thread.sleep(100); // Give the background logger thread 100ms to catch up
+                Logger.end();
             } finally {
                 reset();
             }
@@ -130,17 +133,21 @@ public abstract class ComplexOpMode extends LinearOpMode {
         String logFileName = className + "_" + date + "_" + time;
 
         Logger.addDataReceiver(new RLOGWriter(folderName, logFileName));
-        Logger.addDataReceiver(new RLOGServer());
+
+        RLOGServer server = new RLOGServer();
+        server.start(); // This ensures the ServerThread and broadcastQueue are created
+        Logger.addDataReceiver(server);
+
         Logger.start();
     }
 
+    @SuppressLint("SdCardPath")
     private void initCSV() {
         try {
             String defaultPath = "/sdcard/FIRST/shooterTables/";
             ShooterLookupTable.VALIDITY_TABLE = CsvUtils.getBooleanMatrixFromCsv(defaultPath + "ValidityTable.csv");
             ShooterLookupTable.ANGLE_TABLE = CsvUtils.getDoubleMatrixFromCsv(defaultPath + "AngleTable.csv");
             ShooterLookupTable.VELOCITY_ARRAY = CsvUtils.getDoubleArrayFromCsv(defaultPath + "VelocityArray.csv");
-            System.out.println("workinging probably i guess");
         }
         catch (Exception e) {
             System.err.println("Error loading shooter lookup table CSV files: " + e.getMessage());
@@ -154,5 +161,97 @@ public abstract class ComplexOpMode extends LinearOpMode {
                 }
             }
         }
+    }
+
+    // ----- LOG OVERLOADS -----
+
+    public static void log(String caption, boolean value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, int value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, long value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, float value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, double value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, String value) {
+        OpModeManager.getTelemetry().addData(caption, value);
+        Logger.recordOutput(caption, value);
+    }
+
+    // Standard Arrays
+    public static void log(String caption, double[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, int[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, boolean[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, String[] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.toString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    // 2D Arrays
+    public static void log(String caption, double[][] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.deepToString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, int[][] value) {
+        OpModeManager.getTelemetry().addData(caption, Arrays.deepToString(value));
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, java.util.function.DoubleSupplier value) {
+        OpModeManager.getTelemetry().addData(caption, value.getAsDouble());
+        Logger.recordOutput(caption, value);
+    }
+
+    public static void log(String caption, java.util.function.BooleanSupplier value) {
+        OpModeManager.getTelemetry().addData(caption, value.getAsBoolean());
+        Logger.recordOutput(caption, value);
+    }
+
+    // Enums
+    public static <E extends Enum<E>> void log(String caption, E value) {
+        OpModeManager.getTelemetry().addData(caption, value.toString());
+        Logger.recordOutput(caption, value);
+    }
+
+    // WPISerializable (For Pose2d, Rotation2d, etc.)
+    public static <T extends org.psilynx.psikit.core.wpi.WPISerializable> void log(String caption, T value) {
+        OpModeManager.getTelemetry().addData(caption, value.toString());
+        Logger.recordOutput(caption, value);
+    }
+
+    // Logged Mechanisms
+    public static void log(String caption, org.psilynx.psikit.core.mechanism.LoggedMechanism2d value) {
+        OpModeManager.getTelemetry().addData(caption, "{Mechanism2d}");
+        Logger.recordOutput(caption, value);
     }
 }

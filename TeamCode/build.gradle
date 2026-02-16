@@ -65,9 +65,9 @@ dependencies {
     implementation "org.solverslib:pedroPathing:0.3.3"
 
     implementation "com.skeletonarmyftc.marrow:core:1.0.0"
-    implementation 'com.pedropathing:ftc:2.0.5'
+    implementation 'com.pedropathing:ftc:2.0.6'
     implementation 'com.pedropathing:telemetry:1.0.0'
-    implementation 'com.bylazar:fullpanels:1.0.9'
+    implementation 'com.bylazar:fullpanels:1.0.12'
 
     implementation("dev.frozenmilk.sinister:Sloth:0.2.4")
     implementation("com.acmerobotics.slothboard:dashboard:0.2.4+0.5.1")
