@@ -56,24 +56,7 @@ public class LimelightArtifact {
         return new Pose(deltaX, deltaY);
     }
 
-// =============================================================================
-// ||                         END OF CALCULATIONS                             ||
-// ||                      BEGINNING OF HELPER METHODS                        ||
-// =============================================================================
-
-    public LLStatus getStatus() {
-        return limelight.getStatus();
-    }
-
-    public long getTimeFromLastUpdate() {
-        return limelight.getTimeSinceLastUpdate();
-    }
-
-    public boolean isRunning() {
-        return limelight.isRunning();
-    }
-
-    public boolean reloadPipeline() {
-        return limelight.reloadPipeline();
+    public Limelight3A getLimelight() {
+        return limelight;
     }
 }
