@@ -12,6 +12,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -618,9 +619,17 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command returnAndScore(int spike, boolean isLast) {
         Supplier<PathChain> path = isLast ? this::getFinalPath : () -> getBackPath(spike);
-        return new SequentialCommandGroup(
-                new DeferredCommand(() -> new FollowPathCommand(follower, path.get()), null),
-                shoot()
+        return new ParallelCommandGroup(
+                new SequentialCommandGroup(
+                        // Continue running intake for a bit to ensure the balls intake properly
+                        new InstantCommand(intake::collect),
+                        new WaitCommand(1000),
+                        new InstantCommand(intake::stop)
+                ),
+                new SequentialCommandGroup(
+                        new DeferredCommand(() -> new FollowPathCommand(follower, path.get()), null),
+                        shoot()
+                )
         );
     }
 
