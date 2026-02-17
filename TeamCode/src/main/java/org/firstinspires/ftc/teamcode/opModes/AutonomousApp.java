@@ -10,12 +10,14 @@ import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
+import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
@@ -45,6 +47,7 @@ import java.util.function.Supplier;
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
 public class AutonomousApp extends ComplexOpMode {
     private final Prompter prompter = new Prompter(this);
+    TimerEx matchTime = new TimerEx(30); // 30 second autonomous
 
     private Follower follower;
     private Intake intake;
@@ -67,6 +70,7 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain pushPath;
 
     private Alliance alliance;
+    private boolean endGate;
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
     private int gateSpike;
@@ -140,6 +144,20 @@ public class AutonomousApp extends ComplexOpMode {
                         follower.getHeading(),
                         getRelative(Math.toRadians(180))
                 )
+                .build();
+    }
+
+    public PathChain driveToGate() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(23.65442764578834, 68.34557235421167))
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .setReversed()
                 .build();
     }
 
@@ -381,7 +399,9 @@ public class AutonomousApp extends ComplexOpMode {
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.get("pickup_order");
         gateSpike = prompter.getOrDefault("gate_spike", -1);
+        endGate = prompter.getOrDefault("end_near_gate", true);
         push = prompter.getOrDefault("push", false);
+
         Settings.set("alliance", alliance);
 
         telemetry.addData("Alliance", alliance);
@@ -440,6 +460,7 @@ public class AutonomousApp extends ComplexOpMode {
                             return null;
                         }
                 )
+                .prompt("end_near_gate", new BooleanPrompt("END NEAR GATE?", true))
                 .onComplete(this::afterPrompts);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
@@ -520,6 +541,7 @@ public class AutonomousApp extends ComplexOpMode {
                 initialScore(),
                 pickupSequence(),
                 parkRoutine()
+
         );
     }
 
@@ -560,8 +582,8 @@ public class AutonomousApp extends ComplexOpMode {
     private Command farCycle() {
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
-                collect(0),
-                returnAndScore(0, false)
+                collect(1),
+                returnAndScore(1, false)
         );
     }
 
@@ -620,10 +642,19 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command parkRoutine() {
-        return (startingPosition == StartingPosition.FAR)
-                ? new FollowPathCommand(follower, farDriveBackEnd)
-                : new InstantCommand();
+        PathChain path = (startingPosition == StartingPosition.FAR) ? farDriveBackEnd : nearDriveBackEnd;
+
+        return new ConditionalCommand(
+                new FollowPathCommand(follower, driveToGate()),
+                new FollowPathCommand(follower, path),
+                () -> matchTime.isMoreThan(2.500000000000000000000000000000001) && endGate);
+
     }
+
+    //private boolean isCycle(){
+       // boolean bool = false;
+       // if (matchTime.isMoreThan(7)) ? bool = true : bool = false;
+    //}
 
     private Command shoot() {
         return new ShootCommand(
