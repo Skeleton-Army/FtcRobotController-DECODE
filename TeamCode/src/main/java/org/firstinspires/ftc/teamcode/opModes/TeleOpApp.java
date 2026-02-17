@@ -64,6 +64,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Alliance alliance;
 
     private TimerEx matchTime;
+    private TimerEx overrideTimer;
 
     public static final double INCHES_TO_METERS = 39.37;
     public static final double WIDTH = 14.96;
@@ -71,9 +72,12 @@ public class TeleOpApp extends ComplexOpMode {
     public static final double X_OFFSET = WIDTH / 2.0;
     public static final double Y_OFFSET = HEIGHT / 2.0;
 
+    private boolean isOverrideActive = false;
+
     @Override
     public void initialize() {
         matchTime = new TimerEx(120);
+        overrideTimer = new TimerEx(1);
 
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
@@ -113,8 +117,15 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenReleased(new InstantCommand(intake::stop, intake, transfer));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .and(new Trigger(this::isInsideLaunchZone))
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                .whenPressed(new InstantCommand(() -> {
+                    if (isShootingAllowed()) {
+                        schedule(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                    } else {
+                        gamepad1.rumble(300);
+                        isOverrideActive = true;
+                        overrideTimer.restart();
+                    }
+                }));
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isInsideLaunchZone))
@@ -245,8 +256,14 @@ public class TeleOpApp extends ComplexOpMode {
             follower.startTeleopDrive(USE_BRAKE_MODE);
         }
 
-        // Cancel shooting if not in a launch zone
-        if (!isInsideLaunchZone()) {
+        // Cancel shooting if:
+        // 1. We aren't in the zone
+        // 2. AND we haven't explicitly overriden for this specific shot cycle
+        if (shooter.getCurrentCommand() == null && overrideTimer.isDone()) {
+            isOverrideActive = false;
+        }
+
+        if (!isInsideLaunchZone() && !isOverrideActive) {
             CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
@@ -330,6 +347,10 @@ public class TeleOpApp extends ComplexOpMode {
     @Override
     public void end() {
         Settings.set("pose", follower.getPose(), false);
+    }
+
+    private boolean isShootingAllowed() {
+        return isInsideLaunchZone() || isOverrideActive;
     }
 
     public boolean isInsideLaunchZone() {
