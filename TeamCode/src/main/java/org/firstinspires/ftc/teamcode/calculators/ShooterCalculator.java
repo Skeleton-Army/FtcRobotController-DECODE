@@ -97,7 +97,7 @@ public class ShooterCalculator implements IShooterCalculator {
 
         double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
         double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
-        double predHeading = robotPoseMeters.getHeading();
+        double predHeading = robotPoseMeters.getHeading() + angularVel * SHOT_LATENCY;
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
         double distance = goalPoseMeters.distanceFrom(predictedPose);
