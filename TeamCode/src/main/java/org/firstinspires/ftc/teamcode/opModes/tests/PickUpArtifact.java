@@ -1,7 +1,9 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.Path;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.RunCommand;
@@ -38,7 +40,7 @@ public class PickUpArtifact extends OpMode {
         //CommandScheduler.getInstance().run();
         Pose artifactFieldPos = limeLightArtifact.getClosestArtifact();
         telemetry.addData("artifact x", artifactFieldPos.getX());
-        telemetry.addData("artifact y", artifactFieldPos.getX());
+        telemetry.addData("artifact y", artifactFieldPos.getY());
         telemetry.addData("robot x", follower.getPose().getX());
         telemetry.addData("robot y", follower.getPose().getY());
         telemetry.addData("robot heading", follower.getHeading());

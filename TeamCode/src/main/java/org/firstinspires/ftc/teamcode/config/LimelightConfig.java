@@ -21,6 +21,6 @@ public class LimelightConfig {
 
     // x and y offset to 0;0 of the robot
     public static double Y_OFFSET_INCHES = 0; //-7.48
-    public static double X_OFFSET_INCHES = 7; //-7.67
+    public static double X_OFFSET_INCHES = 13; //-7.67
 
 }

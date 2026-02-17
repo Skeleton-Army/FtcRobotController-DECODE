@@ -3,12 +3,10 @@ package org.firstinspires.ftc.teamcode.vision;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.LLStatus;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import static org.firstinspires.ftc.teamcode.config.LimelightConfig.*;
-
 
 public class LimelightArtifact {
     private final Limelight3A limelight;
@@ -33,13 +31,14 @@ public class LimelightArtifact {
 
         double[] pyOut = llResult.getPythonOutput();
 
-        Pose relativePose = getRelativePose(getDistance(pyOut[1]), pyOut[0]);
+        double distance = getDistance(pyOut[1]);
+        Pose relativePose = getRelativePose(distance, pyOut[0]);
         double theta = follower.getHeading();
 
-        double y = relativePose.getX() * Math.sin(theta) - relativePose.getY() * Math.sin(theta);
-        double x = relativePose.getX() * Math.cos(theta) - relativePose.getY() * Math.cos(theta);
+        double x = relativePose.getX() * Math.cos(theta) - relativePose.getY() * Math.sin(theta);
+        double y = relativePose.getX() * Math.sin(theta) - relativePose.getY() * Math.cos(theta);
 
-        return new Pose(follower.getPose().getX() + x, follower.getPose().getY() + y);
+        return new Pose(follower.getPose().getX() + x, follower.getPose().getY() + y, 0);
     }
 
     private double getDistance (double ty) {
