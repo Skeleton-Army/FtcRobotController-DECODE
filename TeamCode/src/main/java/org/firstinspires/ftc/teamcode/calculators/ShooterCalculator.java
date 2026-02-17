@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MAX;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MIN;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
 import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.RPM_INTERPOLATION;
@@ -132,11 +134,14 @@ public class ShooterCalculator implements IShooterCalculator {
         double aimHorizontalComp = Math.sqrt(vAim.getX() * vAim.getX() + vAim.getY() * vAim.getY());
         double aimVerticalAngle = Math.atan2(vAim.getZ(), aimHorizontalComp);
 
+        boolean isAngleValid = (aimVerticalAngle >= HOOD_MIN) && (aimVerticalAngle <= HOOD_MAX);
+        boolean isSolutionPossible = isAngleValid & currentHood.isValid();
+
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(aimHorizontalAngle),
                 aimVerticalAngle,
                 finalTargetRPM,
-                currentHood.isValid(),
+                isSolutionPossible,
                 vRequired.getNorm()
         );
     }
