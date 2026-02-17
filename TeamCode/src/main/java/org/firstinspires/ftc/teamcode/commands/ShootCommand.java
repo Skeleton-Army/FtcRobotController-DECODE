@@ -63,11 +63,11 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
                 new WaitCommand(1000),
-                new ConditionalCommand(
-                        transfer.kick(),
-                        new InstantCommand(),
-                        transfer::isArtifactDetected
-                ),
+//                new ConditionalCommand(
+//                        transfer.kick(),
+//                        new InstantCommand(),
+//                        transfer::isArtifactDetected
+//                ),
                 new InstantCommand(transfer::block),
                 new InstantCommand(intake::stop),
 
@@ -79,9 +79,9 @@ public class ShootCommand extends SequentialCommandGroup {
 
     public Command waitUntilCanShoot() {
         return new SequentialCommandGroup(
-//                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode()),
+                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode()),
                 new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
-        );
+        ).withTimeout(2000);
     }
 
     public void recordShot() {
