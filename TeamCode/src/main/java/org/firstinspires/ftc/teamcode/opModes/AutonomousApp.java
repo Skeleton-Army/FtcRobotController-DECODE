@@ -488,6 +488,7 @@ public class AutonomousApp extends ComplexOpMode {
         schedule(
                 new SequentialCommandGroup(
                         autonomousRoutine,
+                        new WaitCommand(1000),
                         new InstantCommand(this::requestOpModeStop)
                 )
         );
