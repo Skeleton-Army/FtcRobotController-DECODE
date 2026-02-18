@@ -155,10 +155,10 @@ public class AutonomousApp extends ComplexOpMode {
         pushStartingPose = getRelative(new Pose(57.85,8.5, Math.toRadians(180)));
 
         Pose spike1End = getRelative(new Pose(9.330697624190067, 9.708060475161995));
-        Pose spike2End = getRelative(new Pose(15.550755939524837, 34.76673866090713));
-        Pose spike3End = getRelative(new Pose(17.263, 58.026));
+        Pose spike2End = getRelative(new Pose(20, 34.76673866090713));
+        Pose spike3End = getRelative(new Pose(20, 57));
         Pose spike4End = getRelative(new Pose(23.216, 83.663));
-        Pose openGateEnd = getRelative(new Pose(14.572, 74));
+        Pose openGateEnd = getRelative(new Pose(25, 74));
 
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
