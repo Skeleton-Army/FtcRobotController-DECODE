@@ -69,6 +69,7 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain spike3Open;
     private PathChain spike4Open;
     private PathChain pushPath;
+    private PathChain driveToGate;
 
     private Alliance alliance;
     private boolean endGate;
@@ -145,20 +146,6 @@ public class AutonomousApp extends ComplexOpMode {
                         follower.getHeading(),
                         getRelative(Math.toRadians(180))
                 )
-                .build();
-    }
-
-    public PathChain driveToGate() {
-        return follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower.getPose(),
-                                getRelative(new Pose(23.65442764578834, 68.34557235421167))
-                        )
-                )
-                .setTangentHeadingInterpolation()
-                .setReversed()
                 .build();
     }
 
@@ -392,6 +379,19 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierLine(
                                 follower::getPose,
                                 getRelative(new Pose(30,8.7, Math.toRadians(180)))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+
+        driveToGate = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(23.65442764578834, 68.34557235421167))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -641,7 +641,8 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command returnAndScore(int spike, boolean isLast) {
-        Supplier<PathChain> path = isLast ? this::getFinalPath : () -> getBackPath(spike);
+        Supplier<PathChain> path = (isLast && !endGate) ? this::getFinalPath : () -> getBackPath(spike);
+
         return new ParallelCommandGroup(
                 new SequentialCommandGroup(
                         // Continue running intake for a bit to ensure the balls intake properly
@@ -657,13 +658,11 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command parkRoutine() {
-        PathChain path = (startingPosition == StartingPosition.FAR) ? farDriveBackEnd : nearDriveBackEnd;
-
         return new ConditionalCommand(
-                new FollowPathCommand(follower, driveToGate()),
-                new FollowPathCommand(follower, path),
-                () -> matchTime.isMoreThan(2.500000000000000000000000000000001) && endGate);
-
+                new FollowPathCommand(follower, driveToGate),
+                new FollowPathCommand(follower, farDriveBackEnd),
+                () -> matchTime.isMoreThan(1) && endGate && startingPosition == StartingPosition.CLOSE
+        );
     }
 
     //private boolean isCycle(){
