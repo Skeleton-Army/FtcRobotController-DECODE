@@ -36,6 +36,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
@@ -53,6 +54,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Transfer transfer;
     private Drive drive;
     private Kickstand kickstand;
+    private Vision vision;
 
     private VoltageSensor voltageSensor;
 
@@ -102,6 +104,7 @@ public class TeleOpApp extends ComplexOpMode {
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
         kickstand = new Kickstand(hardwareMap);
+        vision = new Vision(hardwareMap, follower.poseTracker);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -321,6 +324,13 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
         telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
         telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+
+        Pose mt2Pose = vision.getAprilTagPose();
+        telemetry.addData("MT2 x", mt2Pose.getX());
+        telemetry.addData("MT2 y", mt2Pose.getY());
+        telemetry.addData("MT2 heading", mt2Pose.getHeading());
+        telemetry.addData("MT2 heading (deg)", Math.toDegrees(mt2Pose.getHeading()));
+
         telemetry.update();
 
         Logger.recordOutput("Robot Pose", robotPose);
