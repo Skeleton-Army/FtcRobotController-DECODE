@@ -93,6 +93,7 @@ public class Shooter extends SubsystemBase {
     private final PIDController flywheelPID;
     private final SimpleMotorFeedforward flywheelFF;
     private double lastSpeedFlywheel = 0;
+    private double lastSpeedFlywheelFiltered = 0;
 
     // Add this as a class variable
     private long lastLoopTime = 0;
@@ -211,6 +212,9 @@ public class Shooter extends SubsystemBase {
 
         // 2. Calculate Acceleration using real dt
         double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
+        double currentAcceleration = (filteredRPM - lastSpeedFlywheelFiltered) / dt;
+        OpModeManager.getTelemetry().addData("flywheel target acceleration", targetAcceleration);
+        OpModeManager.getTelemetry().addData("flywheel acceleration", currentAcceleration);
 
         double pid = flywheelPID.calculate(flywheel.getCorrectedVelocity(), speed);
 
@@ -218,6 +222,7 @@ public class Shooter extends SubsystemBase {
         double ff = flywheelFF.calculate(speed, targetAcceleration);
 
         lastSpeedFlywheel = speed;
+        lastSpeedFlywheelFiltered = filteredRPM;
 
         double velocityCmd = pid + ff;
         double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
