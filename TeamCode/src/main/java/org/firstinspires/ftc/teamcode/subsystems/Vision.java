@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
+import static org.firstinspires.ftc.teamcode.config.VisionConfig.*;
+
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
@@ -8,6 +10,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.skeletonarmy.marrow.OpModeManager;
+import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
@@ -18,17 +21,29 @@ public class Vision extends SubsystemBase {
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
 
+    private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
+
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker) {
         this.poseTracker = poseTracker;
 
-        limelight = hardwareMap.get(Limelight3A.class, "limelight");
+        limelight = hardwareMap.get(Limelight3A.class, LIMELIGHT_NAME);
         limelight.pipelineSwitch(0);
         limelight.start();
+
+        relocalizeTimer.start();
+    }
+
+    @Override
+    public void periodic() {
+        if (relocalizeTimer.isDone()) {
+            boolean success = relocalize();
+            if (success) {
+                relocalizeTimer.restart();
+            }
+        }
     }
 
     public Pose getAprilTagPose() {
-        // TODO: Accept pose only if it's from the GOAL's tag
-
         Pose FTCRobotPose = poseTracker.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         double orientationDeg = Math.toDegrees(FTCRobotPose.getHeading()) + 180;
         limelight.updateRobotOrientation(orientationDeg);
@@ -52,11 +67,13 @@ public class Vision extends SubsystemBase {
         return new Pose();
     }
 
-    public void relocalize() {
+    public boolean relocalize() {
         Pose tagPose = getAprilTagPose();
-        if (tagPose.roughlyEquals(new Pose(), 1)) return;
-        if (poseTracker.getVelocity().getMagnitude() > 1 || poseTracker.getAngularVelocity() > 1) return;
+
+        if (tagPose.roughlyEquals(new Pose(), 0.001)) return false;
+        if (poseTracker.getVelocity().getMagnitude() > VELOCITY_THRESHOLD || poseTracker.getAngularVelocity() > VELOCITY_THRESHOLD) return false;
 
         poseTracker.setPose(tagPose);
+        return true;
     }
 }
