@@ -51,4 +51,12 @@ public class Vision extends SubsystemBase {
 
         return new Pose();
     }
+
+    public void relocalize() {
+        Pose tagPose = getAprilTagPose();
+        if (tagPose.roughlyEquals(new Pose(), 1)) return;
+        if (poseTracker.getVelocity().getMagnitude() > 1 || poseTracker.getAngularVelocity() > 1) return;
+
+        poseTracker.setPose(tagPose);
+    }
 }

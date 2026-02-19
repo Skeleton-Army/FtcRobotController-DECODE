@@ -220,6 +220,9 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                 .whenPressed(drive.goToCenter());
 
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
+                .whenPressed(vision::relocalize);
+
         if (!tabletopMode && !debugMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                     .whenPressed(this::resetPoseToNearestCorner);
