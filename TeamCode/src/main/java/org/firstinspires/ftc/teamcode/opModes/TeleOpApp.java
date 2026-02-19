@@ -84,7 +84,7 @@ public class TeleOpApp extends ComplexOpMode {
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
-        Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        Pose startPose = new Pose(72, 72, Math.toRadians(0));
         if (!debugMode) startPose = Settings.get("pose", new Pose(X_OFFSET, Y_OFFSET));
 
         //startPose = new Pose(72,72,0);
@@ -97,7 +97,7 @@ public class TeleOpApp extends ComplexOpMode {
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
         //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
+        shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
@@ -261,7 +261,8 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading() - Math.PI));
         Pose rotatedApriltagPose = aprilTagPipeline.getRobotPose(shooter.getTurretPosition()).getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        Pose pedroApriltagPose = aprilTagPipeline.getRobotPose(shooter.getTurretPosition()).getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        //Pose pedroApriltagPose = aprilTagPipeline.getRobotPose(shooter.getTurretPosition()).getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose pedroApriltagPose = aprilTagPipeline.getPedroPose(follower.getPose().getHeading(), shooter.getTurretPosition());
         Pose2d apriltagPose = new Pose2d(-rotatedApriltagPose.getX() / INCHES_TO_METERS, -rotatedApriltagPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedApriltagPose.getHeading() - Math.PI));
 
         Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);

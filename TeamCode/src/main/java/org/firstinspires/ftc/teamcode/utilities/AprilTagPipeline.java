@@ -2,13 +2,21 @@ package org.firstinspires.ftc.teamcode.utilities;
 
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.cameraMatrix;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.distCoeffs;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetX_turret;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetY_turret;
 
 import android.graphics.Canvas;
 
+import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.ftc.InvertedFTCCoordinates;
+import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
@@ -74,8 +82,9 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     @Override
     public void init(Mat firstFrame)
     {
-        CameraCalibration calibration = CameraCalibrationHelper.getInstance().getCalibration(ident, firstFrame.width(), firstFrame.height());
-        processor.init(firstFrame.width(), firstFrame.height(), calibration);
+        Calib3d.undistort(firstFrame, undistored, matrix, dist);
+        CameraCalibration calibration = CameraCalibrationHelper.getInstance().getCalibration(ident, undistored.width(), undistored.height());
+        processor.init(undistored.width(), undistored.height(), calibration);
     }
 
     @Override
@@ -84,7 +93,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         Calib3d.undistort(input, undistored, matrix, dist);
         Object drawCtx = processor.processFrame(undistored, captureTimeNanos);
         requestViewportDrawHook(drawCtx);
-        return input;
+        return undistored;
     }
 
     @Override
@@ -112,8 +121,8 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
             double rotatedY = relX * sinT + relY * cosT;
 
             // Camera offset from robot center (inches)
-            double camOffsetX = BlackWhiteCamera.offsetX_turret;
-            double camOffsetY = BlackWhiteCamera.offsetY_turret;
+            double camOffsetX = offsetX_turret;
+            double camOffsetY = offsetY_turret;
 
             // Translate to robot center
             double robotX = rotatedX - camOffsetX;
@@ -125,6 +134,76 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         }
 
         return new Pose(0,0,0);
+    }
+
+    public Pose getPedroPose(double robotHeading, double turretHeading) {
+        if (processor.getDetections().isEmpty())
+            return new Pose(0,0,0);
+
+        AprilTagDetection detection = processor.getDetections().get(0);
+
+        // 1. We MUST have the tag's known position on the field to find ourselves
+        if (detection.metadata == null) {
+            return new Pose(0,0,0);
+        }
+
+        // (Assuming you have a helper or constants that define the tag's field location in Pedro coordinates)
+        // You will need to replace these with however you store your Tag field positions
+//        double tagFieldX = getTagFieldX(detection.id);
+        Pose2D tagfieldPos2D = new Pose2D(DistanceUnit.INCH,0,0, AngleUnit.RADIANS, 0);
+        if (detection.id == 20) {
+            tagfieldPos2D = new Pose2D(DistanceUnit.METER, -1.482, -1.413, AngleUnit.RADIANS, 0);
+        }
+
+        if (detection.id == 24) {
+            tagfieldPos2D = new Pose2D(DistanceUnit.METER,-1.482, 1.413,AngleUnit.RADIANS, 0);
+        }
+
+        Pose ftcStandard = PoseConverter.pose2DToPose(tagfieldPos2D, InvertedFTCCoordinates.INSTANCE);
+        Pose tagfieldPose = ftcStandard.getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+
+        //Pose tagfieldPose = new Pose(detection.metadata.fieldPosition.get(0), detection.metadata.fieldPosition.get(1), 0);
+        //tagfieldPose = tagfieldPose.getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+        //OpModeManager.getTelemetry().addData("tag field pose: ", tagfieldPose);
+
+        OpModeManager.getTelemetry().addData("tag field pose pedro: ", tagfieldPose);
+        double tagFieldX = tagfieldPose.getAsCoordinateSystem(PedroCoordinates.INSTANCE).getX();
+//        double tagFieldY = getTagFieldY(detection.id);
+        double tagFieldY =  tagfieldPose.getAsCoordinateSystem(PedroCoordinates.INSTANCE).getY();
+
+        OpModeManager.getTelemetry().addData("tag x", tagFieldX);
+        OpModeManager.getTelemetry().addData("tag y", tagFieldY);
+        // 2. Extract relative distances from camera to tag
+        // FTC SDK ftcPose: +Y is forward (depth), +X is right.
+        // Pedro standard: +X is forward, +Y is left.
+        // So we map them to Pedro's local orientation:
+        double localForwardDist = detection.ftcPose.y;
+        double localLeftDist = -detection.ftcPose.x;
+
+        // 3. Camera's global heading on the field
+        double thetaCam = robotHeading + turretHeading;
+
+        // 4. Rotate the Camera-to-Tag distance vector to match the field frame
+        double fieldDistX = (localForwardDist * Math.cos(thetaCam)) - (localLeftDist * Math.sin(thetaCam));
+        double fieldDistY = (localForwardDist * Math.sin(thetaCam)) + (localLeftDist * Math.cos(thetaCam));
+
+        // 5. Calculate Camera's absolute position on the field
+        // Camera is exactly the Tag's position MINUS the distance to the tag
+        double camFieldX = tagFieldX - fieldDistX;
+        double camFieldY = tagFieldY - fieldDistY;
+
+        // 6. Rotate the Robot-to-Turret offset to match the field frame
+        // (Assuming CAMERA_OFFSET_X is forward, CAMERA_OFFSET_Y is left)
+        double offsetFieldX = (offsetY_turret * Math.cos(robotHeading)) - (offsetX_turret * Math.sin(robotHeading));
+        double offsetFieldY = (offsetY_turret * Math.sin(robotHeading)) + (offsetX_turret * Math.cos(robotHeading));
+
+        // 7. Calculate Robot's absolute position
+        // Robot center is exactly the Camera's position MINUS the offset
+        double robotFieldX = camFieldX - offsetFieldX;
+        double robotFieldY = camFieldY - offsetFieldY;
+
+        // Return the final Pedro Pose using the Pinpoint's highly accurate heading
+        return new Pose(robotFieldX, robotFieldY, robotHeading);
     }
 
 
