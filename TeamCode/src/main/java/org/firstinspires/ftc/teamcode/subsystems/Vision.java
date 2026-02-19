@@ -7,11 +7,14 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
 public class Vision extends SubsystemBase {
+    private final double METERS_TO_INCHES = 39.37;
+
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
 
@@ -27,7 +30,7 @@ public class Vision extends SubsystemBase {
         // TODO: Accept pose only if it's from the GOAL's tag
 
         Pose FTCRobotPose = poseTracker.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        double orientationDeg = Math.toDegrees(FTCRobotPose.getHeading());
+        double orientationDeg = Math.toDegrees(FTCRobotPose.getHeading()) + 180;
         limelight.updateRobotOrientation(orientationDeg);
 
         LLResult result = limelight.getLatestResult();
@@ -39,7 +42,7 @@ public class Vision extends SubsystemBase {
                 double y = botPose.getPosition().y;
                 double heading = botPose.getOrientation().getYaw(AngleUnit.RADIANS);
 
-                Pose standardFTCPose = new Pose(x, y, heading);
+                Pose standardFTCPose = new Pose(x, y, heading).scale(METERS_TO_INCHES);
                 Pose pedroPose = FTCCoordinates.INSTANCE.convertToPedro(standardFTCPose);
 
                 return pedroPose;
