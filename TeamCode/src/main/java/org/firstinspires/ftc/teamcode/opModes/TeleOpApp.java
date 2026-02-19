@@ -66,6 +66,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Alliance alliance;
 
     private TimerEx matchTime;
+    private TimerEx overrideTimer;
 
     public static final double INCHES_TO_METERS = 39.37;
     public static final double WIDTH = 14.96;
@@ -78,6 +79,7 @@ public class TeleOpApp extends ComplexOpMode {
     @Override
     public void initialize() {
         matchTime = new TimerEx(120);
+        overrideTimer = new TimerEx(1);
 
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
@@ -95,7 +97,7 @@ public class TeleOpApp extends ComplexOpMode {
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
         //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
-        shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
+        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
 
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
