@@ -21,7 +21,7 @@ public class Transfer extends SubsystemBase {
     private final ServoEx kicker;
     private final ServoEx stopper;
     private final SensorRevColorV3 colorSensor;
-//    private final SensorRevTOFDistance sensorDistance;
+    private final SensorRevTOFDistance sensorDistance;
 
     public Transfer(final HardwareMap hardwareMap) {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
@@ -31,7 +31,7 @@ public class Transfer extends SubsystemBase {
         stopper.set(STOPPER_MAX);
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
-//        sensorDistance = new SensorRevTOFDistance(hardwareMap, DISTANCE_SENSOR_NAME);
+        sensorDistance = new SensorRevTOFDistance(hardwareMap, DISTANCE_SENSOR_NAME);
     }
 
     public Command kick() {
@@ -65,56 +65,56 @@ public class Transfer extends SubsystemBase {
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
-//    public double getDistanceIntake() {
-//        return sensorDistance.getDistance(DistanceUnit.CM);
-//    }
+    public double getDistanceIntake() {
+        return sensorDistance.getDistance(DistanceUnit.CM);
+    }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
-//    public boolean isArtifactInIntake()  {
-//        return getDistanceIntake() <= DISTANCE_INTAKE_CM;
-//    }
+    public boolean isArtifactInIntake()  {
+        return getDistanceIntake() <= DISTANCE_INTAKE_CM;
+    }
 
-//    public Trigger threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
-//        return new Trigger(new BooleanSupplier() {
-//            private long localDetectedTime = 0;
-//            private long lastEmptyCheckTime = 0;
-//            private final long EMPTY_POLL_COOLDOWN = 100;
-//
-//            @Override
-//            public boolean getAsBoolean() {
-//                if (!isCollecting.getAsBoolean()) {
-//                    localDetectedTime = 0;
-//                    return false;
-//                }
-//
-//                long currentTime = System.currentTimeMillis();
-//
-//                if (localDetectedTime == 0) {
-//                    // Only poll I2C if the cooldown has expired
-//                    if (currentTime - lastEmptyCheckTime >= EMPTY_POLL_COOLDOWN) {
-//                        lastEmptyCheckTime = currentTime;
-//
-//                        if (isArtifactInIntake() && isArtifactDetected()) {
-//                            localDetectedTime = currentTime;
-//                        }
-//                    }
-//                    return false;
-//                }
-//
-//                long elapsed = currentTime - localDetectedTime;
-//
-//                if (elapsed >= thresholdMs) {
-//                    if (isArtifactInIntake() && isArtifactDetected()) {
-//                        return true;
-//                    } else {
-//                        localDetectedTime = 0;
-//                        lastEmptyCheckTime = currentTime;
-//                        return false;
-//                    }
-//                }
-//
-//                return false;
-//            }
-//        });
-//    }
+    public Trigger threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
+        return new Trigger(new BooleanSupplier() {
+            private long localDetectedTime = 0;
+            private long lastEmptyCheckTime = 0;
+            private final long EMPTY_POLL_COOLDOWN = 100;
+
+            @Override
+            public boolean getAsBoolean() {
+                if (!isCollecting.getAsBoolean()) {
+                    localDetectedTime = 0;
+                    return false;
+                }
+
+                long currentTime = System.currentTimeMillis();
+
+                if (localDetectedTime == 0) {
+                    // Only poll I2C if the cooldown has expired
+                    if (currentTime - lastEmptyCheckTime >= EMPTY_POLL_COOLDOWN) {
+                        lastEmptyCheckTime = currentTime;
+
+                        if (isArtifactInIntake() && isArtifactDetected()) {
+                            localDetectedTime = currentTime;
+                        }
+                    }
+                    return false;
+                }
+
+                long elapsed = currentTime - localDetectedTime;
+
+                if (elapsed >= thresholdMs) {
+                    if (isArtifactInIntake() && isArtifactDetected()) {
+                        return true;
+                    } else {
+                        localDetectedTime = 0;
+                        lastEmptyCheckTime = currentTime;
+                        return false;
+                    }
+                }
+
+                return false;
+            }
+        });
+    }
 }

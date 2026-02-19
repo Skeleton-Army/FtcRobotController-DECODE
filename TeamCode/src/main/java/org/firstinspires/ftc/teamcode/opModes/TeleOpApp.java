@@ -76,6 +76,7 @@ public class TeleOpApp extends ComplexOpMode {
 
     private boolean isOverrideActive = false;
 
+
     @Override
     public void initialize() {
         matchTime = new TimerEx(120);
@@ -228,7 +229,7 @@ public class TeleOpApp extends ComplexOpMode {
                     .whenPressed(this::resetPoseToNearestCorner);
         }
 
-        new Trigger(intake::isStalled)
+        transfer.threeArtifactsDetected(intake::isCollecting, 250)
                 .whenActive(new InstantCommand(() -> gamepad1.rumble(300)));
 
         drive.setDefaultCommand(
@@ -328,11 +329,13 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
         telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
 
-        Pose mt2Pose = vision.getAprilTagPose();
+        Pose mt2Pose = vision.getAprilTagPose().scale(INCHES_TO_METERS);
         telemetry.addData("MT2 x", mt2Pose.getX());
         telemetry.addData("MT2 y", mt2Pose.getY());
         telemetry.addData("MT2 heading", mt2Pose.getHeading());
         telemetry.addData("MT2 heading (deg)", Math.toDegrees(mt2Pose.getHeading()));
+
+        telemetry.addData("Pinpoint limelight delta", follower.getPose().minus(mt2Pose));
 
         telemetry.update();
 
