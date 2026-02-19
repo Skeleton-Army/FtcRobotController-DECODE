@@ -91,7 +91,6 @@ public class Shooter extends SubsystemBase {
     public double filteredRPMPredicted;
 
     private final PIDController flywheelPID;
-    private final SimpleMotorFeedforward flywheelFF;
     private double lastSpeedFlywheel = 0;
     private double lastSpeedFlywheelFiltered = 0;
 
@@ -123,7 +122,6 @@ public class Shooter extends SubsystemBase {
         flywheel.setCurrentAlert(CURRENT_THRESHOLD, CurrentUnit.AMPS);
 
         flywheelPID = new PIDController(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        flywheelFF = new SimpleMotorFeedforward(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
 
         turret = new ModifiedMotorEx(hardwareMap, TURRET_NAME, ShooterConfig.TURRET_MOTOR);
         turret.setRunMode(Motor.RunMode.RawPower);
@@ -216,10 +214,13 @@ public class Shooter extends SubsystemBase {
         OpModeManager.getTelemetry().addData("flywheel target acceleration", targetAcceleration);
         OpModeManager.getTelemetry().addData("flywheel acceleration", currentAcceleration);
 
-        double pid = flywheelPID.calculate(flywheel.getCorrectedVelocity(), speed);
+        // Choose kA based on the direction of acceleration
+        double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
 
-        // 3. Pass target velocity (speed) and calculated acceleration
-        double ff = flywheelFF.calculate(speed, targetAcceleration);
+        double pid = flywheelPID.calculate(flywheel.getCorrectedVelocity(), speed);
+        double ff = (FLYWHEEL_KS * Math.signum(speed)) +
+                (FLYWHEEL_KV * speed) +
+                (currentKA * targetAcceleration);
 
         lastSpeedFlywheel = speed;
         lastSpeedFlywheelFiltered = filteredRPM;

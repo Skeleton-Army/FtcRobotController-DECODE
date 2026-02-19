@@ -17,6 +17,7 @@ public class ShooterConfig {
     public static double FLYWHEEL_KD = 0.2;
     public static double FLYWHEEL_KS = 150;
     public static double FLYWHEEL_KA = 0.5;
+    public static double FLYWHEEL_KA_DOWN = 0.5;
     public static double FLYWHEEL_KV = 1.7;
     public static double FLYWHEEL_DELAY_SEC = 0.1; // ~2 control loops @ 20ms
     public static double FLYWHEEL_SHOOTING_DIFFRENCE = 0.02;
