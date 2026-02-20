@@ -191,12 +191,6 @@ public class TeleOpApp extends ComplexOpMode {
                 )
         );
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_STICK_BUTTON)
-                .toggleWhenPressed(
-                        new InstantCommand(() -> shooter.disable()),
-                        new InstantCommand(() -> shooter.enable())
-                );
-
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
                 .toggleWhenActive(
                         new InstantCommand(() -> {
@@ -223,6 +217,14 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
                 .whenPressed(vision::relocalize);
+
+        if (debugMode) {
+            gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_STICK_BUTTON)
+                    .toggleWhenPressed(
+                            new InstantCommand(() -> shooter.disable()),
+                            new InstantCommand(() -> shooter.enable())
+                    );
+        }
 
         if (!tabletopMode && !debugMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
