@@ -169,17 +169,6 @@ public class TeleOpApp extends ComplexOpMode {
                         })
                 );
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
-                .whenPressed(
-                        new SequentialCommandGroup(
-                                new InstantCommand(transfer::release),
-                                new InstantCommand(intake::collect),
-                                transfer.kick(),
-                                new InstantCommand(intake::stop),
-                                new InstantCommand(transfer::block)
-                        )
-                );
-
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SHARE)
                 .toggleWhenPressed(
                     new InstantCommand(() -> {
