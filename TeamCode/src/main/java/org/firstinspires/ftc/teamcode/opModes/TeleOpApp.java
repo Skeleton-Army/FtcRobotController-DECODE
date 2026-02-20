@@ -284,6 +284,7 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
 
+//        telemetry.addData("a", transfer.getDistanceIntake());
         telemetry.addData("!Reached RPM", shooter.reachedRPM());
         telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
         telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());

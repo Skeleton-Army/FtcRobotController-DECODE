@@ -23,6 +23,9 @@ public class Transfer extends SubsystemBase {
     private final SensorRevColorV3 colorSensor;
     private final SensorRevTOFDistance sensorDistance;
 
+    private boolean colorSensorDisabled = false;
+    private boolean distanceSensorDisabled = false;
+
     public Transfer(final HardwareMap hardwareMap) {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
         kicker.set(KICKER_MIN);
@@ -32,6 +35,9 @@ public class Transfer extends SubsystemBase {
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
         sensorDistance = new SensorRevTOFDistance(hardwareMap, DISTANCE_SENSOR_NAME);
+
+        if (isSensorDisconnected(getDistance())) colorSensorDisabled = true;
+        if (isSensorDisconnected(getDistanceIntake())) distanceSensorDisabled = true;
     }
 
     public Command kick() {
@@ -56,22 +62,30 @@ public class Transfer extends SubsystemBase {
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public boolean isArtifactDetected() {
-        return getDistance() <= DISTANCE_THRESHOLD_CM;
+        double distance = getDistance();
+        if (distance == -1) return false;
+
+        return distance <= DISTANCE_THRESHOLD_CM;
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public double getDistance() {
+        if (colorSensorDisabled) return -1;
         return colorSensor.distance(DistanceUnit.CM);
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public double getDistanceIntake() {
+        if (distanceSensorDisabled) return -1;
         return sensorDistance.getDistance(DistanceUnit.CM);
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public boolean isArtifactInIntake()  {
-        return getDistanceIntake() <= DISTANCE_INTAKE_CM;
+        double distance = getDistanceIntake();
+        if (distance == -1) return false;
+
+        return distance <= DISTANCE_INTAKE_CM;
     }
 
     public Trigger threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
@@ -116,5 +130,9 @@ public class Transfer extends SubsystemBase {
                 return false;
             }
         });
+    }
+
+    private boolean isSensorDisconnected(double distanceCM) {
+        return distanceCM >= 100 || distanceCM <= 0;
     }
 }
