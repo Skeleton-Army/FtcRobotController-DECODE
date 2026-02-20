@@ -218,7 +218,7 @@ public class Shooter extends SubsystemBase {
         // Adding 1.0 and dividing by 2.0 scales 't' to be exactly between 0.0 and 1.0
         double currentAngle = turret.getDistance();
         double t = (Math.sin(2 * currentAngle) + 1.0) / 2.0;
-        double interpolatedKS = TURRET_KS_LOW + t * (TURRET_KS_HIGH - TURRET_KS_LOW);
+        double interpolatedKS = TURRET_KS_CW + t * (TURRET_KS_CCW - TURRET_KS_CW);
 
         // Only apply kS if the baseRequest is actually trying to move the motor
         // and apply it in the direction of that motion.
