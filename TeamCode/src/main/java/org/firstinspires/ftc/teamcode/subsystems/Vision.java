@@ -15,6 +15,10 @@ import com.skeletonarmy.marrow.TimerEx;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Consumer;
+
 public class Vision extends SubsystemBase {
     private final double METERS_TO_INCHES = 39.37;
 
@@ -22,6 +26,8 @@ public class Vision extends SubsystemBase {
     private final Limelight3A limelight;
 
     private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
+
+    private final List<Consumer<Pose>> onRelocalizeListeners = new ArrayList<>();
 
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker) {
         this.poseTracker = poseTracker;
@@ -76,6 +82,15 @@ public class Vision extends SubsystemBase {
         if (Math.abs(velocity) > VELOCITY_THRESHOLD || Math.abs(angularVelocity) > VELOCITY_THRESHOLD) return false;
 
         poseTracker.setPose(tagPose);
+
+        for (Consumer<Pose> listener : onRelocalizeListeners) {
+            listener.accept(tagPose);
+        }
+
         return true;
+    }
+
+    public void addRelocalizationListener(Consumer<Pose> listener) {
+        onRelocalizeListeners.add(listener);
     }
 }

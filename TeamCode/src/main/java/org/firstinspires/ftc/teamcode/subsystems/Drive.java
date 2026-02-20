@@ -185,6 +185,12 @@ public class Drive extends SubsystemBase {
         }
     }
 
+    public void holdPoint(Pose pose) {
+        if (isHoldingPosition) {
+            follower.holdPoint(pose);
+        }
+    }
+
     public void disable() {
         this.enabled = false;
         follower.setTeleOpDrive(0, 0, 0);

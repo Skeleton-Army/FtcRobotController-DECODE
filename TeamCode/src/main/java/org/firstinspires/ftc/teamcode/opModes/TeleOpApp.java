@@ -107,6 +107,8 @@ public class TeleOpApp extends ComplexOpMode {
         kickstand = new Kickstand(hardwareMap);
         vision = new Vision(hardwareMap, follower.poseTracker);
 
+        vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
+
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         gamepadEx1 = new GamepadEx(gamepad1);
