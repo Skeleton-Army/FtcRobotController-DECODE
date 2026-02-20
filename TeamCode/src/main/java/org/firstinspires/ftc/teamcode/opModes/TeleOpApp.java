@@ -76,6 +76,7 @@ public class TeleOpApp extends ComplexOpMode {
 
     private boolean isOverrideActive = false;
 
+    private double lastLoopTime = 0;
 
     @Override
     public void initialize() {
@@ -243,6 +244,10 @@ public class TeleOpApp extends ComplexOpMode {
 
     @Override
     public void run() {
+        double currentTime = matchTime.getElapsed();
+        double loopTimeMs = (currentTime - lastLoopTime) * 1000.0;
+        lastLoopTime = currentTime;
+
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
@@ -278,7 +283,9 @@ public class TeleOpApp extends ComplexOpMode {
         Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
 
-//        telemetry.addData("a", transfer.getDistanceIntake());
+        telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
+        telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
+
         telemetry.addData("!Reached RPM", shooter.reachedRPM());
         telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
         telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
@@ -338,6 +345,8 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry.update();
 
+        Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
+        Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
         Logger.recordOutput("Robot Pose", robotPose);
         Logger.recordOutput("Voltage", voltageSensor.getVoltage());
         Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone());
