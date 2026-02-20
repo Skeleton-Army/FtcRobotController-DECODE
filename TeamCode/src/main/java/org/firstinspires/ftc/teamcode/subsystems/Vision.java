@@ -69,9 +69,11 @@ public class Vision extends SubsystemBase {
 
     public boolean relocalize() {
         Pose tagPose = getAprilTagPose();
+        double velocity = poseTracker.getVelocity().getMagnitude();
+        double angularVelocity = poseTracker.getAngularVelocity();
 
         if (tagPose.roughlyEquals(new Pose(), 0.001)) return false;
-        if (poseTracker.getVelocity().getMagnitude() > VELOCITY_THRESHOLD || poseTracker.getAngularVelocity() > VELOCITY_THRESHOLD) return false;
+        if (Math.abs(velocity) > VELOCITY_THRESHOLD || Math.abs(angularVelocity) > VELOCITY_THRESHOLD) return false;
 
         poseTracker.setPose(tagPose);
         return true;
