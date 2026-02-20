@@ -275,7 +275,7 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading() - Math.PI));
+        Pose2d robotPose = new Pose2d(rotatedPose.getX() / INCHES_TO_METERS, rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading()));
 
         Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
@@ -301,9 +301,9 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Robot x", rotatedPose.getX());
-        telemetry.addData("Robot y", rotatedPose.getY());
-        telemetry.addData("Robot heading", rotatedPose.getHeading());
+        telemetry.addData("Robot x", -rotatedPose.getX());
+        telemetry.addData("Robot y", -rotatedPose.getY());
+        telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
         telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
         telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
         telemetry.addData("Current Voltage", voltageSensor.getVoltage());
@@ -329,10 +329,10 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
         telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
 
-        Pose mt2Pose = vision.getAprilTagPose().scale(INCHES_TO_METERS);
-        telemetry.addData("MT2 x", mt2Pose.getX());
-        telemetry.addData("MT2 y", mt2Pose.getY());
-        telemetry.addData("MT2 heading", mt2Pose.getHeading());
+        Pose mt2Pose = vision.getAprilTagPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        telemetry.addData("MT2 x", -mt2Pose.getX());
+        telemetry.addData("MT2 y", -mt2Pose.getY());
+        telemetry.addData("MT2 heading", mt2Pose.getHeading() - Math.PI);
         telemetry.addData("MT2 heading (deg)", Math.toDegrees(mt2Pose.getHeading()));
 
         telemetry.addData("Pinpoint limelight delta", follower.getPose().minus(mt2Pose));
