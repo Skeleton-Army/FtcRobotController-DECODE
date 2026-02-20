@@ -17,6 +17,7 @@ import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.prompts.BooleanPrompt;
@@ -555,7 +556,6 @@ public class AutonomousApp extends ComplexOpMode {
                 initialScore(),
                 pickupSequence(),
                 parkRoutine()
-
         );
     }
 
@@ -586,9 +586,17 @@ public class AutonomousApp extends ComplexOpMode {
                 // Open gate, collect, and go back to shoot
                 new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectFromGate()), null),
-                new WaitCommand(1000),
-                new InstantCommand(intake::stop),
-                new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
+                new WaitUntilCommand(transfer.threeArtifactsDetected(intake::isCollecting, 250))
+                        .withTimeout(2000),
+                new ParallelCommandGroup(
+                        new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
+                        new SequentialCommandGroup(
+                                // Continue running intake for a bit to ensure the balls intake properly
+                                new InstantCommand(intake::collect),
+                                new WaitCommand(1000),
+                                new InstantCommand(intake::stop)
+                        )
+                ),
                 shoot()
         );
     }
@@ -596,7 +604,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Command farCycle() {
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
-                collect(1),
+                collect(1).withTimeout(4000),
                 returnAndScore(1, false)
         );
     }

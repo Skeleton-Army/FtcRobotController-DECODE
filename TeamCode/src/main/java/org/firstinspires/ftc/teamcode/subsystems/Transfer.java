@@ -88,8 +88,8 @@ public class Transfer extends SubsystemBase {
         return distance <= DISTANCE_INTAKE_CM;
     }
 
-    public Trigger threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
-        return new Trigger(new BooleanSupplier() {
+    public BooleanSupplier threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
+        return new BooleanSupplier() {
             private long localDetectedTime = 0;
             private long lastEmptyCheckTime = 0;
             private final long EMPTY_POLL_COOLDOWN = 100;
@@ -129,7 +129,7 @@ public class Transfer extends SubsystemBase {
 
                 return false;
             }
-        });
+        };
     }
 
     private boolean isSensorDisconnected(double distanceCM) {

@@ -236,7 +236,7 @@ public class TeleOpApp extends ComplexOpMode {
                     .whenPressed(this::resetPoseToNearestCorner);
         }
 
-        transfer.threeArtifactsDetected(intake::isCollecting, 250)
+        new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
                 .whenActive(new InstantCommand(() -> gamepad1.rumble(300)));
 
         drive.setDefaultCommand(
