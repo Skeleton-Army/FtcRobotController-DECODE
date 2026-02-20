@@ -80,6 +80,7 @@ public class Shooter extends SubsystemBase {
 
     private boolean emergencyStop = false;
     private boolean updateHood = true;
+    private boolean updateFlywheel = true;
     public boolean disabled = false;
 
     public Pose currentPose;
@@ -177,7 +178,7 @@ public class Shooter extends SubsystemBase {
 
         if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
         if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
-        setRPM(solution.getRPM());
+        if (updateFlywheel) setRPM(solution.getRPM());
 
         double voltage = voltageSensor.getVoltage();
         updateFlywheelPID(voltage);
@@ -210,9 +211,9 @@ public class Shooter extends SubsystemBase {
 
         // 2. Calculate Acceleration using real dt
         double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
-        double currentAcceleration = (filteredRPM - lastSpeedFlywheelFiltered) / dt;
-        OpModeManager.getTelemetry().addData("flywheel target acceleration", targetAcceleration);
-        OpModeManager.getTelemetry().addData("flywheel acceleration", currentAcceleration);
+//        double currentAcceleration = (filteredRPM - lastSpeedFlywheelFiltered) / dt;
+//        OpModeManager.getTelemetry().addData("flywheel target acceleration", targetAcceleration);
+//        OpModeManager.getTelemetry().addData("flywheel acceleration", currentAcceleration);
 
         // Choose kA based on the direction of acceleration
         double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
@@ -533,6 +534,10 @@ public class Shooter extends SubsystemBase {
 
     public void setUpdateHood(boolean enabled) {
         updateHood = enabled;
+    }
+
+    public void setUpdateFlywheel(boolean enabled) {
+        updateFlywheel = enabled;
     }
 
     public void disable() {

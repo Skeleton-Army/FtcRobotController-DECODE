@@ -252,6 +252,8 @@ public class TeleOpApp extends ComplexOpMode {
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
+        shooter.setUpdateFlywheel(isInsideLaunchZone());
+
         // Immediately cancel drive command if joysticks are moved
         boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
                 Math.abs(gamepad1.left_stick_x) > 0.1 ||
@@ -322,7 +324,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
         telemetry.addData("Filtered Flywheel RPM predicted", shooter.filteredRPMPredicted);
         telemetry.addData("Target solution RPM", shooter.solution.getRPM());
-        telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
+        telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
         telemetry.addData("Recovery Time", shooter.getRecoveryTime());
         telemetry.addData("calculating recovery", shooter.calculatedRecovery);
 
@@ -352,7 +354,7 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
         Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
         Logger.recordOutput("Shooter/Flywheel/ Filtered RPM Predicted", shooter.filteredRPMPredicted);
-        Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
+        Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
         Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
         Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
