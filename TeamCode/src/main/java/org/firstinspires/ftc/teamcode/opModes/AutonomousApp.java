@@ -24,6 +24,8 @@ import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
 import com.skeletonarmy.marrow.settings.Settings;
+import com.skeletonarmy.marrow.zones.Point;
+import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -47,6 +49,10 @@ import java.util.function.Supplier;
 
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
 public class AutonomousApp extends ComplexOpMode {
+    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
+    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
+    private final PolygonZone robotZone = new PolygonZone(17, 17);
+
     private final Prompter prompter = new Prompter(this);
     TimerEx matchTime = new TimerEx(30); // 30 second autonomous
 
@@ -497,6 +503,7 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void run() {
         telemetry.update();
+        shooter.setUpdateFlywheel(isInsideLaunchZone());
 
         final double inchesToMeters = 39.37;
 
@@ -508,7 +515,7 @@ public class AutonomousApp extends ComplexOpMode {
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
-        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.solution.getRPM()));
+        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
@@ -683,5 +690,11 @@ public class AutonomousApp extends ComplexOpMode {
 
     private PathChain getFinalPath() {
         return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBackEnd;
+    }
+
+    public boolean isInsideLaunchZone() {
+        boolean insideClose = robotZone.isInside(closeLaunchZone);
+        boolean insideFar = robotZone.isInside(farLaunchZone);
+        return insideClose || insideFar;
     }
 }
