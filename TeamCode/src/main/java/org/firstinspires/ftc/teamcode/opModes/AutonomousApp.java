@@ -442,6 +442,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void initialize() {
+        telemetry.setMsTransmissionInterval(500);
+
         Settings.set("debug_mode", false, true);
         Settings.set("tabletop_mode", false, true);
 
@@ -504,6 +506,10 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void run() {
         telemetry.update();
+
+        double voltage = voltageSensor.getVoltage();
+
+        shooter.updateVoltage(voltage);
         shooter.setUpdateFlywheel(isInsideLaunchZone());
 
         final double inchesToMeters = 39.37;
@@ -512,7 +518,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
         Logger.recordOutput("Robot Pose", robotPose);
-        Logger.recordOutput("Voltage", voltageSensor.getVoltage());
+        Logger.recordOutput("Voltage", voltage);
         Logger.recordOutput("Reached RPM", shooter.reachedRPM());
         Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());

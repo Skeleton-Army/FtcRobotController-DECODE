@@ -105,6 +105,9 @@ public class Shooter extends SubsystemBase {
     private double filteredTargetVel = 0;
     private double filteredTargetAccel = 0;
 
+    private double voltage = 12;
+    private boolean voltageExternallySupplied = false;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
@@ -168,6 +171,10 @@ public class Shooter extends SubsystemBase {
         }
         // --------------------
 
+        if (!voltageExternallySupplied) {
+            this.voltage = voltageSensor.getVoltage();
+        }
+
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
         filteredRPM = getFilteredRPM(getRPM());
@@ -180,12 +187,13 @@ public class Shooter extends SubsystemBase {
         if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         if (updateFlywheel) setRPM(solution.getRPM());
 
-        double voltage = voltageSensor.getVoltage();
-        updateFlywheelPID(voltage);
+        updateFlywheelPID();
         updateTurretPID();
+
+        voltageExternallySupplied = false;
     }
 
-    public void updateFlywheelPID(double voltage) {
+    public void updateFlywheelPID() {
         if (disabled || emergencyStop) {
             flywheel.set(0);
             rampTimer.restart();
@@ -270,7 +278,7 @@ public class Shooter extends SubsystemBase {
             }
         }
 
-        double voltageScale = 12.0 / voltageSensor.getVoltage();
+        double voltageScale = 12.0 / voltage;
         double finalOutput = (totalRequest + staticComp) * voltageScale;
 
         turret.set(finalOutput);
@@ -538,6 +546,11 @@ public class Shooter extends SubsystemBase {
 
     public void setUpdateFlywheel(boolean enabled) {
         updateFlywheel = enabled;
+    }
+
+    public void updateVoltage(double voltage) {
+        this.voltage = voltage;
+        voltageExternallySupplied = true;
     }
 
     public void disable() {

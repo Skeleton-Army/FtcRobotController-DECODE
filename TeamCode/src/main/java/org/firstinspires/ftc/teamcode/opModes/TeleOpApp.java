@@ -77,6 +77,7 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean isOverrideActive = false;
 
     private double lastLoopTime = 0;
+    private int loopCount = 0;
 
     @Override
     public void initialize() {
@@ -89,8 +90,8 @@ public class TeleOpApp extends ComplexOpMode {
         Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         if (!debugMode) startPose = Settings.get("pose", new Pose(X_OFFSET, Y_OFFSET));
 
-        //startPose = new Pose(72,72,0);
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        telemetry.setMsTransmissionInterval(500);
 
         follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(USE_BRAKE_MODE);
@@ -247,11 +248,16 @@ public class TeleOpApp extends ComplexOpMode {
         double currentTime = matchTime.getElapsed();
         double loopTimeMs = (currentTime - lastLoopTime) * 1000.0;
         lastLoopTime = currentTime;
+        loopCount++;
 
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
-        shooter.setUpdateFlywheel(isInsideLaunchZone());
+        boolean isInsideLaunchZone = isInsideLaunchZone();
+        double voltage = voltageSensor.getVoltage();
+
+        shooter.updateVoltage(voltage);
+        shooter.setUpdateFlywheel(isInsideLaunchZone);
 
         // Immediately cancel drive command if joysticks are moved
         boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
@@ -273,99 +279,100 @@ public class TeleOpApp extends ComplexOpMode {
             isOverrideActive = false;
         }
 
-        if (!isInsideLaunchZone() && !isOverrideActive) {
+        if (!isInsideLaunchZone && !isOverrideActive) {
             CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
         }
 
-        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        Pose2d robotPose = new Pose2d(rotatedPose.getX() / INCHES_TO_METERS, rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading()));
+        double goalDistance = follower.getPose().distanceFrom(
+                alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
+        ) / INCHES_TO_METERS;
 
-        Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
+        if (loopCount % 10 == 0) {
+            Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+            Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
 
-        telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
-        telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
+            telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
+            telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
 
-        telemetry.addData("!Reached RPM", shooter.reachedRPM());
-        telemetry.addData("!Detected artifact", transfer.isArtifactDetected());
-        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone());
-        telemetry.addData("!Reached angle", shooter.reachedAngle());
-        telemetry.addData("!Can shoot", shooter.getCanShoot());
+            telemetry.addData("!Reached RPM", shooter.reachedRPM());
+            telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
+            telemetry.addData("!Reached angle", shooter.reachedAngle());
+            telemetry.addData("!Can shoot", shooter.getCanShoot());
 
-        telemetry.addData("Time remaining", matchTime.getRemaining());
+            telemetry.addData("Time remaining", matchTime.getRemaining());
 
-        telemetry.addData("Goal x", rotatedGoalPose.getX());
-        telemetry.addData("Goal y", rotatedGoalPose.getY());
-        telemetry.addData("Goal heading", 0);
+            telemetry.addData("Goal x", rotatedGoalPose.getX());
+            telemetry.addData("Goal y", rotatedGoalPose.getY());
+            telemetry.addData("Goal heading", 0);
 
-        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
-        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
-        telemetry.addData("Drift x", driftX);
-        telemetry.addData("Drift y", driftY);
-        telemetry.addData("Drift total", driftX + driftY);
+            double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
+            double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+            telemetry.addData("Drift x", driftX);
+            telemetry.addData("Drift y", driftY);
+            telemetry.addData("Drift total", driftX + driftY);
 
-        telemetry.addData("Pedro Robot x", follower.getPose().getX());
-        telemetry.addData("Pedro Robot y", follower.getPose().getY());
-        telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Robot x", -rotatedPose.getX());
-        telemetry.addData("Robot y", -rotatedPose.getY());
-        telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
-        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("Distance from GOAL", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
-        telemetry.addData("Current Voltage", voltageSensor.getVoltage());
-        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-        telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
-        telemetry.addData("Turret error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
-        telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+            telemetry.addData("Pedro Robot x", follower.getPose().getX());
+            telemetry.addData("Pedro Robot y", follower.getPose().getY());
+            telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
+            telemetry.addData("Robot x", -rotatedPose.getX());
+            telemetry.addData("Robot y", -rotatedPose.getY());
+            telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
+            telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+            telemetry.addData("Distance from GOAL", goalDistance);
+            telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+            telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
+            telemetry.addData("Turret error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+            telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
 
-        telemetry.addData("hood pos", shooter.getRawHoodPosition());
-        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
-        telemetry.addData("Flywheel RPM", shooter.getRPM());
-        telemetry.addData("Flywheel RPM corrected timing ", shooter.getRPMCorrectedTiming());
-        telemetry.addData("rpm raw prediction error ", shooter.filteredRPM - shooter.filteredRPMPredicted);
-        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
-        telemetry.addData("Filtered Flywheel RPM predicted", shooter.filteredRPMPredicted);
-        telemetry.addData("Target solution RPM", shooter.solution.getRPM());
-        telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
-        telemetry.addData("Recovery Time", shooter.getRecoveryTime());
-        telemetry.addData("calculating recovery", shooter.calculatedRecovery);
+            telemetry.addData("hood pos", shooter.getRawHoodPosition());
+            telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
+            telemetry.addData("Flywheel RPM", shooter.getRPM());
+            telemetry.addData("Flywheel RPM corrected timing ", shooter.getRPMCorrectedTiming());
+            telemetry.addData("rpm raw prediction error ", shooter.filteredRPM - shooter.filteredRPMPredicted);
+            telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
+            telemetry.addData("Filtered Flywheel RPM predicted", shooter.filteredRPMPredicted);
+            telemetry.addData("Target solution RPM", shooter.solution.getRPM());
+            telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+            telemetry.addData("Recovery Time", shooter.getRecoveryTime());
+            telemetry.addData("calculating recovery", shooter.calculatedRecovery);
 
-        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
-        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
-        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
-        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+            telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
+            telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
+            telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
+            telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
 
-        Pose mt2Pose = vision.getAprilTagPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        telemetry.addData("MT2 x", -mt2Pose.getX());
-        telemetry.addData("MT2 y", -mt2Pose.getY());
-        telemetry.addData("MT2 heading", mt2Pose.getHeading() - Math.PI);
-        telemetry.addData("MT2 heading (deg)", Math.toDegrees(mt2Pose.getHeading()));
+            telemetry.update();
+        }
 
-        telemetry.addData("Pinpoint limelight delta", follower.getPose().minus(mt2Pose));
+        if (loopCount % 5 == 0) {
+            Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+            Pose2d robotPose = new Pose2d(rotatedPose.getX() / INCHES_TO_METERS, rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading()));
 
-        telemetry.update();
+            Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+            Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
 
-        Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
-        Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
-        Logger.recordOutput("Robot Pose", robotPose);
-        Logger.recordOutput("Voltage", voltageSensor.getVoltage());
-        Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone());
-        Logger.recordOutput("Reached RPM", shooter.reachedRPM());
-        Logger.recordOutput("Reached Angle", shooter.reachedAngle());
-        Logger.recordOutput("Can Shoot", shooter.getCanShoot());
-        Logger.recordOutput("Goal Pose", goalPose);
-        Logger.recordOutput("Distance From Pose", follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS);
-        Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
-        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
-        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM Predicted", shooter.filteredRPMPredicted);
-        Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
-        Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
-        Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
-        Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
-        Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-        Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
-        Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
-        Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+            Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
+            Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
+            Logger.recordOutput("Robot Pose", robotPose);
+            Logger.recordOutput("Voltage", voltage);
+            Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone);
+            Logger.recordOutput("Reached RPM", shooter.reachedRPM());
+            Logger.recordOutput("Reached Angle", shooter.reachedAngle());
+            Logger.recordOutput("Can Shoot", shooter.getCanShoot());
+            Logger.recordOutput("Goal Pose", goalPose);
+            Logger.recordOutput("Distance From Pose", goalDistance);
+            Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
+            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
+            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM Predicted", shooter.filteredRPMPredicted);
+            Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+            Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
+            Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
+            Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
+            Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+            Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+            Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+            Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+        }
     }
 
     @Override
