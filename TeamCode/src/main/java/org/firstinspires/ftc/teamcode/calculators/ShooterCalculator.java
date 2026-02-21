@@ -11,6 +11,7 @@ import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.MAX_VEL_
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.RANGE_BUFFER;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.INCH_TO_METERS;
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY_TURRET;
 
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
@@ -24,7 +25,7 @@ import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 public class ShooterCalculator implements IShooterCalculator {
     private static final double RANGE_BUFFER = 0.05; // Buffer for velocity bounds
     private static final double INCH_TO_METERS = 0.0254;
-    private static final double SHOT_LATENCY = 0.1; // Example latency
+    //private static final double SHOT_LATENCY = 0.1; // Example latency
     private static final double TURRET_OFFSET_X = 0.0; // Example offsets
     private static final double TURRET_OFFSET_Y = 0.0;
 
@@ -97,7 +98,7 @@ public class ShooterCalculator implements IShooterCalculator {
 
         double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
         double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
-        double predHeading = robotPoseMeters.getHeading() + angularVel * SHOT_LATENCY;
+        double predHeading = robotPoseMeters.getHeading() + angularVel * SHOT_LATENCY_TURRET;
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
         double distance = goalPoseMeters.distanceFrom(predictedPose);

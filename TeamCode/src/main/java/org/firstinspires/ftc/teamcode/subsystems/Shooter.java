@@ -52,6 +52,7 @@ public class Shooter extends SubsystemBase {
     public Pose goalPose;
     public Pose turretGoalPose;
 
+    public boolean isConfiguredCW = true;
     private double targetTPS;
 
     private final TimerEx recoveryTimer;
@@ -238,6 +239,52 @@ public class Shooter extends SubsystemBase {
         double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
 
         flywheel.set(finalPower, voltage);
+    }
+
+    public void updateTurretPIDTwoSides() {
+        if (disabled || emergencyStop) {
+            turret.set(0);
+            return;
+        }
+
+        double currentPos = turret.getDistance();
+        double setpoint = turretPID.getSetPoint();
+        double error = setpoint - currentPos;
+
+        // 1. Gain Scheduling with Hysteresis
+        // We only swap gains if the error is larger than a small threshold (e.g., 0.5 degrees)
+        // This creates a "dead zone" where it stops rapidly switching if it's just hovering near 0
+        if (error > 0.5 && !isConfiguredCW) {
+            turretPID.setPID(TURRET_KP_CW, TURRET_KI_CW, TURRET_KD_CW);
+            isConfiguredCW = true;
+        } else if (error < -0.5 && isConfiguredCW) {
+            turretPID.setPID(TURRET_KP_CCW, TURRET_KI_CCW, TURRET_KD_CCW);
+            isConfiguredCW = false;
+        }
+
+        // Now calculate using the single, continuous PID object
+        double pidOutput = turretPID.calculate(currentPos);
+
+        // I-Zone Logic
+        if (Math.abs(error) > TURRET_IZONE) {
+            turretPID.reset(); // Clears integral if too far away
+        }
+
+        // 2. Robot Motion Compensation (Feedforward)
+        double[] netKinematics = getNetTargetKinematics();
+        double ffBase = (netKinematics[0] * TURRET_KV) + (netKinematics[1] * TURRET_KA);
+
+        // 3. Static Friction (kS)
+        double staticComp = 0;
+        // Introduce a small deadband to static friction too, so it doesn't vibrate at the setpoint
+        if (Math.abs(error) > 0.2) {
+            staticComp = (error > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+        }
+
+        double voltageScale = 12.0 / voltage;
+        double finalOutput = (pidOutput + ffBase + staticComp) * voltageScale;
+
+        turret.set(finalOutput);
     }
 
     public void updateTurretPID() {

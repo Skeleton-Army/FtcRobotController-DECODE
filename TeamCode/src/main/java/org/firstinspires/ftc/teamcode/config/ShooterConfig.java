@@ -17,7 +17,7 @@ public class ShooterConfig {
     public static double FLYWHEEL_KD = 0.2;
     public static double FLYWHEEL_KS = 150;
     public static double FLYWHEEL_KA = 0.5;
-    public static double FLYWHEEL_KA_DOWN = 0.75;
+    public static double FLYWHEEL_KA_DOWN = 0.5;
     public static double FLYWHEEL_KV = 1.7;
     public static double FLYWHEEL_DELAY_SEC = 0.1; // ~2 control loops @ 20ms
     public static double FLYWHEEL_SHOOTING_DIFFRENCE = 0.02;
@@ -31,13 +31,23 @@ public class ShooterConfig {
     public static double TURRET_IZONE = Math.toRadians(10);
     public static double ACCELERATION_SMOOTHING_GAIN = 0.7;
     public static double TURRET_DERIVATIVE_GAIN = 0.8;
-    public static double TURRET_KP = 0.5;
-    public static double TURRET_KI = 0.01;
+    public static double TURRET_KP = 0.7;
+    public static double TURRET_KI = 0.02;
     public static double TURRET_KD = 0.01;
     public static double TURRET_KS_CW = 0.05;
+
+    // clockwise PID - Turret
+    public static double TURRET_KP_CW = 1;
+    public static double TURRET_KI_CW = 0;
+    public static double TURRET_KD_CW = 0;
+
+    //Count clockwise PID - Turret
+    public static double TURRET_KP_CCW = 0.7;
+    public static double TURRET_KI_CCW = 0.02;
+    public static double TURRET_KD_CCW = 0.01;
     public static double TURRET_KS_CCW = 0.04;
     public static double TURRET_KV = 0.1;
-    public static double TURRET_KA = 0.0035;
+    public static double TURRET_KA = 0.004;
     public static double TURRET_MIN = Math.toRadians(-170); // Clockwise
     public static double TURRET_MAX = Math.toRadians(180); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;

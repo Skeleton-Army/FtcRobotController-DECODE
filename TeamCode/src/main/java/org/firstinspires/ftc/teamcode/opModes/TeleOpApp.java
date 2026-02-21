@@ -322,19 +322,16 @@ public class TeleOpApp extends ComplexOpMode {
             telemetry.addData("hood pos", shooter.getRawHoodPosition());
             telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
             telemetry.addData("Flywheel RPM", shooter.getRPM());
-            telemetry.addData("Flywheel RPM corrected timing ", shooter.getRPMCorrectedTiming());
-            telemetry.addData("rpm raw prediction error ", shooter.filteredRPM - shooter.filteredRPMPredicted);
             telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
-            telemetry.addData("Filtered Flywheel RPM predicted", shooter.filteredRPMPredicted);
             telemetry.addData("Target solution RPM", shooter.solution.getRPM());
             telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
-            telemetry.addData("Recovery Time", shooter.getRecoveryTime());
-            telemetry.addData("calculating recovery", shooter.calculatedRecovery);
 
             telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
             telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
             telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
             telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+            telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
+            telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
 
             telemetry.update();
         }
@@ -353,8 +350,6 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Can Shoot", shooter.getCanShoot());
             Logger.recordOutput("Distance From Pose", goalDistance);
             Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
-            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
-            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM Predicted", shooter.filteredRPMPredicted);
             Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
             Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
             Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
