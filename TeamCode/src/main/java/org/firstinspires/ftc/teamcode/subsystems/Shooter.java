@@ -272,12 +272,20 @@ public class Shooter extends SubsystemBase {
 
         // 2. Robot Motion Compensation (Feedforward)
         double[] netKinematics = getNetTargetKinematics();
-        double ffBase = (netKinematics[0] * TURRET_KV) + (netKinematics[1] * TURRET_KA);
+        double netVel = netKinematics[0];
+        double netAccel = netKinematics[1];
+
+        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
 
         // 3. Static Friction (kS)
         double staticComp = 0;
-        // Introduce a small deadband to static friction too, so it doesn't vibrate at the setpoint
-        if (Math.abs(error) > 0.2) {
+
+        if (Math.abs(netVel) > 0.01) {
+            // If the target is moving, apply kS in the direction of travel
+            staticComp = (netVel > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+        } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
+            // If the target is still, but we have error, use the error sign
+            // to help the PID break stiction to reach the final goal.
             staticComp = (error > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
         }
 
@@ -315,14 +323,13 @@ public class Shooter extends SubsystemBase {
         // and apply it in the direction of that motion.
         double staticComp = 0;
 
-        if (Math.abs(error) > 0.01) {
-            if (-error > 0) {
-                // Clockwise movement (Positive)
-                staticComp = -TURRET_KS_CW;
-            } else {
-                // Counter-Clockwise movement (Negative)
-                staticComp = TURRET_KS_CCW;
-            }
+        if (Math.abs(netVel) > 0.01) {
+            // If the target is moving, apply kS in the direction of travel
+            staticComp = (netVel > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+        } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
+            // If the target is still, but we have error, use the error sign
+            // to help the PID break stiction to reach the final goal.
+            staticComp = (error > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
         }
 
         double voltageScale = 12.0 / voltage;
