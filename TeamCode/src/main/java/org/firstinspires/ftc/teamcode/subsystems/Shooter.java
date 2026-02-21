@@ -178,7 +178,7 @@ public class Shooter extends SubsystemBase {
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
         filteredRPM = getFilteredRPM(getRPM());
-        filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
+        //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
         canShoot = solution.getCanShoot();

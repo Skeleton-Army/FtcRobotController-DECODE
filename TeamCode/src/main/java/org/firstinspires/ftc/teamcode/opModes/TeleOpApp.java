@@ -289,7 +289,6 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (loopCount % 10 == 0) {
             Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-            Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
 
             telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
             telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
@@ -300,10 +299,6 @@ public class TeleOpApp extends ComplexOpMode {
             telemetry.addData("!Can shoot", shooter.getCanShoot());
 
             telemetry.addData("Time remaining", matchTime.getRemaining());
-
-            telemetry.addData("Goal x", rotatedGoalPose.getX());
-            telemetry.addData("Goal y", rotatedGoalPose.getY());
-            telemetry.addData("Goal heading", 0);
 
             double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
             double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
@@ -348,9 +343,6 @@ public class TeleOpApp extends ComplexOpMode {
             Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
             Pose2d robotPose = new Pose2d(rotatedPose.getX() / INCHES_TO_METERS, rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(rotatedPose.getHeading()));
 
-            Pose rotatedGoalPose = shooter.goalPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-            Pose2d goalPose = new Pose2d(-rotatedGoalPose.getX() / INCHES_TO_METERS, -rotatedGoalPose.getY() / INCHES_TO_METERS, new Rotation2d());
-
             Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
             Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
             Logger.recordOutput("Robot Pose", robotPose);
@@ -359,7 +351,6 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Reached RPM", shooter.reachedRPM());
             Logger.recordOutput("Reached Angle", shooter.reachedAngle());
             Logger.recordOutput("Can Shoot", shooter.getCanShoot());
-            Logger.recordOutput("Goal Pose", goalPose);
             Logger.recordOutput("Distance From Pose", goalDistance);
             Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
             Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
