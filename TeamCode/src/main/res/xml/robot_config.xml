@@ -13,6 +13,8 @@
             <Servo name="hood" port="0" />
             <Servo name="stopper" port="1" />
             <Servo name="kickstand" port="2" />
+
+            <REV_VL53L0X_RANGE_SENSOR name="intakeSensor" port="0" bus="0" />
         </LynxModule>
 
         <LynxModule name="Control Hub" port="173">
@@ -25,7 +27,6 @@
 
             <ControlHubImuBHI260AP name="imu" port="0" bus="0" />
             <goBILDAPinpoint name="pinpoint" port="0" bus="1" />
-            <REV_VL53L0X_RANGE_SENSOR name="intakeSensor" port="0" bus="2" />
             <RevColorSensorV3 name="transferSensor" port="0" bus="3"/>
         </LynxModule>
     </LynxUsbDevice>
