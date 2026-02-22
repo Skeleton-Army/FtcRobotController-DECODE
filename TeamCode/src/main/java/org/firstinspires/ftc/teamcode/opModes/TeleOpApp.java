@@ -14,6 +14,7 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -117,12 +118,10 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx2 = new GamepadEx(gamepad2);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whenPressed(new InstantCommand(intake::collect, intake, transfer))
-                .whenReleased(new InstantCommand(intake::stop, intake, transfer));
+                .whileHeld(new InstantCommand(intake::collect, intake));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whenPressed(new InstantCommand(intake::release, intake, transfer))
-                .whenReleased(new InstantCommand(intake::stop, intake, transfer));
+                .whileHeld(new InstantCommand(intake::release, intake, transfer));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new InstantCommand(() -> {
@@ -135,9 +134,15 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 }));
 
+//        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
+//                .whileActiveContinuous(transfer::release)
+//                .and(new Trigger(() -> !isInsideLaunchZone() || !shooter.getCanShoot()))
+//                .whileActiveContinuous(transfer::block);
+
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isInsideLaunchZone))
-                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                .and(new Trigger(transfer::isArtifactDetected))
+                .whileActiveContinuous(new UninterruptibleCommand(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
@@ -230,6 +235,7 @@ public class TeleOpApp extends ComplexOpMode {
         new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
                 .whenActive(new InstantCommand(() -> gamepad1.rumble(300)));
 
+        intake.setDefaultCommand(new RunCommand(intake::stop, intake));
         drive.setDefaultCommand(
                 new RunCommand(
                         () -> drive.teleOpDrive(gamepad1),
@@ -373,7 +379,7 @@ public class TeleOpApp extends ComplexOpMode {
     public boolean isInsideLaunchZone() {
         boolean insideClose = robotZone.isInside(closeLaunchZone);
         boolean insideFar = robotZone.isInside(farLaunchZone);
-        return insideClose || insideFar || debugMode;
+        return insideClose || insideFar;
     }
 
     public LaunchZone getCurrentLaunchZone() {
