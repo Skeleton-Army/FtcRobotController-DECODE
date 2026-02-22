@@ -316,7 +316,7 @@ public class TeleOpApp extends ComplexOpMode {
             telemetry.addData("Distance from GOAL", goalDistance);
             telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
             telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
-            telemetry.addData("Turret error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+            telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
             telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
 
             telemetry.addData("hood pos", shooter.getRawHoodPosition());

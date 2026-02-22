@@ -50,7 +50,7 @@ public class ShooterConfig {
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
     public static double TURRET_KS_CCW = 0.04;
-    public static double TURRET_KV = 0.1;
+    public static double TURRET_KV = 0.154;
     public static double TURRET_KA = 0.004;
     public static double TURRET_MIN = Math.toRadians(-170); // Clockwise
     public static double TURRET_MAX = Math.toRadians(180); // Counter-clockwise
