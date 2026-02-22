@@ -263,7 +263,7 @@ public class TeleOpApp extends ComplexOpMode {
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
-        shooter.setUpdateFlywheel(isInsideLaunchZone);
+        shooter.setUpdateFlywheel(distanceFromLaunchZone() < 20);
 
         // Immediately cancel drive command if joysticks are moved
         boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
@@ -380,6 +380,10 @@ public class TeleOpApp extends ComplexOpMode {
         boolean insideClose = robotZone.isInside(closeLaunchZone);
         boolean insideFar = robotZone.isInside(farLaunchZone);
         return insideClose || insideFar;
+    }
+
+    public double distanceFromLaunchZone() {
+        return Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
     }
 
     public LaunchZone getCurrentLaunchZone() {
