@@ -62,7 +62,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
-                new WaitCommand(1000),
+                new WaitCommand(1200),
 //                new ConditionalCommand(
 //                        transfer.kick(),
 //                        new InstantCommand(),

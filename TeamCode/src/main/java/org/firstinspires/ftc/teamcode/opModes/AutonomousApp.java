@@ -137,7 +137,7 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .setLinearHeadingInterpolation(
                         follower.getHeading(),
-                        getRelative(Math.toRadians(140))
+                        getRelative(Math.toRadians(154.8622))
                 )
                 .build();
     }
@@ -161,18 +161,18 @@ public class AutonomousApp extends ComplexOpMode {
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55.78,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(22.92, 120.32, Math.toRadians(143)));
+        nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
         pushStartingPose = getRelative(new Pose(57.85,8.5, Math.toRadians(180)));
 
         Pose spike1End = getRelative(new Pose(13, 9.708060475161995));
         Pose spike2End = getRelative(new Pose(20, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(20, 57));
-        Pose spike4End = getRelative(new Pose(23.216, 83.663));
+        Pose spike4End = getRelative(new Pose(21.216, 83.663));
         Pose openGateEnd = getRelative(new Pose(25, 74));
 
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
-        gateOpenPose = getRelative(new Pose(12, 59.125));
+        gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
 
         nearPathsReturn[0] = this::nearDriveBack;
         nearPathsReturn[1] = this::nearDriveBack;
@@ -439,8 +439,6 @@ public class AutonomousApp extends ComplexOpMode {
 
         follower.setStartingPose(startingPose);
         Settings.set("pose", startingPose, false);
-
-        follower.update(); // DO NOT DELETE THIS - I have no clue why, but this makes it use the actual PID coefficients. Without it, if the entire PID is set to 0, it will still move. Live Love Pedro XOXO.
     }
 
     @Override
@@ -509,6 +507,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void run() {
+        follower.update();
+
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
@@ -676,7 +676,7 @@ public class AutonomousApp extends ComplexOpMode {
                 new SequentialCommandGroup(
                         // Continue running intake for a bit to ensure the balls intake properly
                         new InstantCommand(intake::collect),
-                        new WaitCommand(1000),
+                        new WaitCommand(2000),
                         new InstantCommand(intake::stop)
                 ),
                 new SequentialCommandGroup(
