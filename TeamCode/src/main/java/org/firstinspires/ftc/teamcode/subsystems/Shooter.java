@@ -189,12 +189,13 @@ public class Shooter extends SubsystemBase {
         if (updateFlywheel) setRPM(solution.getRPM());
 
         updateFlywheelPID();
-        updateTurretPID();
+        updateTurretPID(true);
+        //updateTurretPID(false);
 
         voltageExternallySupplied = false;
     }
 
-    public void updateFlywheelPID() {
+    public void updateFlywheelPID(boolean useDelayCompensation) {
         if (disabled || emergencyStop) {
             flywheel.set(0);
             rampTimer.restart();
@@ -218,6 +219,12 @@ public class Shooter extends SubsystemBase {
 
         double speed = (0.9 * targetTPS) * rampMultiplier;
 
+        double velocity = flywheel.getCorrectedVelocity();
+        if (useDelayCompensation) {
+            double accel = flywheel.getAcceleration();
+            velocity += accel * FLYWHEEL_DELAY_SEC;
+            speed += accel * FLYWHEEL_DELAY_SEC;
+        }
         // 2. Calculate Acceleration using real dt
         double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
 //        double currentAcceleration = (filteredRPM - lastSpeedFlywheelFiltered) / dt;
@@ -227,7 +234,7 @@ public class Shooter extends SubsystemBase {
         // Choose kA based on the direction of acceleration
         double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
 
-        double pid = flywheelPID.calculate(flywheel.getCorrectedVelocity(), speed);
+        double pid = flywheelPID.calculate(velocity, speed);
         double ff = (FLYWHEEL_KS * Math.signum(speed)) +
                 (FLYWHEEL_KV * speed) +
                 (currentKA * targetAcceleration);
@@ -295,14 +302,26 @@ public class Shooter extends SubsystemBase {
         turret.set(finalOutput);
     }
 
-    public void updateTurretPID() {
+    public void updateTurretPID(boolean useDelayCompensation) {
         if (disabled || emergencyStop) {
             turret.set(0);
             return;
         }
 
-        // 1. PID Calculation
-        double pid = turretPID.calculate(turret.getDistance());
+        // --- 1. Sensor Reading & Delay Compensation ---
+        double measuredPos = turret.getDistance();
+
+        if (useDelayCompensation) {
+            // Grab the velocity (ensure this returns units/sec matching your distance units)
+            double measuredVel = turret.getVelocity();
+
+            // Extrapolate the position forward to guess where the turret is RIGHT NOW
+            measuredPos += (measuredVel * TURRET_DELAY);
+        }
+
+        // --- 2. PID Calculation ---
+        // Feed the (potentially compensated) position into the PID
+        double pid = turretPID.calculate(measuredPos);
         double error = turretPID.getPositionError();
 
         // If we are more than X degrees away, clear the integral sum
@@ -311,7 +330,7 @@ public class Shooter extends SubsystemBase {
             turretPID.clearTotalError();
         }
 
-        // 2. Robot Motion Compensation
+        // --- 3. Robot Motion Compensation ---
         double[] netKinematics = getNetTargetKinematics();
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
@@ -319,6 +338,7 @@ public class Shooter extends SubsystemBase {
         double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
         double totalRequest = pid + ffBase;
 
+        // --- 4. Static Friction (kS) ---
         // Only apply kS if the baseRequest is actually trying to move the motor
         // and apply it in the direction of that motion.
         double staticComp = 0;
@@ -332,6 +352,7 @@ public class Shooter extends SubsystemBase {
             staticComp = (error > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
         }
 
+        // --- 5. Voltage Scaling & Output ---
         double voltageScale = 12.0 / voltage;
         double finalOutput = (totalRequest + staticComp) * voltageScale;
 
