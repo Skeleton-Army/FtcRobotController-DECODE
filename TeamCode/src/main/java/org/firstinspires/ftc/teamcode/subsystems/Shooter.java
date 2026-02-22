@@ -265,11 +265,6 @@ public class Shooter extends SubsystemBase {
         // Safety: Clamp power between -1.0 and 1.0 before setting
         finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
 
-        OpModeManager.getTelemetry().addData("power flywheel ", finalPower * (12.0 / voltage));
-        OpModeManager.getTelemetry().addData("PID Output", pid);
-        OpModeManager.getTelemetry().addData("FF Output", ff);
-        OpModeManager.getTelemetry().update();
-
         flywheel.set(finalPower, voltage);
     }
 

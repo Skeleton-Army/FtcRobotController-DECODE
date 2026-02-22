@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
@@ -19,6 +21,7 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
@@ -442,6 +445,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void initialize() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
         telemetry.setMsTransmissionInterval(500);
 
         Settings.set("debug_mode", false, true);
@@ -505,7 +509,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void run() {
-        telemetry.update();
+        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
+        robotZone.setRotation(follower.getPose().getHeading());
 
         double voltage = voltageSensor.getVoltage();
 
@@ -525,6 +530,10 @@ public class AutonomousApp extends ComplexOpMode {
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        Logger.recordOutput("CanShoot", shooter.getCanShootRPMCalc());
+        Logger.recordOutput("reachedAngle", shooter.reachedAngle());
+
+        telemetry.update();
     }
 
     @Override
