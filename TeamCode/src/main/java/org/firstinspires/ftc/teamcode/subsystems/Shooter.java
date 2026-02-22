@@ -12,7 +12,6 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.controller.PIDController;
-import com.seattlesolvers.solverslib.controller.wpilibcontroller.SimpleMotorFeedforward;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
@@ -77,7 +76,7 @@ public class Shooter extends SubsystemBase {
     private double verticalOffset = 0;
     private double lastshotRPM;
 
-    private boolean canShoot;
+    private boolean canShootRPMCalc;
 
     private boolean emergencyStop = false;
     private boolean updateHood = true;
@@ -105,6 +104,7 @@ public class Shooter extends SubsystemBase {
     private double targetAccel = 0;
     private double filteredTargetVel = 0;
     private double filteredTargetAccel = 0;
+    private boolean isBraking = false;
 
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
@@ -167,7 +167,7 @@ public class Shooter extends SubsystemBase {
             flywheel.stopMotor();
             turret.stopMotor();
             emergencyStop = true;
-            canShoot = false;
+            canShootRPMCalc = false;
             return;
         }
         // --------------------
@@ -182,60 +182,76 @@ public class Shooter extends SubsystemBase {
         //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
-        canShoot = solution.getCanShoot();
+        canShootRPMCalc = solution.getCanShoot();
 
         if (!horizontalManualMode && !disabled) setHorizontalAngle(solution.getHorizontalAngle() + horizontalOffset);
         if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         if (updateFlywheel) setRPM(solution.getRPM());
 
-        updateFlywheelPID(true);
-        //updateFlywheelPID(false);
-        updateTurretPID(true);
-        //updateTurretPID(false);
+        //updateFlywheelPID(true);
+        updateFlywheelPID(false);
+        //updateTurretPID(true);
+        updateTurretPID(false);
 
         voltageExternallySupplied = false;
     }
 
-    public void updateFlywheelPID(boolean useDelayCompensation) {
+    private void updateFlywheelPID(boolean useDelayCompensation) {
         if (disabled || emergencyStop) {
             flywheel.set(0);
             rampTimer.restart();
             rampTimer.pause();
-            lastSpeedFlywheel = 0; // Reset this so we don't get a huge spike on restart
-            lastLoopTime = System.nanoTime(); // Reset time
+            lastSpeedFlywheel = 0;
+            lastLoopTime = System.nanoTime();
             return;
         }
 
-        // 1. Calculate real Delta Time (dt) in seconds
+        // 1. Calculate real Delta Time (dt)
         long currentTime = System.nanoTime();
-        if (lastLoopTime == 0) lastLoopTime = currentTime; // Safety for first run
-        double dt = (currentTime - lastLoopTime) / 1.0e9; // Convert nanoseconds to seconds
+        if (lastLoopTime == 0) lastLoopTime = currentTime;
+        double dt = (currentTime - lastLoopTime) / 1.0e9;
         lastLoopTime = currentTime;
-
-        // Safety: Prevent division by zero if loops run instantly (unlikely but safe)
         if (dt < 0.001) dt = 0.001;
 
         if (!rampTimer.isOn()) rampTimer.resume();
         double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
 
         double speed = (0.9 * targetTPS) * rampMultiplier;
+        double velocity = flywheel1.getCorrectedVelocity();
 
-        double velocity = flywheel.getCorrectedVelocity();
         if (useDelayCompensation) {
-            double accel = flywheel.getAcceleration();
+            double accel = flywheel1.getAcceleration();
             velocity += accel * FLYWHEEL_DELAY_SEC;
             speed += accel * FLYWHEEL_DELAY_SEC;
         }
-        // 2. Calculate Acceleration using real dt
-        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
-//        double currentAcceleration = (filteredRPM - lastSpeedFlywheelFiltered) / dt;
-//        OpModeManager.getTelemetry().addData("flywheel target acceleration", targetAcceleration);
-//        OpModeManager.getTelemetry().addData("flywheel acceleration", currentAcceleration);
 
-        // Choose kA based on the direction of acceleration
+        // --- ASYMMETRIC P-GAIN LOGIC ---
+        double error = speed - velocity;
+
+        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
+            // We are overshooting by a lot: Trigger the Brakes
+            isBraking = true;
+        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
+            // We have slowed down enough: Return to normal control
+            isBraking = false;
+        }
+
+        // Apply the Kp based on the state
+        if (isBraking) {
+            flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
+        } else {
+            flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+        }
+        // -------------------------------
+
+        // 2. Calculate Acceleration
+        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
         double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
 
+        // Calculate PID with the newly set coefficients
         double pid = flywheelPID.calculate(velocity, speed);
+
+        // Feedforward
         double ff = (FLYWHEEL_KS * Math.signum(speed)) +
                 (FLYWHEEL_KV * speed) +
                 (currentKA * targetAcceleration);
@@ -246,10 +262,18 @@ public class Shooter extends SubsystemBase {
         double velocityCmd = pid + ff;
         double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
 
+        // Safety: Clamp power between -1.0 and 1.0 before setting
+        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
+
+        OpModeManager.getTelemetry().addData("power flywheel ", finalPower * (12.0 / voltage));
+        OpModeManager.getTelemetry().addData("PID Output", pid);
+        OpModeManager.getTelemetry().addData("FF Output", ff);
+        OpModeManager.getTelemetry().update();
+
         flywheel.set(finalPower, voltage);
     }
 
-    public void updateTurretPIDTwoSides() {
+    private void updateTurretPIDTwoSides() {
         if (disabled || emergencyStop) {
             turret.set(0);
             return;
@@ -303,7 +327,7 @@ public class Shooter extends SubsystemBase {
         turret.set(finalOutput);
     }
 
-    public void updateTurretPID(boolean useDelayCompensation) {
+    private void updateTurretPID(boolean useDelayCompensation) {
         if (disabled || emergencyStop) {
             turret.set(0);
             return;
@@ -344,7 +368,7 @@ public class Shooter extends SubsystemBase {
         // and apply it in the direction of that motion.
         double staticComp = 0;
 
-        if (Math.abs(netVel) > 0.01) {
+        if (Math.abs(netVel) > 0.2) {
             // If the target is moving, apply kS in the direction of travel
             staticComp = (netVel > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
@@ -475,12 +499,13 @@ public class Shooter extends SubsystemBase {
         return movingAverageRPM;
     }
 
-    public boolean getCanShoot() {
-        return canShoot;
+    public boolean getCanShootRPMCalc() {
+        return canShootRPMCalc;
     }
 
-    public boolean reachedRPM() {
-        return Math.abs(getTargetRPM() - getRPM()) <= RPM_REACHED_THRESHOLD;
+    // checking if the flywheel and the turret is ready to shoot
+    public boolean getCanShoot() {
+        return canShootRPMCalc && reachedAngle();
     }
 
     public double getTurretWindow() {

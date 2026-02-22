@@ -79,9 +79,9 @@ public class ShootCommand extends SequentialCommandGroup {
 
     public Command waitUntilCanShoot() {
         return new SequentialCommandGroup(
-                new WaitUntilCommand(() -> shooter.getCanShoot() || shooter.getVerticalManualMode()),
+                new WaitUntilCommand(() -> shooter.getCanShootRPMCalc() || shooter.getVerticalManualMode()),
                 new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
-        ).withTimeout(2000);
+        );
     }
 
     public void recordShot() {
@@ -96,7 +96,7 @@ public class ShootCommand extends SequentialCommandGroup {
         // simulates the ball trajectory accounting for air resistance
         ShootingSolution solution = shooter.solution;
         Pose shotPos = shooter.currentPose.getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        Logger.recordOutput("Shot/Trajectory" , TrajectoryCalculator.generateTrajectory(new Translation3d(shotPos.getX() * inchesToMeters, shotPos.getY() * inchesToMeters, 0.4), solution.getExitVel(), solution.getVerticalAngle(), solution.getHorizontalAngle() - Math.PI, 2, 0.1));
+        Logger.recordOutput("Shot/Trajectory" , TrajectoryCalculator.generateTrajectory(new Translation3d(-shotPos.getX() * inchesToMeters, -shotPos.getY() * inchesToMeters, 0.4), solution.getExitVel(), solution.getVerticalAngle(), solution.getHorizontalAngle() - Math.PI, 1, 0.1));
     }
 
     @Override
