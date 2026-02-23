@@ -168,9 +168,9 @@ public class AutonomousApp extends ComplexOpMode {
 
         Pose spike1End = getRelative(new Pose(15, 9.708060475161995));
         Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
-        Pose spike3End = getRelative(new Pose(20, 57));
-        Pose spike4End = getRelative(new Pose(21.216, 83.663));
-        Pose openGateEnd = getRelative(new Pose(25, 74));
+        Pose spike3End = getRelative(new Pose(19, 56));
+        Pose spike4End = getRelative(new Pose(19, 83.663));
+        Pose openGateEnd = getRelative(new Pose(21, 74));
 
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
@@ -697,10 +697,14 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command parkRoutine() {
+        Command parkPath = (startingPosition == StartingPosition.CLOSE)
+                ? new FollowPathCommand(follower, driveToGate)
+                : new FollowPathCommand(follower, farDriveBackEnd);
+
         return new ConditionalCommand(
-                new FollowPathCommand(follower, driveToGate),
-                new FollowPathCommand(follower, farDriveBackEnd),
-                () -> matchTime.isMoreThan(1) && endGate && startingPosition == StartingPosition.CLOSE
+                parkPath,
+                new InstantCommand(),
+                () -> matchTime.isMoreThan(1) && endGate
         );
     }
 
