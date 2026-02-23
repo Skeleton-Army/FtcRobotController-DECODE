@@ -16,7 +16,9 @@ import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
+import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
@@ -496,6 +498,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void onStart() {
+        matchTime.start();
+
         boolean doCycle = prompter.get("cycle");
         Command autonomousRoutine;
 
@@ -544,6 +548,7 @@ public class AutonomousApp extends ComplexOpMode {
         Logger.recordOutput("CanShoot", shooter.getCanShootRPMCalc());
         Logger.recordOutput("reachedAngle", shooter.reachedAngle());
 
+        telemetry.addData("Time remaining", matchTime.getRemaining());
         telemetry.update();
     }
 
@@ -599,9 +604,7 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
                 pickupSequence(),
-                farCycle(),
-                farCycle(),
-                farCycle(),
+                repeatIfTime(this::farCycle, 5.0),
                 parkRoutine() // Park
         );
     }
@@ -725,5 +728,21 @@ public class AutonomousApp extends ComplexOpMode {
         boolean insideClose = robotZone.isInside(closeLaunchZone);
         boolean insideFar = robotZone.isInside(farLaunchZone);
         return insideClose || insideFar;
+    }
+
+    /**
+     * Repeatedly schedules a command as long as there is enough time remaining.
+     * @param cycleSupplier A factory that returns a NEW instance of the cycle command.
+     * @param threshold The minimum seconds remaining required to START a new cycle.
+     */
+    private Command repeatIfTime(Supplier<Command> cycleSupplier, double threshold) {
+        return new ConditionalCommand(
+                new SequentialCommandGroup(
+                        cycleSupplier.get(),
+                        new DeferredCommand(() -> repeatIfTime(cycleSupplier, threshold), null)
+                ),
+                new InstantCommand(),
+                () -> matchTime.isMoreThan(threshold)
+        );
     }
 }
