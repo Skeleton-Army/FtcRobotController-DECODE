@@ -674,13 +674,9 @@ public class AutonomousApp extends ComplexOpMode {
 
         return new ParallelCommandGroup(
                 new SequentialCommandGroup(
-                        // Continue running intake for a bit to ensure the balls intake properly
                         new InstantCommand(intake::collect),
-                        new WaitCommand(2000),
-                        new InstantCommand(intake::stop)
-                ),
-                new SequentialCommandGroup(
                         new DeferredCommand(() -> new FollowPathCommand(follower, path.get()), null),
+                        new InstantCommand(intake::stop),
                         shoot()
                 )
         );
