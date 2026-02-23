@@ -29,6 +29,8 @@ public class Vision extends SubsystemBase {
 
     private final List<Consumer<Pose>> onRelocalizeListeners = new ArrayList<>();
 
+    private boolean firstRelocalization = true;
+
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker) {
         this.poseTracker = poseTracker;
 
@@ -44,9 +46,11 @@ public class Vision extends SubsystemBase {
         double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
         limelight.updateRobotOrientation(orientationDeg);
 
-        if (relocalizeTimer.isDone()) {
+        // Check if it's the first run OR if the timer is done
+        if (relocalizeTimer.isDone() || firstRelocalization) {
             boolean success = relocalize();
             if (success) {
+                firstRelocalization = false;
                 relocalizeTimer.restart();
             }
         }
@@ -73,12 +77,12 @@ public class Vision extends SubsystemBase {
     }
 
     public boolean relocalize() {
-        Pose tagPose = getAprilTagPose();
         double velocity = poseTracker.getVelocity().getMagnitude();
         double angularVelocity = poseTracker.getAngularVelocity();
-
-        if (tagPose.roughlyEquals(new Pose(), 0.001)) return false;
         if (Math.abs(velocity) > VELOCITY_THRESHOLD || Math.abs(angularVelocity) > VELOCITY_THRESHOLD) return false;
+
+        Pose tagPose = getAprilTagPose();
+        if (tagPose.roughlyEquals(new Pose(), 0.001)) return false;
 
         poseTracker.setPose(tagPose);
 
