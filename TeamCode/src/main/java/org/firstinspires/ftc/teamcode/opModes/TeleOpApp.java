@@ -55,6 +55,7 @@ public class TeleOpApp extends ComplexOpMode {
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
     private final PolygonZone robotZone = new PolygonZone(HEIGHT, WIDTH); // Width maps to X-axis and height maps to Y-axis relative to 0° heading
+    private final PolygonZone futureRobotZone = new PolygonZone(HEIGHT, WIDTH); // Width maps to X-axis and height maps to Y-axis relative to 0° heading
 
     private Follower follower;
     private Intake intake;
@@ -384,7 +385,6 @@ public class TeleOpApp extends ComplexOpMode {
         double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * SHOT_LATENCY);
 
         // Create a temporary zone for the future position
-        PolygonZone futureRobotZone = new PolygonZone(HEIGHT, WIDTH); // Width maps to X-axis and height maps to Y-axis relative to 0° heading
         futureRobotZone.setPosition(futureX, futureY);
         futureRobotZone.setRotation(follower.getPose().getHeading());
 
