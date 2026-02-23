@@ -14,6 +14,7 @@ public class ServoTest extends OpMode {
     private Servo servo;
 
     public static String name = "hood";
+
     @Override
     public void init() {
         servo = hardwareMap.get(Servo.class, name);
@@ -23,7 +24,7 @@ public class ServoTest extends OpMode {
     public void loop() {
 
         switch (name) {
-            case "stopper": {
+            case "stopper":
                 if (gamepad1.crossWasPressed()) {
                     servo.setPosition(TransferConfig.STOPPER_MAX);
                 }
@@ -31,9 +32,20 @@ public class ServoTest extends OpMode {
                 if (gamepad1.squareWasPressed()) {
                     servo.setPosition(TransferConfig.STOPPER_MIN);
                 }
-            }
+                break;
+
+            case "kicker":
+                if (gamepad1.crossWasPressed()) {
+                    servo.setPosition(TransferConfig.KICKER_MAX);
+                }
+
+                if (gamepad1.squareWasPressed()) {
+                    servo.setPosition(TransferConfig.KICKER_MIN);
+                }
+                break;
 
             case "hood":
+            default:
                 if (gamepad1.crossWasPressed()) {
                     servo.setPosition(ShooterConfig.HOOD_POSSIBLE_MAX);
                 }
@@ -41,14 +53,7 @@ public class ServoTest extends OpMode {
                 if (gamepad1.squareWasPressed()) {
                     servo.setPosition(ShooterConfig.HOOD_POSSIBLE_MIN);
                 }
-        }
-
-        if (gamepad1.crossWasPressed()) {
-            servo.setPosition(TransferConfig.STOPPER_MAX);
-        }
-
-        if (gamepad1.squareWasPressed()) {
-            servo.setPosition(TransferConfig.STOPPER_MIN);
+                break;
         }
 
         if (gamepad1.dpadUpWasPressed()) {
