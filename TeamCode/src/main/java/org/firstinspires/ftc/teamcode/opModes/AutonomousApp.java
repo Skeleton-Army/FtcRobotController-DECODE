@@ -160,12 +160,12 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     public void setupPaths() {
-        farStartingPose = getRelative(new Pose(55.78,7.48, Math.toRadians(90)));
+        farStartingPose = getRelative(new Pose(55.61,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
         pushStartingPose = getRelative(new Pose(57.85,8.5, Math.toRadians(180)));
 
-        Pose spike1End = getRelative(new Pose(13, 9.708060475161995));
-        Pose spike2End = getRelative(new Pose(20, 34.76673866090713));
+        Pose spike1End = getRelative(new Pose(15, 9.708060475161995));
+        Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(20, 57));
         Pose spike4End = getRelative(new Pose(21.216, 83.663));
         Pose openGateEnd = getRelative(new Pose(25, 74));
@@ -205,6 +205,8 @@ public class AutonomousApp extends ComplexOpMode {
                                 spike1End
                         )
                 )
+                .setTranslationalConstraint(5)
+                .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
@@ -214,6 +216,8 @@ public class AutonomousApp extends ComplexOpMode {
                                 getRelative(new Pose(17, 9.708060475161995))
                         )
                 )
+                .setTranslationalConstraint(5)
+                .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
@@ -223,6 +227,8 @@ public class AutonomousApp extends ComplexOpMode {
                                 spike1End
                         )
                 )
+                .setTranslationalConstraint(5)
+                .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
@@ -477,7 +483,12 @@ public class AutonomousApp extends ComplexOpMode {
                             return null;
                         }
                 )
-                .prompt("end_near_gate", new BooleanPrompt("END NEAR GATE?", true))
+                .prompt("end_near_gate", () -> {
+                    if (prompter.get("starting_position").equals(StartingPosition.CLOSE)) {
+                        return new BooleanPrompt("END NEAR GATE?", true);
+                    }
+                    return null;
+                })
                 .onComplete(this::afterPrompts);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
@@ -618,7 +629,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Command farCycle() {
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
-                collect(1).withTimeout(4000),
+                collect(1).withTimeout(3000),
                 returnAndScore(1, false)
         );
     }
