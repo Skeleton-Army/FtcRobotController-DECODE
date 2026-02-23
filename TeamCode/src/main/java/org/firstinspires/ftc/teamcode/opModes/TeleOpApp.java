@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -45,9 +46,15 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
+    public static final double INCHES_TO_METERS = 39.37;
+    public static final double WIDTH = 14.96;
+    public static final double HEIGHT = 16.53;
+    public static final double X_OFFSET = WIDTH / 2.0;
+    public static final double Y_OFFSET = HEIGHT / 2.0;
+
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
-    private final PolygonZone robotZone = new PolygonZone(17, 17);
+    private final PolygonZone robotZone = new PolygonZone(HEIGHT, WIDTH); // Width maps to X-axis and height maps to Y-axis relative to 0° heading
 
     private Follower follower;
     private Intake intake;
@@ -68,12 +75,6 @@ public class TeleOpApp extends ComplexOpMode {
 
     private TimerEx matchTime;
     private TimerEx overrideTimer;
-
-    public static final double INCHES_TO_METERS = 39.37;
-    public static final double WIDTH = 14.96;
-    public static final double HEIGHT = 16.53;
-    public static final double X_OFFSET = WIDTH / 2.0;
-    public static final double Y_OFFSET = HEIGHT / 2.0;
 
     private boolean isOverrideActive = false;
 
@@ -134,15 +135,10 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 }));
 
-//        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
-//                .whileActiveContinuous(transfer::release)
-//                .and(new Trigger(() -> !isInsideLaunchZone() || !shooter.getCanShoot()))
-//                .whileActiveContinuous(transfer::block);
-
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
-                .and(new Trigger(this::isInsideLaunchZone))
+                .and(new Trigger(this::isShootingAllowed))
                 .and(new Trigger(transfer::isArtifactDetected))
-                .whileActiveContinuous(new UninterruptibleCommand(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS)));
+                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(
@@ -259,7 +255,7 @@ public class TeleOpApp extends ComplexOpMode {
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
-        boolean isInsideLaunchZone = isInsideLaunchZone();
+        boolean isInsideLaunchZone = isInsideLaunchZonePredictive();
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
@@ -373,7 +369,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private boolean isShootingAllowed() {
-        return isInsideLaunchZone() || isOverrideActive;
+        return isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
     public boolean isInsideLaunchZone() {
@@ -382,21 +378,21 @@ public class TeleOpApp extends ComplexOpMode {
         return insideClose || insideFar;
     }
 
-    public double distanceFromLaunchZone() {
-        return Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
+    public boolean isInsideLaunchZonePredictive() {
+        // Project future X and Y based on current velocity
+        double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * SHOT_LATENCY);
+        double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * SHOT_LATENCY);
+
+        // Create a temporary zone for the future position
+        PolygonZone futureRobotZone = new PolygonZone(HEIGHT, WIDTH); // Width maps to X-axis and height maps to Y-axis relative to 0° heading
+        futureRobotZone.setPosition(futureX, futureY);
+        futureRobotZone.setRotation(follower.getPose().getHeading());
+
+        return futureRobotZone.isInside(closeLaunchZone) || futureRobotZone.isInside(farLaunchZone);
     }
 
-    public LaunchZone getCurrentLaunchZone() {
-        if (isInsideLaunchZone()) {
-            if (robotZone.isInside(closeLaunchZone)) {
-                return LaunchZone.CLOSE;
-            } else {
-                return LaunchZone.FAR;
-            }
-        } else {
-            return LaunchZone.NONE;
-        }
-
+    public double distanceFromLaunchZone() {
+        return Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
     }
 
     private void resetPoseToNearestCorner() {
