@@ -6,5 +6,5 @@ import com.acmerobotics.dashboard.config.Config;
 public class VisionConfig {
     public static String LIMELIGHT_NAME = "limelight";
     public static double VELOCITY_THRESHOLD = 0.2;
-    public static double RELOCALIZE_COOLDOWN = 1000;
+    public static double RELOCALIZE_COOLDOWN = 60;
 }
