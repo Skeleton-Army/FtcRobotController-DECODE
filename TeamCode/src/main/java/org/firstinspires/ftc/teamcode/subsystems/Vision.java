@@ -41,6 +41,9 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
+        double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
+        limelight.updateRobotOrientation(orientationDeg);
+
         if (relocalizeTimer.isDone()) {
             boolean success = relocalize();
             if (success) {
@@ -50,10 +53,6 @@ public class Vision extends SubsystemBase {
     }
 
     public Pose getAprilTagPose() {
-        Pose FTCRobotPose = poseTracker.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
-        double orientationDeg = Math.toDegrees(FTCRobotPose.getHeading()) + 180;
-        limelight.updateRobotOrientation(orientationDeg);
-
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
             Pose3D botPose = result.getBotpose_MT2();
