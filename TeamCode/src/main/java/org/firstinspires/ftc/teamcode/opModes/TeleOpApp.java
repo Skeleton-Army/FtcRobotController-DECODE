@@ -289,7 +289,7 @@ public class TeleOpApp extends ComplexOpMode {
                 alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
         ) / INCHES_TO_METERS;
 
-        if (loopCount % 5 == 0) {
+        if (debugMode && loopCount % 5 == 0) {
             Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
 
             telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
@@ -338,7 +338,7 @@ public class TeleOpApp extends ComplexOpMode {
             telemetry.update();
         }
 
-        if (loopCount % 5 == 0) {
+        if (loopCount % 2 == 0) {
             Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
             Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
 
