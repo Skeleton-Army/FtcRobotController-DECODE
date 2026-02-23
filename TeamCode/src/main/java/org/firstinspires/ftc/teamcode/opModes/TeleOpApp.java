@@ -352,8 +352,8 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
             Logger.recordOutput("Can Shoot", shooter.getCanShoot());
             Logger.recordOutput("Distance From Pose", goalDistance);
-            Logger.recordOutput("Shooter/Flywheel/ RPM", shooter.getRPM());
-            Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
+            Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
             Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
             Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
             Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
