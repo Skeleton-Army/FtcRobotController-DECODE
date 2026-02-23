@@ -103,7 +103,7 @@ public class Shooter extends SubsystemBase {
     private double targetVel = 0;
     private double targetAccel = 0;
     private double filteredTargetVel = 0;
-    private double filteredTargetAccel = 0;
+    public double filteredTargetAccel = 0;
     private boolean isBraking = false;
 
     private double voltage = 12;
@@ -365,11 +365,11 @@ public class Shooter extends SubsystemBase {
 
         if (Math.abs(netVel) > 0.2) {
             // If the target is moving, apply kS in the direction of travel
-            staticComp = (netVel > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+            staticComp = (netVel > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
             // If the target is still, but we have error, use the error sign
             // to help the PID break stiction to reach the final goal.
-            staticComp = (error > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+            staticComp = (netVel > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
         }
 
         // --- 5. Voltage Scaling & Output ---
@@ -406,14 +406,14 @@ public class Shooter extends SubsystemBase {
         // 1. Calculate Raw Derivatives
         double deltaAngle = MathFunctions.normalizeAngleSigned(currentTargetAngle - lastTargetAngle);
         double rawTargetVel = deltaAngle / dt;
-        rawTargetVel = MathUtils.clamp(rawTargetVel, -20.0, 20.0);
+        rawTargetVel = MathUtils.clamp(rawTargetVel, -4, 4);
 
         double rawTargetAccel = (rawTargetVel - targetVel) / dt;
-        rawTargetAccel = MathUtils.clamp(rawTargetAccel, -40.0, 40.0);
+        rawTargetAccel = MathUtils.clamp(rawTargetAccel, -4, 4);
 
         // 2. Apply Low Pass Filter using your Kinematics utility
         filteredTargetVel = Kinematics.lowPassFilter(rawTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
-        filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_DERIVATIVE_GAIN);
+        filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_SECOND_DERIVATIVE_GAIN);
 
         targetVel = rawTargetVel;
         lastTargetAngle = currentTargetAngle;
