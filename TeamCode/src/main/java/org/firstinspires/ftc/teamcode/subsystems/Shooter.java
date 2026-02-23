@@ -363,7 +363,7 @@ public class Shooter extends SubsystemBase {
         // and apply it in the direction of that motion.
         double staticComp = 0;
 
-        if (Math.abs(netVel) > 0.2) {
+        if (Math.abs(netVel) > 0.3) {
             // If the target is moving, apply kS in the direction of travel
             staticComp = (netVel > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
