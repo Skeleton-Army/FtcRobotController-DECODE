@@ -104,6 +104,9 @@ public class Shooter extends SubsystemBase {
     private double targetAccel = 0;
     private double filteredTargetVel = 0;
     public double filteredTargetAccel = 0;
+    public double filteredTargetAccelFlywheel = 0;
+    private double filteredVelocity = 0; // flywheel velocity
+    private final double VELOCITY_FILTER_ALPHA = 0.7; // Adjust (0.1 = heavy filter, 0.9 = light)
     private boolean isBraking = false;
 
     private double voltage = 12;
@@ -188,7 +191,8 @@ public class Shooter extends SubsystemBase {
         if (!verticalManualMode && updateHood && !disabled) setVerticalAngle(solution.getVerticalAngle() + verticalOffset);
         if (updateFlywheel) setRPM(solution.getRPM());
 
-        //updateFlywheelPID(true);
+        //updateFlywheelPID(false);
+        //updateFlywheelPIDFiltered(true);
         updateFlywheelPID(false);
         //updateTurretPID(true);
         updateTurretPID(false);
@@ -222,7 +226,7 @@ public class Shooter extends SubsystemBase {
         if (useDelayCompensation) {
             double accel = flywheel1.getAcceleration();
             velocity += accel * FLYWHEEL_DELAY_SEC;
-            speed += accel * FLYWHEEL_DELAY_SEC;
+            //speed += accel * FLYWHEEL_DELAY_SEC;
         }
 
         // --- ASYMMETRIC P-GAIN LOGIC ---
@@ -265,6 +269,78 @@ public class Shooter extends SubsystemBase {
         // Safety: Clamp power between -1.0 and 1.0 before setting
         finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
 
+        flywheel.set(finalPower, voltage);
+    }
+
+    private void updateFlywheelPIDFiltered(boolean useDelayCompensation) {
+        if (disabled || emergencyStop) {
+            flywheel.set(0);
+            rampTimer.restart();
+            rampTimer.pause();
+            lastSpeedFlywheel = 0;
+            lastLoopTime = System.nanoTime();
+            return;
+        }
+
+        // 1. Calculate real Delta Time (dt)
+        long currentTime = System.nanoTime();
+        if (lastLoopTime == 0) lastLoopTime = currentTime;
+        double dt = (currentTime - lastLoopTime) / 1.0e9;
+        lastLoopTime = currentTime;
+        if (dt < 0.001) dt = 0.001;
+
+        if (!rampTimer.isOn()) rampTimer.resume();
+        double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
+
+        // 'speed' is our Target Velocity
+        double speed = (targetTPS) * rampMultiplier;
+
+        // Get raw measurement and apply Low Pass Filter to mitigate sensor noise
+        //double rawVelocity = flywheel1.getCorrectedVelocity();
+        //filteredVelocity = (VELOCITY_FILTER_ALPHA * rawVelocity) + (1.0 - VELOCITY_FILTER_ALPHA) * filteredVelocity;
+
+        double processVariable = filteredRPM;
+
+        // 2. Delay Compensation (Lead Compensation)
+        // We add predicted velocity gain to offset the phase lag of the filter and mechanical latency
+        if (useDelayCompensation) {
+            double accel = Kinematics.lowPassFilter(flywheel1.getAcceleration(), filteredTargetAccelFlywheel, 0.3);
+            processVariable += accel * FLYWHEEL_DELAY_SEC;
+        }
+
+        // --- ASYMMETRIC P-GAIN LOGIC ---
+        double error = speed - processVariable;
+
+        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
+            isBraking = true;
+        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
+            isBraking = false;
+        }
+
+        if (isBraking) {
+            flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
+        } else {
+            flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+        }
+
+        // 3. Calculate Acceleration for Feedforward
+        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
+        double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
+
+        // PID calculates based on filtered/compensated velocity
+        double pid = flywheelPID.calculate(processVariable, speed);
+
+        // Feedforward calculates based on TARGET (speed), not measurement
+        double ff = (FLYWHEEL_KS * Math.signum(speed)) +
+                (FLYWHEEL_KV * speed) +
+                (currentKA * targetAcceleration);
+
+        lastSpeedFlywheel = speed;
+
+        double velocityCmd = pid + ff;
+        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+
+        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
         flywheel.set(finalPower, voltage);
     }
 

@@ -13,7 +13,7 @@ public class ShooterConfig {
     public static boolean FLYWHEEL2_INVERTED = true;
     public static int RPM_REACHED_THRESHOLD = 200;
     public static double FLYWHEEL_KP = 5;
-    public static double FLYWHEEL_KP_DOWN = 15;
+    public static double FLYWHEEL_KP_DOWN = 16;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0.2;
     public static double FLYWHEEL_KS = 150;
@@ -51,8 +51,8 @@ public class ShooterConfig {
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
     public static double TURRET_KS_CCW = 0.04;
-    public static double TURRET_KV = 0.18;
-    public static double TURRET_KA = 0.004;
+    public static double TURRET_KV = 0.15;
+    public static double TURRET_KA = 0;
     public static double TURRET_MIN = Math.toRadians(-170); // Clockwise
     public static double TURRET_MAX = Math.toRadians(180); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
