@@ -173,7 +173,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
-        Pose openGateEnd = getRelative(new Pose(21, 74));
+        Pose openGateEnd = getRelative(new Pose(21, 72));
 
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
@@ -229,7 +229,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower::getPose,
-                                spike1End
+                                getRelative(new Pose(15, 8.0000000001))
+
                         )
                 )
                 .setTranslationalConstraint(5)
@@ -619,15 +620,9 @@ public class AutonomousApp extends ComplexOpMode {
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectFromGate()), null),
                 new WaitUntilCommand(transfer.threeArtifactsDetected(intake::isCollecting, 250))
                         .withTimeout(2000),
-                new ParallelCommandGroup(
-                        new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
-                        new SequentialCommandGroup(
-                                // Continue running intake for a bit to ensure the balls intake properly
-                                new InstantCommand(intake::collect),
-                                new WaitCommand(1000),
-                                new InstantCommand(intake::stop)
-                        )
-                ),
+                new InstantCommand(intake::collect),
+                new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
+                new InstantCommand(intake::stop),
                 shoot()
         );
     }
