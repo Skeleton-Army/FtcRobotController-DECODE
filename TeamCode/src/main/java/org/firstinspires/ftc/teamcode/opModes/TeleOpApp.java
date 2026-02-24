@@ -133,6 +133,9 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 }));
 
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
+                .whenPressed(transfer.kick());
+
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isShootingAllowed))
                 .and(new Trigger(transfer::isArtifactDetected))
