@@ -14,8 +14,6 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -31,7 +29,6 @@ import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
-import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -47,15 +44,15 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 @TeleOp
 public class TeleOpApp extends ComplexOpMode {
     public static final double INCHES_TO_METERS = 39.37;
-    public static final double WIDTH = 14.96;
-    public static final double HEIGHT = 16.53;
-    public static final double X_OFFSET = WIDTH / 2.0;
-    public static final double Y_OFFSET = HEIGHT / 2.0;
+    public static final double ROBOT_WIDTH = 16.53; // Side-to-side
+    public static final double ROBOT_LENGTH = 14.96; // Front-to-back
+    public static final double X_OFFSET = ROBOT_LENGTH / 2.0;
+    public static final double Y_OFFSET = ROBOT_WIDTH / 2.0;
 
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
-    private final PolygonZone robotZone = new PolygonZone(HEIGHT, WIDTH); // Width maps to X-axis and height maps to Y-axis relative to 0° heading
-    private final PolygonZone futureRobotZone = new PolygonZone(HEIGHT, WIDTH); // Width maps to X-axis and height maps to Y-axis relative to 0° heading
+    private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH); // Length maps to X-axis and width maps to Y-axis relative to 0° heading
+    private final PolygonZone futureRobotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH); // Length maps to X-axis and width maps to Y-axis relative to 0° heading
 
     private Follower follower;
     private Intake intake;

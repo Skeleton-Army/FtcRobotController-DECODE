@@ -1,5 +1,8 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.ROBOT_LENGTH;
+import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.ROBOT_WIDTH;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.ftc.FTCCoordinates;
@@ -57,7 +60,7 @@ import java.util.function.Supplier;
 public class AutonomousApp extends ComplexOpMode {
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
-    private final PolygonZone robotZone = new PolygonZone(17, 17);
+    private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
 
     private final Prompter prompter = new Prompter(this);
     TimerEx matchTime = new TimerEx(30); // 30 second autonomous
