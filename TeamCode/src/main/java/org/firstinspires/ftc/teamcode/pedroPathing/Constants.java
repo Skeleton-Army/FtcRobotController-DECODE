@@ -7,12 +7,17 @@ import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
 import com.pedropathing.ftc.drivetrains.MecanumConstants;
 import com.pedropathing.ftc.localization.constants.PinpointConstants;
+import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.teamcode.utilities.KalmanPinpointLocalizer;
+
+import dev.frozenmilk.sinister.sdk.opmodes.OpModeScanner;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
@@ -47,12 +52,18 @@ public class Constants {
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+    public static KalmanPinpointLocalizer sigmaKalmanPinpointLocalizer = new KalmanPinpointLocalizer(
+            OpModeManager.getHardwareMap(),
+            localizerConstants,
+            new Pose(72,72,Math.toRadians(180))
+    );
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
                 .mecanumDrivetrain(driveConstants)
-                .pinpointLocalizer(localizerConstants)
+                //.pinpointLocalizer(localizerConstants)
+                .setLocalizer(sigmaKalmanPinpointLocalizer)
                 .build();
     }
 }
