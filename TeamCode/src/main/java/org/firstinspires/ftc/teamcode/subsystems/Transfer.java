@@ -12,6 +12,7 @@ import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.hardware.SensorRevColorV3;
 import com.seattlesolvers.solverslib.hardware.SensorRevTOFDistance;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
@@ -35,9 +36,6 @@ public class Transfer extends SubsystemBase {
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
         sensorDistance = new SensorRevTOFDistance(hardwareMap, DISTANCE_SENSOR_NAME);
-
-        if (isSensorDisconnected(getDistance())) colorSensorDisabled = true;
-        if (isSensorDisconnected(getDistanceIntake())) distanceSensorDisabled = true;
     }
 
     public Command kick() {
@@ -71,13 +69,27 @@ public class Transfer extends SubsystemBase {
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public double getDistance() {
         if (colorSensorDisabled) return -1;
-        return colorSensor.distance(DistanceUnit.CM);
+
+        double dist = colorSensor.distance(DistanceUnit.CM);
+        if (isSensorDisconnected(dist)) {
+            colorSensorDisabled = true;
+            return -1;
+        }
+
+        return dist;
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
     public double getDistanceIntake() {
         if (distanceSensorDisabled) return -1;
-        return sensorDistance.getDistance(DistanceUnit.CM);
+
+        double dist = sensorDistance.getDistance(DistanceUnit.CM);
+        if (isSensorDisconnected(dist)) {
+            distanceSensorDisabled = true;
+            return -1;
+        }
+
+        return dist;
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
