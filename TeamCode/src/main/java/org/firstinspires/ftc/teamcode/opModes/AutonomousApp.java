@@ -60,7 +60,7 @@ import java.util.function.Supplier;
 public class AutonomousApp extends ComplexOpMode {
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
-    private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
+    private final PolygonZone robotZone = new PolygonZone(17, 17);
 
     private final Prompter prompter = new Prompter(this);
     TimerEx matchTime = new TimerEx(30); // 30 second autonomous
@@ -536,6 +536,14 @@ public class AutonomousApp extends ComplexOpMode {
         shooter.updateVoltage(voltage);
         shooter.setUpdateFlywheel(isInsideLaunchZone());
 
+        telemetry.addData("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret/Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+        telemetry.addData("Turret/Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+        telemetry.addData("CanShootRPM", shooter.getCanShootRPMCalc());
+        telemetry.addData("reachedAngle", shooter.reachedAngle());
+        telemetry.addData("canShoot", shooter.getCanShoot());
+        telemetry.addData("In Zone", isInsideLaunchZone());
+
         final double inchesToMeters = 39.37;
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
@@ -543,14 +551,17 @@ public class AutonomousApp extends ComplexOpMode {
 
         Logger.recordOutput("Robot Pose", robotPose);
         Logger.recordOutput("Voltage", voltage);
-        Logger.recordOutput("Reached Angle", shooter.reachedAngle());
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
         Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-        Logger.recordOutput("CanShoot", shooter.getCanShootRPMCalc());
+        Logger.recordOutput("Turret/Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+        Logger.recordOutput("Turret/Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+        Logger.recordOutput("CanShootRPM", shooter.getCanShootRPMCalc());
         Logger.recordOutput("reachedAngle", shooter.reachedAngle());
+        Logger.recordOutput("canShoot", shooter.getCanShoot());
+        Logger.recordOutput("In Zone", isInsideLaunchZone());
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
         telemetry.update();

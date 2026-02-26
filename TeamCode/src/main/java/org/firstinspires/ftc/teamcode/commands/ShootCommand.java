@@ -81,7 +81,7 @@ public class ShootCommand extends SequentialCommandGroup {
         return new SequentialCommandGroup(
                 new WaitUntilCommand(() -> shooter.getCanShootRPMCalc() || shooter.getVerticalManualMode()),
                 new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
-        );
+        ).withTimeout(3000);
     }
 
     public void recordShot() {
