@@ -445,7 +445,7 @@ public class Shooter extends SubsystemBase {
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
             // If the target is still, but we have error, use the error sign
             // to help the PID break stiction to reach the final goal.
-            staticComp = (netVel > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
+            staticComp = (error > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
         }
 
         // --- 5. Voltage Scaling & Output ---
