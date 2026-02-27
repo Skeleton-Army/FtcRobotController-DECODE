@@ -73,7 +73,6 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Pose farStartingPose;
     private Pose nearStartingPose;
-    private Pose pushStartingPose;
 
     private final PathChain[] farPaths = new PathChain[4];
     private final PathChain[] nearPaths = new PathChain[4];
@@ -85,7 +84,6 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain spike4Open;
     private PathChain nearSpike3Open;
     private PathChain nearSpike4Open;
-    private PathChain pushPath;
     private PathChain driveToGate;
 
     private Alliance alliance;
@@ -93,7 +91,6 @@ public class AutonomousApp extends ComplexOpMode {
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
     private int gateSpike;
-    private boolean push;
 
     private VoltageSensor voltageSensor;
 
@@ -169,7 +166,6 @@ public class AutonomousApp extends ComplexOpMode {
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55.61,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
-        pushStartingPose = getRelative(new Pose(57.85,8.5, Math.toRadians(180)));
 
         Pose spike1End = getRelative(new Pose(15, 9.708060475161995));
         Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
@@ -430,19 +426,6 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .build();
 
-        pushPath = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(30,8.7, Math.toRadians(180)))
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .build();
-
         driveToGate = follower
                 .pathBuilder()
                 .addPath(
@@ -463,7 +446,6 @@ public class AutonomousApp extends ComplexOpMode {
         pickupOrder = prompter.get("pickup_order");
         gateSpike = prompter.getOrDefault("gate_spike", -1);
         endGate = prompter.getOrDefault("end_near_gate", true);
-        push = prompter.getOrDefault("push", false);
 
         Settings.set("alliance", alliance);
 
@@ -482,7 +464,6 @@ public class AutonomousApp extends ComplexOpMode {
         setupPaths();
 
         Pose startingPose = startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose;
-        if (push) startingPose = pushStartingPose;
 
         follower.setStartingPose(startingPose);
         Settings.set("pose", startingPose, false);
@@ -511,15 +492,6 @@ public class AutonomousApp extends ComplexOpMode {
                             if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
                             if (Boolean.TRUE.equals(prompter.get("open_gate"))) {
                                 return new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4);
-                            }
-                            return null;
-                        }
-                )
-                .prompt("push",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
-                            if (prompter.get("starting_position").equals(StartingPosition.FAR)) {
-                                return new BooleanPrompt("PUSH OTHER ROBOT?", false);
                             }
                             return null;
                         }
@@ -632,7 +604,6 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command standardRoutine() {
         return new SequentialCommandGroup(
-                pushRoutine(),
                 initialScore(),
                 pickupSequence(),
                 parkRoutine()
@@ -679,10 +650,6 @@ public class AutonomousApp extends ComplexOpMode {
                 collect(1).withTimeout(3000),
                 returnAndScore(1, false)
         );
-    }
-
-    private Command pushRoutine() {
-        return push ? new FollowPathCommand(follower, pushPath) : new InstantCommand();
     }
 
     private Command initialScore() {
