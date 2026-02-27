@@ -53,6 +53,7 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.function.Supplier;
 
@@ -443,7 +444,7 @@ public class AutonomousApp extends ComplexOpMode {
     public void afterPrompts() {
         alliance = prompter.get("alliance");
         startingPosition = prompter.get("starting_position");
-        pickupOrder = prompter.get("pickup_order");
+        pickupOrder = prompter.getOrDefault("pickup_order", List.of());
         gateSpike = prompter.getOrDefault("gate_spike", -1);
         endGate = prompter.getOrDefault("end_near_gate", true);
 
@@ -479,16 +480,34 @@ public class AutonomousApp extends ComplexOpMode {
 
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
-                .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
-                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
+                .prompt("sorted",
+                        () -> {
+                            if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
+                            return new BooleanPrompt("RUN VIRTUAL SORTING?", false);
+                        }
+                )
+                .prompt("cycle",
+                        () -> {
+                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
+                            return new BooleanPrompt("RUN CYCLE ROUTINE?", false);
+                        }
+                )
+                .prompt("pickup_order",
+                        () -> {
+                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
+                            return new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4);
+                        }
+                )
                 .prompt("open_gate",
                         () -> {
+                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
                             if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
                             return new BooleanPrompt("OPEN GATE?", false);
                         }
                 )
                 .prompt("gate_spike",
                         () -> {
+                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
                             if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
                             if (Boolean.TRUE.equals(prompter.get("open_gate"))) {
                                 return new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4);
@@ -497,10 +516,9 @@ public class AutonomousApp extends ComplexOpMode {
                         }
                 )
                 .prompt("end_near_gate", () -> {
-                    if (prompter.get("starting_position").equals(StartingPosition.CLOSE)) {
-                        return new BooleanPrompt("END NEAR GATE?", true);
-                    }
-                    return null;
+                    if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
+                    if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
+                    return new BooleanPrompt("END NEAR GATE?", true);
                 })
                 .onComplete(this::afterPrompts);
 
@@ -511,16 +529,16 @@ public class AutonomousApp extends ComplexOpMode {
     public void onStart() {
         matchTime.start();
 
-        boolean doCycle = prompter.get("cycle");
-        Command autonomousRoutine;
+        boolean doCycle = prompter.getOrDefault("cycle", false);
+        boolean sorted = prompter.getOrDefault("sorted", false);
 
-        if (doCycle) {
-            autonomousRoutine = (startingPosition == StartingPosition.CLOSE)
-                    ? closeCycleRoutine()
-                    : farCycleRoutine();
-        } else {
-            autonomousRoutine = standardRoutine();
-        }
+        Command cycleRoutine = (startingPosition == StartingPosition.CLOSE)
+                ? closeCycleRoutine()
+                : farCycleRoutine();
+
+        Command autonomousRoutine = doCycle
+                ? cycleRoutine
+                : (sorted ? sortedRoutine() : standardRoutine());
 
         schedule(
                 new SequentialCommandGroup(
@@ -607,6 +625,14 @@ public class AutonomousApp extends ComplexOpMode {
                 initialScore(),
                 pickupSequence(),
                 parkRoutine()
+        );
+    }
+
+    private Command sortedRoutine() {
+        return new SequentialCommandGroup(
+                initialScore(),
+                // Detect obelisk
+                pickupSequence()
         );
     }
 
