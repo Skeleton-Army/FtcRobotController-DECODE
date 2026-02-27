@@ -10,6 +10,7 @@ public class GoalPositions {
     public final static Pose RED_GOAL = new Pose(FIELD_LENGTH - BLUE_GOAL.getX(), BLUE_GOAL.getY());
     public final static Pose TURRET_RED_GOAL = new Pose(FIELD_LENGTH - TURRET_BLUE_GOAL.getX(), TURRET_BLUE_GOAL.getY());
 
+    public final static double FAR_INCREMENT_X = 4;
     public final static Pose BLUE_GOAL_TOP = new Pose(25, FIELD_LENGTH);
     public final static Pose BLUE_GOAL_BUTTOM = new Pose(0, 119);
     public final static Pose BLUE_GOAL_CORNER = new Pose(0, FIELD_LENGTH);

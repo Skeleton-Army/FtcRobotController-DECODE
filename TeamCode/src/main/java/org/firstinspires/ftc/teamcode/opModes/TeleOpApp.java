@@ -21,14 +21,18 @@ import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
+import com.skeletonarmy.marrow.zones.Zone;
 
+import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculatorClose;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -102,7 +106,11 @@ public class TeleOpApp extends ComplexOpMode {
         //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
         IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
+        IShooterCalculator shooterCalculatorClose = new ShooterCalculatorClose();
+        IShooterCalculator shooterCalculatorFar = new ShooterCalculatorClose();
+
+        //shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalculatorClose,shooterCalculatorFar, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
@@ -290,6 +298,7 @@ public class TeleOpApp extends ComplexOpMode {
                 alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
         ) / INCHES_TO_METERS;
 
+        shooter.setZoneCalculator(getCalculatorZone());
         if (debugMode && loopCount % 5 == 0) {
             Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
 
@@ -396,6 +405,9 @@ public class TeleOpApp extends ComplexOpMode {
         return Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
     }
 
+    public LaunchZone getCalculatorZone() {
+        return robotZone.distanceTo(closeLaunchZone) < robotZone.distanceTo(farLaunchZone) ? LaunchZone.CLOSE : LaunchZone.FAR;
+    }
     private void resetPoseToNearestCorner() {
         Pose currentPose = follower.getPose();
 

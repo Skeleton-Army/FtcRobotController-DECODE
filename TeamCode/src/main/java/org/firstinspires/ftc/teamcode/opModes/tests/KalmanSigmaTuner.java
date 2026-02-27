@@ -54,7 +54,7 @@ public class KalmanSigmaTuner extends LinearOpMode {
 
         shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, Alliance.RED);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, shooterCalc, Alliance.RED);
 
         // Optional: Initialize auxiliary motors to create vibration
         // flywheelMotor = hardwareMap.get(DcMotorEx.class, "flywheel");
