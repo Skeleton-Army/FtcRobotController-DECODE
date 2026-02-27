@@ -83,6 +83,8 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain nearDriveBackEnd;
     private PathChain spike3Open;
     private PathChain spike4Open;
+    private PathChain nearSpike3Open;
+    private PathChain nearSpike4Open;
     private PathChain pushPath;
     private PathChain driveToGate;
 
@@ -173,7 +175,10 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
+
         Pose openGateEnd = getRelative(new Pose(21, 72));
+        Pose spike3GateEnd = getRelative(new Pose(21, 66));
+        Pose spike4GateEnd = getRelative(new Pose(21, 83.663));
 
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
@@ -388,6 +393,36 @@ public class AutonomousApp extends ComplexOpMode {
                                 follower::getPose,
                                 getRelative(new Pose(33.594, 76.111)),
                                 openGateEnd
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+
+        nearSpike3Open = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(50.536, 55)),
+                                getRelative(new Pose(42.630, 55)),
+                                spike3GateEnd
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .build();
+
+        nearSpike4Open = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(13, 86.5)),
+                                getRelative(new Pose(22, 79)),
+                                spike4GateEnd
                         )
                 )
                 .setConstantHeadingInterpolation(
