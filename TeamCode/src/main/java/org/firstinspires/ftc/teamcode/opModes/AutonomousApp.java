@@ -650,7 +650,7 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
                 pickupSequence(),
-                repeatIfTime(this::farCycle, 5.0),
+                repeatIfTime(this::farCycle, 4.0),
                 parkRoutine() // Park
         );
     }
