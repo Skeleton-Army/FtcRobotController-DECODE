@@ -168,7 +168,7 @@ public class AutonomousApp extends ComplexOpMode {
         farStartingPose = getRelative(new Pose(55.61,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
 
-        Pose spike1End = getRelative(new Pose(15, 9.708060475161995));
+        Pose spike1End = getRelative(new Pose(16, 9.708060475161995));
         Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
@@ -207,8 +207,9 @@ public class AutonomousApp extends ComplexOpMode {
         farPaths[0] = follower
                 .pathBuilder()
                 .addPath(
-                        new BezierLine(
+                        new BezierCurve(
                                 follower::getPose,
+                                getRelative(new Pose(48, 9)),
                                 spike1End
                         )
                 )
@@ -220,7 +221,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower::getPose,
-                                getRelative(new Pose(17, 9.708060475161995))
+                                getRelative(new Pose(18, 9.708060475161995))
                         )
                 )
                 .setTranslationalConstraint(5)
@@ -229,17 +230,15 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .addPath(
-                        new BezierLine(
+                        new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(15, 8.0000000001))
-
+                                getRelative(new Pose(18.5, 19.5)),
+                                getRelative(new Pose(16, 19))
                         )
                 )
                 .setTranslationalConstraint(5)
                 .setTValueConstraint(0.7)
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
+                .setTangentHeadingInterpolation()
                 .build();
 
         farPaths[1] = follower
