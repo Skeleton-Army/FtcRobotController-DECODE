@@ -558,7 +558,7 @@ public class AutonomousApp extends ComplexOpMode {
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
-        shooter.setUpdateFlywheel(isInsideLaunchZone());
+        shooter.setUpdateFlywheel(distanceFromLaunchZone() < 20);
 
         telemetry.addData("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret/Angle Target (deg)", Math.toDegrees(shooter.wrapped));
@@ -768,6 +768,10 @@ public class AutonomousApp extends ComplexOpMode {
         boolean insideClose = robotZone.isInside(closeLaunchZone);
         boolean insideFar = robotZone.isInside(farLaunchZone);
         return insideClose || insideFar;
+    }
+
+    public double distanceFromLaunchZone() {
+        return Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
     }
 
     /**
