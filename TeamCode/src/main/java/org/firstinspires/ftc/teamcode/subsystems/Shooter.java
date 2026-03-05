@@ -738,7 +738,7 @@ public class Shooter extends SubsystemBase {
         currentPose = pose;
     }
 
-    private void setRPM(double rpm) {
+    public void setRPM(double rpm) {
         rpm = MathUtils.clamp(rpm, 0, flywheel.getMaxRPM());
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
@@ -751,5 +751,12 @@ public class Shooter extends SubsystemBase {
 
         lastshotRPM = getRPM();
         return false;
+    }
+
+    public void updatePIDFCoefficients() {
+        flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+        flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
+        flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+        turretPID.setPID(TURRET_KP, TURRET_KI, TURRET_KD);
     }
 }
