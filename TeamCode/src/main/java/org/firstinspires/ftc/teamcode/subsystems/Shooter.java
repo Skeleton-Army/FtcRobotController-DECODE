@@ -405,47 +405,49 @@ public class Shooter extends SubsystemBase {
         }
 
         // --- 1. Sensor Reading & Delay Compensation ---
-        double measuredPos = turret.getDistance();
+        double rawPos = turret.getDistance();
+        double measuredPos = rawPos;
 
         if (useDelayCompensation) {
-            // Grab the velocity (ensure this returns units/sec matching your distance units)
             double measuredVel = turret.getVelocity();
-
-            // Extrapolate the position forward to guess where the turret is RIGHT NOW
             measuredPos += (measuredVel * TURRET_DELAY);
         }
 
         // --- 2. PID Calculation ---
-        // Feed the (potentially compensated) position into the PID
         double pid = turretPID.calculate(measuredPos);
         double error = turretPID.getPositionError();
 
-        // If we are more than X degrees away, clear the integral sum
-        // This prevents it from building up during the high-speed part of the move
         if (Math.abs(error) > TURRET_IZONE) {
             turretPID.clearTotalError();
         }
 
-        // --- 3. Robot Motion Compensation ---
+        // --- 3. Robot Motion & Gyroscopic Compensation ---
         double[] netKinematics = getNetTargetKinematics();
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
 
-        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
+        // GYRO EFFECT: Scale KV based on Flywheel Velocity
+        // As the flywheel spins faster, the bearings bind, requiring more KV to hit target speeds.
+        double flywheelVel = Math.abs(flywheel.getCorrectedVelocity());
+        double dynamicKV = TURRET_KV + (flywheelVel * TURRET_K_GYRO);
+
+        double ffBase = (netVel * dynamicKV) + (netAccel * TURRET_KA);
         double totalRequest = pid + ffBase;
 
-        // --- 4. Static Friction (kS) ---
-        // Only apply kS if the baseRequest is actually trying to move the motor
-        // and apply it in the direction of that motion.
-        double staticComp = 0;
+        // --- 4. Sine-Mapped Static Friction (kS) ---
+        // Mapping the friction profile: Lowest at -45 and 135 degrees.
+        // Math.sin(2 * theta) is -1.0 at -45deg and 135deg.
+        double t = (Math.sin(Math.toRadians(2 * rawPos)) + 1.0) / 2.0;
+        double currentKS_CCW = TURRET_KS_CCW_MIN + t * (TURRET_KS_CCW_MAX - TURRET_KS_CCW_MIN);
+        double currentKS_CW  = TURRET_KS_CW_MIN  + t * (TURRET_KS_CW_MAX  - TURRET_KS_CW_MIN);
 
+        double staticComp = 0;
         if (Math.abs(netVel) > 0.3) {
-            // If the target is moving, apply kS in the direction of travel
-            staticComp = (netVel > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
+            // Use netVel direction for the kS sign
+            staticComp = (netVel > 0) ? currentKS_CCW : -currentKS_CW;
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            // If the target is still, but we have error, use the error sign
-            // to help the PID break stiction to reach the final goal.
-            staticComp = (error > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
+            // Use error direction to break stiction when nearly stationary
+            staticComp = (error > 0) ? currentKS_CCW : -currentKS_CW;
         }
 
         // --- 5. Voltage Scaling & Output ---
@@ -454,7 +456,6 @@ public class Shooter extends SubsystemBase {
 
         turret.set(finalOutput);
     }
-
     /**
      * Calculates the required velocity and acceleration for the turret to track the moving target.
      * @return an array where [0] is Net Velocity and [1] is Net Acceleration

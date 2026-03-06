@@ -40,6 +40,8 @@ public class ShooterConfig {
     public static double TURRET_KI = 0.02;
     public static double TURRET_KD = 0.01;
     public static double TURRET_KS_CW = 0.041;
+    public static double TURRET_KS_CW_MIN = 0.035; // tune this
+    public static double TURRET_KS_CW_MAX = 0.041; // tune this
 
     // clockwise PID - Turret
     public static double TURRET_KP_CW = 1;
@@ -51,8 +53,12 @@ public class ShooterConfig {
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
     public static double TURRET_KS_CCW = 0.037;
+    public static double TURRET_KS_CCW_MIN = 0.037; // tune this
+    public static double TURRET_KS_CCW_MAX = 0.04; // tune this
     public static double TURRET_KV = 0.15;
     public static double TURRET_KA = 0;
+    public static double TURRET_K_GYRO = 0;
+
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
