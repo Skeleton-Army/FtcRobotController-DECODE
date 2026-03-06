@@ -459,7 +459,7 @@ public class Shooter extends SubsystemBase {
      * Calculates the required velocity and acceleration for the turret to track the moving target.
      * @return an array where [0] is Net Velocity and [1] is Net Acceleration
      */
-    private double[] getNetTargetKinematics() {
+    public double[] getNetTargetKinematics() {
         long currentTime = System.nanoTime();
         double currentTargetAngle = solution.getHorizontalAngle() + horizontalOffset;
 
@@ -616,6 +616,13 @@ public class Shooter extends SubsystemBase {
         return angleUnit == AngleUnit.DEGREES ? Math.toDegrees(turret.getDistance()) : turret.getDistance();
     }
 
+    public double getTurretAngleVel() {
+        return turret.getVelocity();
+    }
+
+    public double getTurretAngleAccel() {
+        return turret.getAcceleration();
+    }
     public void resetTurret() {
         turret.resetEncoder();
     }

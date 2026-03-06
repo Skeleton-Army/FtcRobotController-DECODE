@@ -6,6 +6,8 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.seattlesolvers.solverslib.gamepad.GamepadEx;
+import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -47,7 +49,9 @@ public class TurretTuner extends ComplexOpMode {
 
     private boolean stepToggle = false;
     private boolean active = false;
+    private GamepadEx gamepadEx1;
 
+    private boolean updateFlywheelSolution = false; // updates the flywheel according to the solution/ our calculations
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -58,20 +62,21 @@ public class TurretTuner extends ComplexOpMode {
 
         shooter.setHorizontalManualMode(true);
         shooter.setVerticalManualMode(true);
-        shooter.setUpdateFlywheel(false);
+        shooter.setUpdateFlywheel(updateFlywheelSolution);
 
         timer = new ElapsedTime();
+        gamepadEx1 = new GamepadEx(gamepad1);
     }
 
     @Override
     public void run() {
-        if (gamepad1.crossWasPressed()) {
+        if (gamepadEx1.wasJustPressed(GamepadKeys.Button.CROSS)) {
             ENABLE_SINE = !ENABLE_SINE;
             active = true;
             resetStats();
         }
 
-        if (gamepad1.squareWasPressed()) {
+        if (gamepadEx1.wasJustPressed(GamepadKeys.Button.SQUARE)) {
             ENABLE_SINE = false;
             stepToggle = !stepToggle;
             targetAngleDeg = stepToggle ? SINE_AMPLITUDE_DEG : 0;
@@ -79,12 +84,20 @@ public class TurretTuner extends ComplexOpMode {
             resetStats();
         }
 
+        if (gamepadEx1.stateJustChanged(GamepadKeys.Button.TRIANGLE)) {
+            updateFlywheelSolution = !updateFlywheelSolution;
+        }
+
         if (ENABLE_SINE) {
             targetAngleDeg = SINE_AMPLITUDE_DEG * Math.sin(2 * Math.PI * SINE_FREQUENCY_HZ * timer.seconds());
         }
 
         shooter.updatePIDFCoefficients();
-        shooter.setRPM(TUNING_FLYWHEEL_RPM);
+        if (!updateFlywheelSolution) {
+            shooter.setUpdateFlywheel(false);
+            shooter.setRPM(TUNING_FLYWHEEL_RPM);
+        }
+        else if (updateFlywheelSolution) {shooter.setUpdateFlywheel(true);}
         shooter.setHorizontalAngle(Math.toRadians(targetAngleDeg));
 
         double actualAngleDeg = shooter.getTurretAngle(AngleUnit.DEGREES);
@@ -92,12 +105,23 @@ public class TurretTuner extends ComplexOpMode {
 
         if (active) updateStats(errorDeg);
 
+        double[] targetKinematics = shooter.getNetTargetKinematics();
+        telemetry.addLine("----------------------------------");
         telemetry.addData("Target Angle (Deg)", targetAngleDeg);
         telemetry.addData("Actual Angle (Deg)", actualAngleDeg);
         telemetry.addData("Error (Deg)", errorDeg);
-        telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Avg Error (Deg)", sumErrorDeg / Math.max(1, loopCount));
         telemetry.addData("Max Error (Deg)", maxErrorDeg);
+        telemetry.addLine("----------------------------------");
+        telemetry.addData("Target Velocity (Deg/sec)", targetKinematics[0]);
+        telemetry.addData("Actual Velocity (Deg/sec)", shooter.getTurretAngleVel());
+        telemetry.addData("Error (Deg/sec)", targetKinematics[0] - shooter.getTurretAngleVel());
+        telemetry.addLine("----------------------------------");
+        telemetry.addData("Target Acceleration (Deg/sec^2)", targetKinematics[1]);
+        telemetry.addData("Actual Acceleration (Deg/sec^2)", shooter.getTurretAngleVel());
+        telemetry.addData("Error (Deg/sec^2)", targetKinematics[1] - shooter.getTurretAngleVel());
+        telemetry.addLine("----------------------------------");
+        telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.update();
     }
 
