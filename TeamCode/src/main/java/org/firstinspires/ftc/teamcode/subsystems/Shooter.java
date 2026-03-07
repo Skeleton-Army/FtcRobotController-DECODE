@@ -461,7 +461,7 @@ public class Shooter extends SubsystemBase {
      */
     public double[] getNetTargetKinematics() {
         long currentTime = System.nanoTime();
-        double currentTargetAngle = solution.getHorizontalAngle() + horizontalOffset;
+        double currentTargetAngle = turretPID.getSetPoint();
 
         if (lastTargetUpdateTime == 0) {
             lastTargetUpdateTime = currentTime;
