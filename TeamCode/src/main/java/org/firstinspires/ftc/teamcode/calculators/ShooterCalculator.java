@@ -20,15 +20,13 @@ import com.pedropathing.math.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.pedropathing.math.Vector;
+import com.skeletonarmy.marrow.OpModeManager;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.firstinspires.ftc.robotcore.internal.opmode.OpModeMetaAndClass;
 
 public class ShooterCalculator implements IShooterCalculator {
-    private static final double RANGE_BUFFER = 0.05; // Buffer for velocity bounds
     private static final double INCH_TO_METERS = 0.0254;
-    //private static final double SHOT_LATENCY = 0.1; // Example latency
-    private static final double TURRET_OFFSET_X = 0.0; // Example offsets
-    private static final double TURRET_OFFSET_Y = 0.0;
-
     private final double[] hoodCoeffs;
 
     public ShooterCalculator(double[] hoodCoeffs) {
@@ -39,7 +37,7 @@ public class ShooterCalculator implements IShooterCalculator {
      * Generic helper to evaluate a polynomial of arbitrary degree.
      * Expects coefficients in descending order (highest degree first), matching MATLAB's polyfit.
      */
-    private double evaluatePolynomial(double[] coeffs, double x) {
+    public static double evaluatePolynomial(double[] coeffs, double x) {
         double result = 0.0;
         for (int exponent = 0; exponent < coeffs.length; exponent++) {
             result += coeffs[exponent] * Math.pow(x, coeffs.length - exponent - 1);
@@ -136,7 +134,9 @@ public class ShooterCalculator implements IShooterCalculator {
         double aimVerticalAngle = Math.atan2(vAim.getZ(), aimHorizontalComp);
 
         boolean isAngleValid = (aimVerticalAngle >= HOOD_MIN) && (aimVerticalAngle <= HOOD_MAX);
-        boolean isSolutionPossible = isAngleValid & currentHood.isValid();
+        boolean isSolutionPossible = isAngleValid && currentHood.isValid();
+        OpModeManager.getTelemetry().addData("isAngleValid", isAngleValid);
+        OpModeManager.getTelemetry().addData("Current hood is valid", currentHood.isValid());
 
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(aimHorizontalAngle),

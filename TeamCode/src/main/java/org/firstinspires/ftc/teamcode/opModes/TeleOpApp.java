@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.MAX_VEL_COEFFS;
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.MIN_VEL_COEFFS;
+import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.RPM_INTERPOLATION;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
 
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -329,6 +332,8 @@ public class TeleOpApp extends ComplexOpMode {
             telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
             telemetry.addData("Target solution RPM", shooter.solution.getRPM());
             telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+            telemetry.addData("Min RPM", ShooterCalculator.evaluatePolynomial(MIN_VEL_COEFFS, goalDistance) * RPM_INTERPOLATION[0]);
+            telemetry.addData("Max RPM", ShooterCalculator.evaluatePolynomial(MAX_VEL_COEFFS, goalDistance) * RPM_INTERPOLATION[0]);
 
             telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
             telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
