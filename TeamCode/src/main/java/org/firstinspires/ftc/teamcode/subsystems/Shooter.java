@@ -431,7 +431,10 @@ public class Shooter extends SubsystemBase {
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
 
-        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
+        double measuredVel = turret.getCorrectedVelocity();
+        double gyroComp = filteredRPM * measuredVel * TURRET_KG;
+
+        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA) + gyroComp;
         double totalRequest = pid + ffBase;
 
         // --- 4. Static Friction (kS) ---
@@ -542,7 +545,7 @@ public class Shooter extends SubsystemBase {
     public double getRPMCorrectedTiming() {
         double motorTPS = flywheel.getVelocity();
         if (!Double.isNaN(flywheel1.getAcceleration())) {
-             motorTPS += flywheel1.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
+            motorTPS += flywheel1.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
             return (motorTPS * 60.0) / flywheel.getCPR();
         }
 
