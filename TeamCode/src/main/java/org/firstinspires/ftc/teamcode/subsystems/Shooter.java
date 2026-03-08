@@ -759,11 +759,4 @@ public class Shooter extends SubsystemBase {
         lastshotRPM = getRPM();
         return false;
     }
-
-    public void updatePIDFCoefficients() {
-        flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
-        flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        turretPID.setPID(TURRET_KP, TURRET_KI, TURRET_KD);
-    }
 }

@@ -49,7 +49,6 @@ public class TurretTuner extends ComplexOpMode {
 
     private boolean stepToggle = false;
     private boolean active = false;
-    private GamepadEx gamepadEx1;
 
     private boolean updateFlywheelSolution = false; // updates the flywheel according to the solution/ our calculations
     @Override
@@ -65,18 +64,25 @@ public class TurretTuner extends ComplexOpMode {
         shooter.setUpdateFlywheel(updateFlywheelSolution);
 
         timer = new ElapsedTime();
-        gamepadEx1 = new GamepadEx(gamepad1);
     }
 
     @Override
     public void run() {
-        if (gamepadEx1.wasJustPressed(GamepadKeys.Button.CROSS)) {
+        // Force the OpMode to run on 30ms
+        ElapsedTime loopTimer = new ElapsedTime();
+        double remainingTimeMs = 30.0 - loopTimer.milliseconds();
+
+        if (remainingTimeMs > 0) {
+            sleep((long) remainingTimeMs);
+        }
+
+        if (gamepad1.crossWasPressed()) {
             ENABLE_SINE = !ENABLE_SINE;
             active = true;
             resetStats();
         }
 
-        if (gamepadEx1.wasJustPressed(GamepadKeys.Button.SQUARE)) {
+        if (gamepad1.squareWasPressed()) {
             ENABLE_SINE = false;
             stepToggle = !stepToggle;
             targetAngleDeg = stepToggle ? SINE_AMPLITUDE_DEG : 0;
@@ -84,7 +90,7 @@ public class TurretTuner extends ComplexOpMode {
             resetStats();
         }
 
-        if (gamepadEx1.stateJustChanged(GamepadKeys.Button.TRIANGLE)) {
+        if (gamepad1.triangleWasPressed()) {
             updateFlywheelSolution = !updateFlywheelSolution;
         }
 
@@ -92,7 +98,6 @@ public class TurretTuner extends ComplexOpMode {
             targetAngleDeg = SINE_AMPLITUDE_DEG * Math.sin(2 * Math.PI * SINE_FREQUENCY_HZ * timer.seconds());
         }
 
-        shooter.updatePIDFCoefficients();
         if (!updateFlywheelSolution) {
             shooter.setUpdateFlywheel(false);
             shooter.setRPM(TUNING_FLYWHEEL_RPM);
@@ -106,6 +111,7 @@ public class TurretTuner extends ComplexOpMode {
         if (active) updateStats(errorDeg);
 
         double[] targetKinematics = shooter.getNetTargetKinematics();
+        telemetry.addData("Loop Time (ms)", loopTimer.milliseconds());
         telemetry.addLine("----------------------------------");
         telemetry.addData("Target Angle (Deg)", targetAngleDeg);
         telemetry.addData("Actual Angle (Deg)", actualAngleDeg);
