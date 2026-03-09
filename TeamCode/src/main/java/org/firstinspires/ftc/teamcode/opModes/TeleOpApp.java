@@ -37,6 +37,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
+import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -81,22 +82,22 @@ public class TeleOpApp extends ComplexOpMode {
 
     @Override
     public void initialize() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        telemetry.setMsTransmissionInterval(500);
+
         matchTime = new TimerEx(120);
         overrideTimer = new TimerEx(1);
 
         debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
-        Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
-        if (!debugMode) startPose = Settings.get("pose", new Pose(X_OFFSET, Y_OFFSET));
 
-        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
-        telemetry.setMsTransmissionInterval(500);
-        telemetry.addData("bruh", startPose);
-        follower = Constants.createFollower(hardwareMap);
+        follower = FollowerManager.createFollower(hardwareMap);
         follower.startTeleopDrive(USE_BRAKE_MODE);
-        follower.setPose(startPose);
         follower.setMaxPower(1);
+
+        Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        if (debugMode) follower.setPose(startPose);
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
         //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
@@ -363,11 +364,6 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
             Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
         }
-    }
-
-    @Override
-    public void end() {
-        Settings.set("pose", follower.getPose(), false);
     }
 
     private boolean isShootingAllowed() {
