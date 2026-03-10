@@ -710,10 +710,12 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command farCycle() {
+        PathChain path = pickupOrder.contains(2) ? farCycle : farPaths[0];
+
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
                 new InstantCommand(intake::collect),
-                new FollowPathCommand(follower, farCycle)
+                new FollowPathCommand(follower, path)
                         .withTimeout(3000)
                         .interruptOn(() -> transfer.isArtifactDetected() && transfer.isArtifactInIntake()),
                 returnAndScore(1, false)
