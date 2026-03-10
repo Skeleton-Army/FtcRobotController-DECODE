@@ -192,8 +192,8 @@ public class Shooter extends SubsystemBase {
         if (updateFlywheel) setRPM(solution.getRPM());
 
         //updateFlywheelPID(false);
-        //updateFlywheelPIDFiltered(true);
-        updateFlywheelPID(false);
+        updateFlywheelPIDFiltered(false);
+        //updateFlywheelPID(false);
         //updateTurretPID(true);
         updateTurretPID(false);
 
@@ -293,13 +293,13 @@ public class Shooter extends SubsystemBase {
         double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
 
         // 'speed' is our Target Velocity
-        double speed = (targetTPS) * rampMultiplier;
+        double speed = targetTPS * rampMultiplier;
 
         // Get raw measurement and apply Low Pass Filter to mitigate sensor noise
         //double rawVelocity = flywheel1.getCorrectedVelocity();
         //filteredVelocity = (VELOCITY_FILTER_ALPHA * rawVelocity) + (1.0 - VELOCITY_FILTER_ALPHA) * filteredVelocity;
 
-        double processVariable = filteredRPM;
+        double processVariable = (filteredRPM * flywheel.getCPR()) / 60.0;
 
         // 2. Delay Compensation (Lead Compensation)
         // We add predicted velocity gain to offset the phase lag of the filter and mechanical latency
