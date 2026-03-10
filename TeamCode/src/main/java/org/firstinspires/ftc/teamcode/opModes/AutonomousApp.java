@@ -700,9 +700,8 @@ public class AutonomousApp extends ComplexOpMode {
                 // Open gate, collect, and go back to shoot
                 new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectFromGate()), null),
-                new WaitUntilCommand(transfer.threeArtifactsDetected(intake::isCollecting, 250))
+                new WaitUntilCommand(() -> transfer.isArtifactDetected() && transfer.isArtifactInIntake())
                         .withTimeout(2000),
-                new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
                 new InstantCommand(intake::stop),
                 shoot()
