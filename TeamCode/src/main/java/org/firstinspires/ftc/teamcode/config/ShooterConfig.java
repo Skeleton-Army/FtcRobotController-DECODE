@@ -36,9 +36,9 @@ public class ShooterConfig {
     public static double TURRET_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_DELAY = 0.02;
-    public static double TURRET_KP = 0;
-    public static double TURRET_KI = 0;
-    public static double TURRET_KD = 0;
+    public static double TURRET_KP = 0.7;
+    public static double TURRET_KI = 0.02;
+    public static double TURRET_KD = 0.01;
     public static double TURRET_KS_CW = 0.041;
 
     // clockwise PID - Turret
