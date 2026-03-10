@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import static org.firstinspires.ftc.teamcode.config.TransferConfig.*;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -72,6 +73,7 @@ public class Transfer extends SubsystemBase {
 
         double dist = colorSensor.distance(DistanceUnit.CM);
         if (isSensorDisconnected(dist)) {
+            RobotLog.addGlobalWarningMessage("TRANSFER SENSOR DISCONNECTED.");
             colorSensorDisabled = true;
             return -1;
         }
@@ -85,6 +87,7 @@ public class Transfer extends SubsystemBase {
 
         double dist = sensorDistance.getDistance(DistanceUnit.CM);
         if (isSensorDisconnected(dist)) {
+            RobotLog.addGlobalWarningMessage("INTAKE SENSOR DISCONNECTED.");
             distanceSensorDisabled = true;
             return -1;
         }
