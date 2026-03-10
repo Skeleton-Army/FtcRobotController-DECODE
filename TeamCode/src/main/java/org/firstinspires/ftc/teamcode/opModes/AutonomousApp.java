@@ -231,15 +231,17 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .addPath(
-                        new BezierCurve(
+                        new BezierLine(
                                 follower::getPose,
-                                getRelative(new Pose(18.5, 19.5)),
-                                getRelative(new Pose(16, 19))
+                                getRelative(new Pose(15, 8.0000000001))
+
                         )
                 )
                 .setTranslationalConstraint(5)
                 .setTValueConstraint(0.7)
-                .setTangentHeadingInterpolation()
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
                 .build();
 
         farPaths[1] = follower
