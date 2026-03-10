@@ -486,35 +486,35 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .prompt("cycle",
                         () -> {
-                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
+                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
                             return new BooleanPrompt("RUN CYCLE ROUTINE?", false);
                         }
                 )
                 .prompt("pickup_order",
                         () -> {
-                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
+                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
                             return new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4);
                         }
                 )
                 .prompt("open_gate",
                         () -> {
-                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
-                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
+                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
+                            if (Boolean.TRUE.equals(prompter.getOrDefault("cycle", false))) return null;
                             return new BooleanPrompt("OPEN GATE?", false);
                         }
                 )
                 .prompt("gate_spike",
                         () -> {
-                            if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
-                            if (Boolean.TRUE.equals(prompter.get("cycle"))) return null;
-                            if (Boolean.TRUE.equals(prompter.get("open_gate"))) {
+                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
+                            if (Boolean.TRUE.equals(prompter.getOrDefault("cycle", false))) return null;
+                            if (Boolean.TRUE.equals(prompter.getOrDefault("open_gate", false))) {
                                 return new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4);
                             }
                             return null;
                         }
                 )
                 .prompt("end_near_gate", () -> {
-                    if (Boolean.TRUE.equals(prompter.get("sorted"))) return null;
+                    if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
                     if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
                     return new BooleanPrompt("END NEAR GATE?", true);
                 })
