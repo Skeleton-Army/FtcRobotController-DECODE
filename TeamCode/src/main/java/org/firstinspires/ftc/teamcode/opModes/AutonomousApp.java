@@ -1,8 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.ROBOT_LENGTH;
-import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.ROBOT_WIDTH;
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.ftc.FTCCoordinates;
@@ -21,14 +18,11 @@ import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
-import com.seattlesolvers.solverslib.command.PerpetualCommand;
-import com.seattlesolvers.solverslib.command.RepeatCommand;
-import com.seattlesolvers.solverslib.command.RunCommand;
+import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
-import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
@@ -45,7 +39,6 @@ import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
@@ -56,8 +49,8 @@ import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
-import java.util.Collection;
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
@@ -720,7 +713,8 @@ public class AutonomousApp extends ComplexOpMode {
                 // Go to LOADING ZONE, collect, and go back to shoot
                 new InstantCommand(intake::collect),
                 new FollowPathCommand(follower, farCycle)
-                        .withTimeout(3000),
+                        .withTimeout(3000)
+                        .interruptOn(() -> transfer.isArtifactDetected() && transfer.isArtifactInIntake()),
                 returnAndScore(1, false)
         );
     }
@@ -792,12 +786,8 @@ public class AutonomousApp extends ComplexOpMode {
         return new FollowPathCommand(follower, farDriveBackEnd);
     }
 
-    //private boolean isCycle(){
-       // boolean bool = false;
-       // if (matchTime.isMoreThan(7)) ? bool = true : bool = false;
-    //}
-
     private Command shoot() {
+        // TODO: If no ball, don't shoot
         return new ShootCommand(
                 shooter, intake, transfer, drive,
                 () -> startingPosition == StartingPosition.FAR

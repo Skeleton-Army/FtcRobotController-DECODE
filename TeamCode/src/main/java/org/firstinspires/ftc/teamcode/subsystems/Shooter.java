@@ -15,7 +15,6 @@ import com.seattlesolvers.solverslib.controller.PIDController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
-import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -74,7 +73,7 @@ public class Shooter extends SubsystemBase {
 
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
-    private double lastshotRPM;
+    private double lastShotRPM;
 
     private boolean canShootRPMCalc;
 
@@ -753,13 +752,12 @@ public class Shooter extends SubsystemBase {
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
 
-    // returns true if we just shot, otherwise false
-    private boolean wasBallshot() {
-        if ((Math.abs(getTargetRPM() - getRPM()) > RPM_REACHED_THRESHOLD) && (Math.abs(lastshotRPM - getRPM()) > RPM_REACHED_THRESHOLD)) {
+    public boolean justShot() {
+        if ((Math.abs(getTargetRPM() - getRPM()) > RPM_REACHED_THRESHOLD) && (Math.abs(lastShotRPM - getRPM()) > RPM_REACHED_THRESHOLD)) {
             return true;
         }
 
-        lastshotRPM = getRPM();
+        lastShotRPM = getRPM();
         return false;
     }
 }
