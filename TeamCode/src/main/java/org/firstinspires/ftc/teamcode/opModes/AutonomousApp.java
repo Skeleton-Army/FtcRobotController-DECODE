@@ -10,6 +10,7 @@ import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.pedropathing.follower.Follower;
@@ -19,6 +20,7 @@ import com.seattlesolvers.solverslib.command.ConditionalCommand;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.PerpetualCommand;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
@@ -87,6 +89,7 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain nearSpike3Open;
     private PathChain nearSpike4Open;
     private PathChain driveToGate;
+    private PathChain farCycle;
 
     private Alliance alliance;
     private boolean endGate;
@@ -110,8 +113,19 @@ public class AutonomousApp extends ComplexOpMode {
                                 farDriveBack
                         )
                 )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.8,
+                                        HeadingInterpolator.tangent.reverse()
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.8,
+                                        1,
+                                        HeadingInterpolator.linear(follower.getHeading(), getRelative(Math.toRadians(180)))
+                                )
+                        )
                 )
                 .build();
     }
@@ -205,6 +219,33 @@ public class AutonomousApp extends ComplexOpMode {
         farPathsReturn[2] = this::farDriveBack;
         farPathsReturn[3] = this::farDriveBack;
 
+        farCycle = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(48, 9)),
+                                spike1End
+                        )
+                )
+                .setTranslationalConstraint(5)
+                .setTValueConstraint(0.7)
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .addPath(
+                        new BezierCurve(
+                                spike1End,
+                                getRelative(new Pose(9.01511879049676, 11.382289416846664)),
+                                getRelative(new Pose(9.341252699784018, 25.918825053995683)),
+                                getRelative(new Pose(9.036717062634992, 40.04319654427647))
+                        )
+                )
+                .setTranslationalConstraint(5)
+                .setTValueConstraint(0.7)
+                .setTangentHeadingInterpolation()
+                .build();
+
         farPaths[0] = follower
                 .pathBuilder()
                 .addPath(
@@ -228,16 +269,15 @@ public class AutonomousApp extends ComplexOpMode {
                 .setTranslationalConstraint(5)
                 .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
+                        getRelative(Math.toRadians(170))
                 )
                 .addPath(
                         new BezierLine(
                                 follower::getPose,
-                                getRelative(new Pose(15, 8.0000000001))
-
+                                getRelative(new Pose(0, 7.5))
                         )
                 )
-                .setTranslationalConstraint(5)
+                .setTranslationalConstraint(2)
                 .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
@@ -646,8 +686,18 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
                 pickupSequence(),
-                repeatIfTime(this::farCycle, 4.0),
-                parkRoutine() // Park
+                collect(1)
+                        .withTimeout(2000),
+                returnAndScore(1, false),
+                new ParallelDeadlineGroup(
+                        new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
+                        repeatIfTime(this::farCycle, 4.0)
+                ),
+                // Move forward at max speed
+                new InstantCommand(() -> {
+                    follower.startTeleOpDrive();
+                    follower.setTeleOpDrive(1, 0, 0, true);
+                })
         );
     }
 
@@ -668,7 +718,9 @@ public class AutonomousApp extends ComplexOpMode {
     private Command farCycle() {
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
-                collect(1).withTimeout(3000),
+                new InstantCommand(intake::collect),
+                new FollowPathCommand(follower, farCycle)
+                        .withTimeout(3000),
                 returnAndScore(1, false)
         );
     }
@@ -729,15 +781,15 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command parkRoutine() {
-        Command parkPath = (startingPosition == StartingPosition.CLOSE)
-                ? new FollowPathCommand(follower, driveToGate)
-                : new FollowPathCommand(follower, farDriveBackEnd);
+        if (endGate) {
+            return new ConditionalCommand(
+                    new FollowPathCommand(follower, driveToGate),
+                    new InstantCommand(),
+                    () -> matchTime.isMoreThan(1)
+            );
+        }
 
-        return new ConditionalCommand(
-                parkPath,
-                new InstantCommand(),
-                () -> matchTime.isMoreThan(1) && endGate
-        );
+        return new FollowPathCommand(follower, farDriveBackEnd);
     }
 
     //private boolean isCycle(){
