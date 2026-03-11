@@ -123,9 +123,6 @@ public class ShootCommand extends SequentialCommandGroup {
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
         intake.setIntakeSpeed(INTAKE_POWER);
-
-        if (interrupted) {
-            transfer.kick().schedule();
-        }
+        transfer.kick().schedule();
     }
 }

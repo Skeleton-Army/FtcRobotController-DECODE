@@ -101,6 +101,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Pose gateOpenPose;
 
+    private boolean isSorting = false;
+
     public PathChain farDriveBack() {
         return follower
                 .pathBuilder()
@@ -180,15 +182,17 @@ public class AutonomousApp extends ComplexOpMode {
         return follower
                 .pathBuilder()
                 .addPath(
-                        new BezierLine(
+                        new BezierCurve(
                                 follower.getPose(),
-                                getRelative(new Pose(25.721, 117.055))
+                                getRelative(new Pose(40, 82.348)),
+                                getRelative(new Pose(25.520, 117.174))
                         )
                 )
                 .setLinearHeadingInterpolation(
                         follower.getHeading(),
                         getRelative(Math.toRadians(141.5))
                 )
+                .setGlobalDeceleration()
                 .build();
     }
 
@@ -204,6 +208,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(141.5))
                 )
+                .setGlobalDeceleration()
                 .build();
     }
 
@@ -617,7 +622,7 @@ public class AutonomousApp extends ComplexOpMode {
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
-        shooter.setUpdateFlywheel(distanceFromLaunchZone() < 20);
+        if (!isSorting) shooter.setUpdateFlywheel(distanceFromLaunchZone() < 20);
 
         telemetry.addData("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret/Angle Target (deg)", Math.toDegrees(shooter.wrapped));
@@ -858,9 +863,34 @@ public class AutonomousApp extends ComplexOpMode {
     private Command sortNTimes(int n) {
         return new DeferredCommand(() -> {
             SequentialCommandGroup seq = new SequentialCommandGroup();
+            if (n == 0) return seq;
+
+            seq.addCommands(
+                    new InstantCommand(() -> {
+                        isSorting = true;
+                        shooter.setUpdateFlywheel(false);
+                        shooter.setVerticalManualMode(true);
+                        shooter.setHorizontalManualMode(true);
+
+                        shooter.setRPM(300);
+                        shooter.setVerticalAngle(Math.toRadians(45));
+                        shooter.setHorizontalAngle(Math.toRadians(0));
+                    })
+            );
+
             for (int i = 0; i < n; i++) {
                 seq.addCommands(goSortOnce());
             }
+
+            seq.addCommands(
+                    new InstantCommand(() -> {
+                        isSorting = false;
+                        shooter.setUpdateFlywheel(true);
+                        shooter.setVerticalManualMode(false);
+                        shooter.setHorizontalManualMode(false);
+                    })
+            );
+
             return seq;
         }, null);
     }
@@ -868,22 +898,12 @@ public class AutonomousApp extends ComplexOpMode {
     private Command goSortOnce() {
         return new SequentialCommandGroup(
                 new DeferredCommand(() -> new FollowPathCommand(follower, goSort()), null),
-                new InstantCommand(() -> {
-                    shooter.setUpdateFlywheel(false);
-                    shooter.setVerticalManualMode(true);
-                    shooter.setRPM(200);
-                    shooter.setVerticalAngle(Math.toRadians(45));
-                }),
                 new ShootCommand(
                         shooter, intake, transfer, drive,
                         SHOOTING_POWER,
                         300,
                         false
                 ).asProxy(),
-                new InstantCommand(() -> {
-                    shooter.setUpdateFlywheel(true);
-                    shooter.setVerticalManualMode(false);
-                }),
                 new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
         );
