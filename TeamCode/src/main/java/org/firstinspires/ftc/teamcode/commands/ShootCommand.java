@@ -63,26 +63,25 @@ public class ShootCommand extends SequentialCommandGroup {
 
         addCommands(
                 waitUntilCanShoot(),
-                new InstantCommand(this::recordShot),
-                new InstantCommand(() -> drive.setShootingMode(true)),
-                new InstantCommand(() -> intake.setIntakeSpeed(SHOOTING_POWER)),
-//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setIntakeSpeed(SLOW_SHOOTING_POWER); }),
 
-                new InstantCommand(transfer::release),
-                new InstantCommand(intake::collect),
+                new InstantCommand(() -> {
+                    recordShot();
+                    drive.setShootingMode(true);
+//                    if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false);
+                    intake.setIntakeSpeed(dontUpdate.getAsBoolean() ? SLOW_SHOOTING_POWER : SHOOTING_POWER);
+                    transfer.release();
+                    intake.collect();
+                }),
+
                 new WaitCommand(waitMillis),
-//                new ConditionalCommand(
-//                        transfer.kick(),
-//                        new InstantCommand(),
-//                        transfer::isArtifactDetected
-//                ),
-                new InstantCommand(transfer::block),
-                new InstantCommand(intake::stop),
 
-                new InstantCommand(() -> drive.setShootingMode(false)),
-                new InstantCommand(() -> intake.setIntakeSpeed(INTAKE_POWER))
-//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
+                new InstantCommand(() -> {
+                    transfer.block();
+                    intake.stop();
+                    drive.setShootingMode(false);
+                    intake.setIntakeSpeed(INTAKE_POWER);
+//                    if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true);
+                })
         );
     }
 
