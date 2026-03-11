@@ -430,8 +430,7 @@ public class Shooter extends SubsystemBase {
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
 
-        double measuredVel = turret.getCorrectedVelocity();
-        double gyroComp = filteredRPM * measuredVel * TURRET_KG;
+        double gyroComp = filteredRPM * netVel * TURRET_KG;
 
         double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA) + gyroComp;
         double totalRequest = pid + ffBase;
