@@ -40,11 +40,20 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Drive drive;
 
     private final double inchesToMeters = 0.0254;
+
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
         this(shooter, intake, transfer, drive, () -> false);
     }
 
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, int waitMillis) {
+        this(shooter, intake, transfer, drive, () -> false, waitMillis);
+    }
+
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate) {
+        this(shooter, intake, transfer, drive, dontUpdate, 1200);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate, int waitMillis) {
         addRequirements(shooter, intake, transfer);
 
         this.shooter = shooter;
@@ -62,7 +71,7 @@ public class ShootCommand extends SequentialCommandGroup {
 
                 new InstantCommand(transfer::release),
                 new InstantCommand(intake::collect),
-                new WaitCommand(1200),
+                new WaitCommand(waitMillis),
 //                new ConditionalCommand(
 //                        transfer.kick(),
 //                        new InstantCommand(),
