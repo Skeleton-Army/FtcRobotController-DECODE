@@ -46,14 +46,22 @@ public class ShootCommand extends SequentialCommandGroup {
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, int waitMillis) {
-        this(shooter, intake, transfer, drive, () -> false, waitMillis);
+        this(shooter, intake, transfer, drive, () -> false, waitMillis, true);
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate) {
-        this(shooter, intake, transfer, drive, dontUpdate, 1200);
+        this(shooter, intake, transfer, drive, dontUpdate, true);
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate, int waitMillis) {
+        this(shooter, intake, transfer, drive, dontUpdate, waitMillis, true);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate, boolean waitUntilReady) {
+        this(shooter, intake, transfer, drive, dontUpdate, 1200, waitUntilReady);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate, int waitMillis, boolean waitUntilReady) {
         addRequirements(shooter, intake, transfer);
 
         this.shooter = shooter;
@@ -62,7 +70,7 @@ public class ShootCommand extends SequentialCommandGroup {
         this.drive = drive;
 
         addCommands(
-                waitUntilCanShoot(),
+                waitUntilReady ? waitUntilCanShoot() : new InstantCommand(),
 
                 new InstantCommand(() -> {
                     recordShot();

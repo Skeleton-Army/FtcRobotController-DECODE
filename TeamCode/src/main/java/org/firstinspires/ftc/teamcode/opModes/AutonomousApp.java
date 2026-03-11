@@ -38,6 +38,7 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -168,6 +169,37 @@ public class AutonomousApp extends ComplexOpMode {
                 .setLinearHeadingInterpolation(
                         follower.getHeading(),
                         getRelative(Math.toRadians(180))
+                )
+                .build();
+    }
+
+    public PathChain goSort() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(25.721, 117.055))
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        follower.getHeading(),
+                        getRelative(Math.toRadians(141.5))
+                )
+                .build();
+    }
+
+    public PathChain collectSorted() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                nearStartingPose
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(141.5))
                 )
                 .build();
     }
@@ -658,10 +690,15 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command sortedRoutine() {
+        gateSpike = 4;
+        ArtifactPattern target = ArtifactPattern.PPG; // from obelisk detection
+
         return new SequentialCommandGroup(
                 initialScore(),
                 // Detect obelisk
-                pickupSequence()
+                collectSortAndScore(4, target),
+                collectSortAndScore(3, target),
+                collectSortAndScore(2, target)
         );
     }
 
@@ -802,6 +839,64 @@ public class AutonomousApp extends ComplexOpMode {
 
     private PathChain getFinalPath() {
         return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBackEnd;
+    }
+
+    private Command collectSortAndScore(int spike, ArtifactPattern target) {
+        ArtifactPattern collectedPattern = ArtifactPattern.fromSpike(spike);
+        int sorts = collectedPattern.sortsTo(target);
+
+        return new SequentialCommandGroup(
+                collect(spike),
+                openGate(spike),
+                sortNTimes(sorts),
+
+                new InstantCommand(intake::collect),
+                new ConditionalCommand(
+                        new DeferredCommand(() -> new FollowPathCommand(follower, getBackPath(1)), null), // Always go in a straight line if sorted
+                        new DeferredCommand(() -> new FollowPathCommand(follower, getBackPath(spike)), null), // If didn't sort, go back in the according path
+                        () -> sorts > 0
+                ),
+                new InstantCommand(intake::stop),
+
+                new ShootCommand(
+                        shooter, intake, transfer, drive,
+                        () -> true
+                ).asProxy()
+        );
+    }
+
+    private Command sortNTimes(int n) {
+        return new DeferredCommand(() -> {
+            SequentialCommandGroup seq = new SequentialCommandGroup();
+            for (int i = 0; i < n; i++) {
+                seq.addCommands(goSortOnce());
+            }
+            return seq;
+        }, null);
+    }
+
+    private Command goSortOnce() {
+        return new SequentialCommandGroup(
+                new DeferredCommand(() -> new FollowPathCommand(follower, goSort()), null),
+                new InstantCommand(() -> {
+                    shooter.setUpdateFlywheel(false);
+                    shooter.setVerticalManualMode(true);
+                    shooter.setRPM(200);
+                    shooter.setVerticalAngle(Math.toRadians(45));
+                }),
+                new ShootCommand(
+                        shooter, intake, transfer, drive,
+                        () -> startingPosition == StartingPosition.FAR,
+                        300,
+                        false
+                ).asProxy(),
+                new InstantCommand(() -> {
+                    shooter.setUpdateFlywheel(true);
+                    shooter.setVerticalManualMode(false);
+                }),
+                new InstantCommand(intake::collect),
+                new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
+        );
     }
 
     public boolean isInsideLaunchZone() {
