@@ -116,7 +116,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 new HeadingInterpolator.PiecewiseNode(
                                         0.8,
                                         1,
-                                        HeadingInterpolator.linear(follower.getHeading(), getRelative(Math.toRadians(180)))
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
                                 )
                         )
                 )
