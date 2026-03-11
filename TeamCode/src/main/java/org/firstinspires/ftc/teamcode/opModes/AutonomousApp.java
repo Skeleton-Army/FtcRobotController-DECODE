@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SHOOTING_POWER;
 import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
 
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -886,6 +887,7 @@ public class AutonomousApp extends ComplexOpMode {
                 }),
                 new ShootCommand(
                         shooter, intake, transfer, drive,
+                        SHOOTING_POWER,
                         300,
                         false
                 ).asProxy(),
