@@ -1,7 +1,7 @@
 package org.firstinspires.ftc.teamcode.enums;
 
 public enum ArtifactPattern {
-    PGP(1, 3), PPG(2), GPP(4);
+    PGP(1, 3), GPP(2), PPG(4);
 
     public final int[] spikes;
 
