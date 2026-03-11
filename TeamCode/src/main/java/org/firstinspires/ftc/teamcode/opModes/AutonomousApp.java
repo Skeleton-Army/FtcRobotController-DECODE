@@ -212,7 +212,7 @@ public class AutonomousApp extends ComplexOpMode {
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
-        Pose farSpike1End = getRelative(new Pose(16, 9.708060475161995));
+        Pose farSpike1End = getRelative(new Pose(12, 8.5));
         Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
@@ -257,8 +257,6 @@ public class AutonomousApp extends ComplexOpMode {
                                 farSpike1End
                         )
                 )
-                .setTranslationalConstraint(5)
-                .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
@@ -273,6 +271,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setTranslationalConstraint(5)
                 .setTValueConstraint(0.7)
                 .setTangentHeadingInterpolation()
+                .setGlobalDeceleration()
                 .build();
 
         farPaths[0] = follower
@@ -298,19 +297,9 @@ public class AutonomousApp extends ComplexOpMode {
                 .setTranslationalConstraint(5)
                 .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(170))
+                        getRelative(Math.toRadians(150))
                 )
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(0, 7.5))
-                        )
-                )
-                .setTranslationalConstraint(2)
-                .setTValueConstraint(0.7)
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
+                .setGlobalDeceleration()
                 .build();
 
         farPaths[1] = follower
