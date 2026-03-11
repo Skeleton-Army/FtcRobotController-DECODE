@@ -18,6 +18,8 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
+import java.util.ArrayDeque;
+
 @Config
 @TeleOp(name = "Tuning: Turret PIDF", group = "Tuning")
 public class TurretTuner extends ComplexOpMode {
@@ -37,20 +39,37 @@ public class TurretTuner extends ComplexOpMode {
     /** Target flywheel speed. */
     public static double TUNING_FLYWHEEL_RPM = 3000;
 
+    /**
+     * Number of loops to ignore after motion starts.
+     * Prevents the initial transient from polluting max/avg error.
+     * INCREASE: Ignore more of the startup spike.
+     * DECREASE: Start tracking sooner.
+     */
+    public static int SETTLE_LOOPS = 30;
+
+    /**
+     * Rolling window size for average error (in loops).
+     * INCREASE: Smoother average, slower to react to changes.
+     * DECREASE: More reactive, noisier average.
+     */
+    public static int ROLLING_WINDOW = 30;
+
     private Shooter shooter;
     private Follower follower;
 
     private ElapsedTime timer;
     private double targetAngleDeg = 0;
 
-    private double sumErrorDeg = 0;
-    private int loopCount = 0;
+    private final ArrayDeque<Double> errorWindow = new ArrayDeque<>();
+    private double rollingSum = 0;
     private double maxErrorDeg = 0;
+    private int settleCounter = 0;
 
     private boolean stepToggle = false;
     private boolean active = false;
 
-    private boolean updateFlywheelSolution = false; // updates the flywheel according to the solution/ our calculations
+    private boolean updateFlywheelSolution = false;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -95,20 +114,30 @@ public class TurretTuner extends ComplexOpMode {
         }
 
         if (ENABLE_SINE) {
+            active = true;
             targetAngleDeg = SINE_AMPLITUDE_DEG * Math.sin(2 * Math.PI * SINE_FREQUENCY_HZ * timer.seconds());
         }
 
         if (!updateFlywheelSolution) {
             shooter.setUpdateFlywheel(false);
             shooter.setRPM(TUNING_FLYWHEEL_RPM);
+        } else {
+            shooter.setUpdateFlywheel(true);
         }
-        else if (updateFlywheelSolution) {shooter.setUpdateFlywheel(true);}
         shooter.setHorizontalAngle(Math.toRadians(targetAngleDeg));
 
         double actualAngleDeg = shooter.getTurretAngle(AngleUnit.DEGREES);
         double errorDeg = Math.abs(targetAngleDeg - actualAngleDeg);
 
-        if (active) updateStats(errorDeg);
+        if (active) {
+            if (settleCounter < SETTLE_LOOPS) {
+                settleCounter++;
+            } else {
+                updateStats(errorDeg);
+            }
+        }
+
+        double rollingAvg = errorWindow.isEmpty() ? 0 : rollingSum / errorWindow.size();
 
         double[] targetKinematics = shooter.getNetTargetKinematics();
         telemetry.addData("Loop Time (ms)", loopTimer.milliseconds());
@@ -116,8 +145,9 @@ public class TurretTuner extends ComplexOpMode {
         telemetry.addData("Target Angle (Deg)", targetAngleDeg);
         telemetry.addData("Actual Angle (Deg)", actualAngleDeg);
         telemetry.addData("Error (Deg)", errorDeg);
-        telemetry.addData("Avg Error (Deg)", sumErrorDeg / Math.max(1, loopCount));
+        telemetry.addData("Avg Error (Deg) [last " + ROLLING_WINDOW + "]", rollingAvg);
         telemetry.addData("Max Error (Deg)", maxErrorDeg);
+        telemetry.addData("Settling", settleCounter < SETTLE_LOOPS ? "YES (" + settleCounter + "/" + SETTLE_LOOPS + ")" : "NO");
         telemetry.addLine("----------------------------------");
         telemetry.addData("Target Velocity (Deg/sec)", targetKinematics[0]);
         telemetry.addData("Actual Velocity (Deg/sec)", shooter.getTurretAngleVel());
@@ -132,14 +162,19 @@ public class TurretTuner extends ComplexOpMode {
     }
 
     private void updateStats(double error) {
-        sumErrorDeg += error;
-        loopCount++;
+        if (errorWindow.size() >= ROLLING_WINDOW) {
+            rollingSum -= errorWindow.removeFirst();
+        }
+        errorWindow.addLast(error);
+        rollingSum += error;
+
         if (error > maxErrorDeg) maxErrorDeg = error;
     }
 
     private void resetStats() {
-        sumErrorDeg = 0;
-        loopCount = 0;
+        errorWindow.clear();
+        rollingSum = 0;
         maxErrorDeg = 0;
+        settleCounter = 0;
     }
 }
