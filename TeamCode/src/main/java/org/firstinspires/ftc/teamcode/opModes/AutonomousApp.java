@@ -681,7 +681,7 @@ public class AutonomousApp extends ComplexOpMode {
                 initialScore(), // Score first 3 artifacts
                 pickupSequence(),
                 collect(1)
-                        .withTimeout(2000),
+                        .withTimeout(3000),
                 returnAndScore(1, false),
                 new ParallelDeadlineGroup(
                         new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
