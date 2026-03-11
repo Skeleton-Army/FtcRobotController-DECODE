@@ -845,6 +845,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Command collectSortAndScore(int spike, ArtifactPattern target) {
         ArtifactPattern collectedPattern = ArtifactPattern.fromSpike(spike);
         int sorts = collectedPattern.sortsTo(target);
+        boolean isLast = spike == 2;
 
         return new SequentialCommandGroup(
                 collect(spike),
@@ -852,11 +853,9 @@ public class AutonomousApp extends ComplexOpMode {
                 sortNTimes(sorts),
 
                 new InstantCommand(intake::collect),
-                new ConditionalCommand(
-                        new DeferredCommand(() -> new FollowPathCommand(follower, getBackPath(1)), null), // Always go in a straight line if sorted
-                        new DeferredCommand(() -> new FollowPathCommand(follower, getBackPath(spike)), null), // If didn't sort, go back in the according path
-                        () -> sorts > 0
-                ),
+                new DeferredCommand(() -> new FollowPathCommand(follower,
+                        isLast ? getFinalPath() : getBackPath(sorts > 0 ? 1 : spike)
+                ), null),
                 new InstantCommand(intake::stop),
 
                 new ShootCommand(
