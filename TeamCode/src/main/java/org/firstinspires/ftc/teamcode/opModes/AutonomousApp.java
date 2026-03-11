@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
+
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.ftc.FTCCoordinates;
@@ -828,8 +830,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Command shoot() {
         // TODO: If no ball, don't shoot
         return new ShootCommand(
-                shooter, intake, transfer, drive,
-                () -> startingPosition == StartingPosition.FAR
+                shooter, intake, transfer, drive
         ).asProxy();
     }
 
@@ -860,7 +861,7 @@ public class AutonomousApp extends ComplexOpMode {
 
                 new ShootCommand(
                         shooter, intake, transfer, drive,
-                        () -> true
+                        SLOW_SHOOTING_POWER
                 ).asProxy()
         );
     }
@@ -886,7 +887,6 @@ public class AutonomousApp extends ComplexOpMode {
                 }),
                 new ShootCommand(
                         shooter, intake, transfer, drive,
-                        () -> startingPosition == StartingPosition.FAR,
                         300,
                         false
                 ).asProxy(),

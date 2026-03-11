@@ -126,7 +126,7 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new InstantCommand(() -> {
                     if (isShootingAllowed()) {
-                        schedule(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                        schedule(new ShootCommand(shooter, intake, transfer, drive));
                     } else {
                         gamepad1.rumble(300);
                         isOverrideActive = true;
@@ -140,7 +140,7 @@ public class TeleOpApp extends ComplexOpMode {
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isShootingAllowed))
                 .and(new Trigger(transfer::isArtifactDetected))
-                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .whileHeld(

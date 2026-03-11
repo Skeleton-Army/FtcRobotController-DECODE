@@ -42,26 +42,26 @@ public class ShootCommand extends SequentialCommandGroup {
     private final double inchesToMeters = 0.0254;
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
-        this(shooter, intake, transfer, drive, () -> false);
+        this(shooter, intake, transfer, drive, SHOOTING_POWER);
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, int waitMillis) {
-        this(shooter, intake, transfer, drive, () -> false, waitMillis, true);
+        this(shooter, intake, transfer, drive, SHOOTING_POWER, waitMillis, true);
     }
 
-    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate) {
-        this(shooter, intake, transfer, drive, dontUpdate, true);
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed) {
+        this(shooter, intake, transfer, drive, intakeSpeed, true);
     }
 
-    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate, int waitMillis) {
-        this(shooter, intake, transfer, drive, dontUpdate, waitMillis, true);
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, int waitMillis) {
+        this(shooter, intake, transfer, drive, intakeSpeed, waitMillis, true);
     }
 
-    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate, boolean waitUntilReady) {
-        this(shooter, intake, transfer, drive, dontUpdate, 1200, waitUntilReady);
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, boolean waitUntilReady) {
+        this(shooter, intake, transfer, drive, intakeSpeed, 1200, waitUntilReady);
     }
 
-    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate, int waitMillis, boolean waitUntilReady) {
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, int waitMillis, boolean waitUntilReady) {
         addRequirements(shooter, intake, transfer);
 
         this.shooter = shooter;
@@ -75,8 +75,7 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(() -> {
                     recordShot();
                     drive.setShootingMode(true);
-//                    if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false);
-                    intake.setIntakeSpeed(dontUpdate.getAsBoolean() ? SLOW_SHOOTING_POWER : SHOOTING_POWER);
+                    intake.setIntakeSpeed(intakeSpeed);
                     transfer.release();
                     intake.collect();
                 }),
@@ -88,7 +87,6 @@ public class ShootCommand extends SequentialCommandGroup {
                     intake.stop();
                     drive.setShootingMode(false);
                     intake.setIntakeSpeed(INTAKE_POWER);
-//                    if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true);
                 })
         );
     }

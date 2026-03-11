@@ -102,7 +102,7 @@ public class ShooterTest extends ComplexOpMode   {
         GamepadEx gamepadEx1 = new GamepadEx(gamepad1);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
-                .whenActive(new ShootCommand(shooter, intake, transfer, drive, () -> follower.getPose().distanceFrom(alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL) / INCHES_TO_METERS >= DISTANCE_THRESHOLD_METERS));
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenActive(this::forNextPath);
