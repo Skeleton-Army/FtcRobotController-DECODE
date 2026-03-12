@@ -380,15 +380,15 @@ public class Shooter extends SubsystemBase {
         double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
 
         // 3. Static Friction (kS)
+        double[] ks = getBandedTurretKS();
+        double ks_cw  = ks[0];
+        double ks_ccw = ks[1];
         double staticComp = 0;
 
-        if (Math.abs(netVel) > 0.01) {
-            // If the target is moving, apply kS in the direction of travel
-            staticComp = (netVel > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+        if (Math.abs(netVel) > 0.3) {
+            staticComp = (netVel > 0) ? ks_ccw : -ks_cw;
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            // If the target is still, but we have error, use the error sign
-            // to help the PID break stiction to reach the final goal.
-            staticComp = (error > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+            staticComp = (error > 0) ? ks_ccw : -ks_cw;
         }
 
         double voltageScale = 12.0 / voltage;
@@ -430,23 +430,21 @@ public class Shooter extends SubsystemBase {
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
 
-        double gyroComp = filteredRPM * netVel * TURRET_KG;
-
-        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA) + gyroComp;
+        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
         double totalRequest = pid + ffBase;
 
         // --- 4. Static Friction (kS) ---
         // Only apply kS if the baseRequest is actually trying to move the motor
         // and apply it in the direction of that motion.
+        double[] ks = getBandedTurretKS();
+        double ks_cw  = ks[0];
+        double ks_ccw = ks[1];
         double staticComp = 0;
 
         if (Math.abs(netVel) > 0.3) {
-            // If the target is moving, apply kS in the direction of travel
-            staticComp = (netVel > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
+            staticComp = (netVel > 0) ? ks_ccw : -ks_cw;
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            // If the target is still, but we have error, use the error sign
-            // to help the PID break stiction to reach the final goal.
-            staticComp = (error > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
+            staticComp = (error > 0) ? ks_ccw : -ks_cw;
         }
 
         // --- 5. Voltage Scaling & Output ---
@@ -501,6 +499,14 @@ public class Shooter extends SubsystemBase {
         double netAccel = filteredTargetAccel;
 
         return new double[] {netVel, netAccel};
+    }
+
+    private double[] getBandedTurretKS() {
+        double rpm = Math.abs(filteredRPM);
+        if      (rpm < 1000) return new double[]{ TURRET_KS_CW_0,    TURRET_KS_CCW_0    };
+        else if (rpm < 2000) return new double[]{ TURRET_KS_CW_1000, TURRET_KS_CCW_1000 };
+        else if (rpm < 3000) return new double[]{ TURRET_KS_CW_2000, TURRET_KS_CCW_2000 };
+        else                 return new double[]{ TURRET_KS_CW_3000, TURRET_KS_CCW_3000 };
     }
 
     public boolean isFlywheelDamaged() {

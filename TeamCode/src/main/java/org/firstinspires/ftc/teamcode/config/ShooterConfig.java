@@ -39,7 +39,11 @@ public class ShooterConfig {
     public static double TURRET_KP = 0.7;
     public static double TURRET_KI = 0.02;
     public static double TURRET_KD = 0.01;
-    public static double TURRET_KS_CW = 0.041;
+    public static double TURRET_KS_CW_0    = 0.04;  public static double TURRET_KS_CCW_0    = 0.04;  // 0–1000 RPM
+    public static double TURRET_KS_CW_1000 = 0.04;  public static double TURRET_KS_CCW_1000 = 0.04;  // 1000–2000 RPM
+    public static double TURRET_KS_CW_2000 = 0.05;  public static double TURRET_KS_CCW_2000 = 0.044;  // 2000–3000 RPM
+    public static double TURRET_KS_CW_3000 = 0.05;  public static double TURRET_KS_CCW_3000 = 0.044;  // 3000–4000 RPM
+
 
     // clockwise PID - Turret
     public static double TURRET_KP_CW = 1;
@@ -50,10 +54,8 @@ public class ShooterConfig {
     public static double TURRET_KP_CCW = 0.7;
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
-    public static double TURRET_KS_CCW = 0.037;
     public static double TURRET_KV = 0.15;
     public static double TURRET_KA = 0;
-    public static double TURRET_KG = 0;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
