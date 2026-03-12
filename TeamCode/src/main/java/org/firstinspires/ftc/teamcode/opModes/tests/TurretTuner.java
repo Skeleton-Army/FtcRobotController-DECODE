@@ -36,6 +36,13 @@ public class TurretTuner extends ComplexOpMode {
     /** Toggle for sine wave motion. Use Gamepad Cross to toggle live. */
     public static boolean ENABLE_SINE = false;
 
+    /**
+     * Toggle for linear (triangle wave) motion. Use Gamepad Circle to toggle live.
+     * Ramps linearly between -SINE_AMPLITUDE_DEG and +SINE_AMPLITUDE_DEG.
+     * Uses SINE_FREQUENCY_HZ to control sweep speed.
+     */
+    public static boolean ENABLE_LINEAR = false;
+
     /** Target flywheel speed. */
     public static double TUNING_FLYWHEEL_RPM = 3000;
 
@@ -97,12 +104,21 @@ public class TurretTuner extends ComplexOpMode {
 
         if (gamepad1.crossWasPressed()) {
             ENABLE_SINE = !ENABLE_SINE;
+            if (ENABLE_SINE) ENABLE_LINEAR = false;
+            active = true;
+            resetStats();
+        }
+
+        if (gamepad1.circleWasPressed()) {
+            ENABLE_LINEAR = !ENABLE_LINEAR;
+            if (ENABLE_LINEAR) ENABLE_SINE = false;
             active = true;
             resetStats();
         }
 
         if (gamepad1.squareWasPressed()) {
             ENABLE_SINE = false;
+            ENABLE_LINEAR = false;
             stepToggle = !stepToggle;
             targetAngleDeg = stepToggle ? SINE_AMPLITUDE_DEG : 0;
             active = true;
@@ -116,6 +132,17 @@ public class TurretTuner extends ComplexOpMode {
         if (ENABLE_SINE) {
             active = true;
             targetAngleDeg = SINE_AMPLITUDE_DEG * Math.sin(2 * Math.PI * SINE_FREQUENCY_HZ * timer.seconds());
+        } else if (ENABLE_LINEAR) {
+            active = true;
+            // Triangle wave: period = 1/SINE_FREQUENCY_HZ
+            // Ramps linearly from -AMPLITUDE to +AMPLITUDE and back
+            double period = 1.0 / SINE_FREQUENCY_HZ;
+            double phase = (timer.seconds() % period) / period; // 0.0 -> 1.0
+            // Map phase to triangle: 0->1 goes -A to +A, 0.5->1 goes +A back to -A
+            double triangle = (phase < 0.5)
+                    ? (4.0 * phase - 1.0)          // -1 to +1 over first half
+                    : (3.0 - 4.0 * phase);          // +1 to -1 over second half
+            targetAngleDeg = SINE_AMPLITUDE_DEG * triangle;
         }
 
         if (!updateFlywheelSolution) {
@@ -139,8 +166,11 @@ public class TurretTuner extends ComplexOpMode {
 
         double rollingAvg = errorWindow.isEmpty() ? 0 : rollingSum / errorWindow.size();
 
+        String activeMode = ENABLE_SINE ? "SINE" : (ENABLE_LINEAR ? "LINEAR" : (active ? "STEP" : "IDLE"));
+
         double[] targetKinematics = shooter.getNetTargetKinematics();
         telemetry.addData("Loop Time (ms)", loopTimer.milliseconds());
+        telemetry.addData("Mode", activeMode);
         telemetry.addLine("----------------------------------");
         telemetry.addData("Target Angle (Deg)", targetAngleDeg);
         telemetry.addData("Actual Angle (Deg)", actualAngleDeg);
