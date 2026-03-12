@@ -916,6 +916,7 @@ public class AutonomousApp extends ComplexOpMode {
                         false
                 ).asProxy(),
                 new InstantCommand(intake::collect),
+                new WaitCommand(500),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
         );
     }
