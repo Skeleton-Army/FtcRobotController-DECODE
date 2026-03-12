@@ -20,6 +20,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import java.util.function.BooleanSupplier;
 
 public class Transfer extends SubsystemBase {
+    private static final int SENSOR_FAIL_THRESHOLD = 5;
+
     private final ServoEx kicker;
     private final ServoEx stopper;
     private final SensorRevColorV3 colorSensor;
@@ -27,6 +29,8 @@ public class Transfer extends SubsystemBase {
 
     private boolean colorSensorDisabled = false;
     private boolean distanceSensorDisabled = false;
+    private int colorSensorFailCount = 0;
+    private int distanceSensorFailCount = 0;
 
     public Transfer(final HardwareMap hardwareMap) {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
@@ -73,11 +77,14 @@ public class Transfer extends SubsystemBase {
 
         double dist = colorSensor.distance(DistanceUnit.CM);
         if (isSensorDisconnected(dist)) {
-            RobotLog.addGlobalWarningMessage("TRANSFER SENSOR DISCONNECTED.");
-            colorSensorDisabled = true;
+            if (++colorSensorFailCount >= SENSOR_FAIL_THRESHOLD) {
+                RobotLog.addGlobalWarningMessage("TRANSFER SENSOR DISCONNECTED.");
+                colorSensorDisabled = true;
+            }
             return -1;
         }
 
+        colorSensorFailCount = 0;
         return dist;
     }
 
@@ -87,11 +94,14 @@ public class Transfer extends SubsystemBase {
 
         double dist = sensorDistance.getDistance(DistanceUnit.CM);
         if (isSensorDisconnected(dist)) {
-            RobotLog.addGlobalWarningMessage("INTAKE SENSOR DISCONNECTED.");
-            distanceSensorDisabled = true;
+            if (++distanceSensorFailCount >= SENSOR_FAIL_THRESHOLD) {
+                RobotLog.addGlobalWarningMessage("INTAKE SENSOR DISCONNECTED.");
+                distanceSensorDisabled = true;
+            }
             return -1;
         }
 
+        distanceSensorFailCount = 0;
         return dist;
     }
 
