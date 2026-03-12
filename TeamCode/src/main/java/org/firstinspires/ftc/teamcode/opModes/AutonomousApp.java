@@ -239,8 +239,6 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike3GateEnd = getRelative(new Pose(21, 66));
         Pose spike4GateEnd = getRelative(new Pose(21, 83.663));
 
-        Pose obeliskScorePose = getRelative(new Pose(50, 110, Math.toRadians(60)));
-
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
         gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
@@ -525,7 +523,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower::getPose,
-                                obeliskScorePose
+                                nearDriveBack
                         )
                 )
                 .setHeadingInterpolation(
@@ -538,7 +536,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 new HeadingInterpolator.PiecewiseNode(
                                         0.8,
                                         1,
-                                        HeadingInterpolator.constant(obeliskScorePose.getHeading())
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(70)))
                                 )
                         )
                 )
