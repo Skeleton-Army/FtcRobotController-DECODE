@@ -21,7 +21,6 @@ import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
-import com.seattlesolvers.solverslib.command.ParallelRaceGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
@@ -47,6 +46,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
+import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
 import org.psilynx.psikit.core.Logger;
@@ -54,7 +54,6 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
@@ -71,6 +70,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Shooter shooter;
     private Transfer transfer;
     private Drive drive;
+    private Vision vision;
 
     private Pose farStartingPose;
     private Pose nearStartingPose;
@@ -87,6 +87,7 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain nearSpike4Open;
     private PathChain driveToGate;
     private PathChain farCycle;
+    private PathChain obeliskInitialScorePath;
 
     private Alliance alliance;
     private boolean endGate;
@@ -102,6 +103,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Pose gateOpenPose;
 
     private boolean isSorting = false;
+    private ArtifactPattern detectedPattern = ArtifactPattern.PPG; // fallback default
 
     public PathChain farDriveBack() {
         return follower
@@ -236,6 +238,8 @@ public class AutonomousApp extends ComplexOpMode {
         Pose openGateEnd = getRelative(new Pose(21, 72));
         Pose spike3GateEnd = getRelative(new Pose(21, 66));
         Pose spike4GateEnd = getRelative(new Pose(21, 83.663));
+
+        Pose obeliskScorePose = getRelative(new Pose(50, 110, Math.toRadians(60)));
 
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
@@ -515,6 +519,30 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .build();
+
+        obeliskInitialScorePath = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                obeliskScorePose
+                        )
+                )
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.8,
+                                        HeadingInterpolator.tangent.reverse()
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.8,
+                                        1,
+                                        HeadingInterpolator.constant(obeliskScorePose.getHeading())
+                                )
+                        )
+                )
+                .build();
     }
 
     public void afterPrompts() {
@@ -537,6 +565,7 @@ public class AutonomousApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
+        vision = new Vision(hardwareMap, follower.poseTracker);
 
         setupPaths();
 
@@ -702,14 +731,19 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command sortedRoutine() {
         gateSpike = 4;
-        ArtifactPattern target = ArtifactPattern.PPG; // from obelisk detection
 
         return new SequentialCommandGroup(
-                initialScore(),
-                // Detect obelisk
-                collectSortAndScore(4, target),
-                collectSortAndScore(3, target),
-                collectSortAndScore(2, target)
+                new FollowPathCommand(follower, obeliskInitialScorePath),
+                new ParallelCommandGroup(
+                        shoot(),
+                        detectObelisk()
+                ),
+
+                new DeferredCommand(() -> new SequentialCommandGroup(
+                        collectSortAndScore(4, detectedPattern),
+                        collectSortAndScore(3, detectedPattern),
+                        collectSortAndScore(2, detectedPattern)
+                ), null)
         );
     }
 
@@ -922,6 +956,17 @@ public class AutonomousApp extends ComplexOpMode {
                 new WaitCommand(500),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
         );
+    }
+
+    private Command detectObelisk() {
+        return new WaitUntilCommand(() -> {
+            ArtifactPattern p = vision.detectPattern();
+            if (p != null) {
+                detectedPattern = p;
+                return true;
+            }
+            return false;
+        }).withTimeout(1000);
     }
 
     public boolean isInsideLaunchZone() {

@@ -6,14 +6,15 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
 import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -21,6 +22,9 @@ import java.util.function.Consumer;
 
 public class Vision extends SubsystemBase {
     private final double METERS_TO_INCHES = 39.37;
+    private static final int GPP_TAG_ID = 21;
+    private static final int PGP_TAG_ID = 22;
+    private static final int PPG_TAG_ID = 23;
 
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
@@ -95,5 +99,23 @@ public class Vision extends SubsystemBase {
 
     public void addRelocalizationListener(Consumer<Pose> listener) {
         onRelocalizeListeners.add(listener);
+    }
+
+    /**
+     * Reads the obelisk AprilTag from the latest Limelight result.
+     * Returns null if no obelisk tag is currently visible.
+     */
+    public ArtifactPattern detectPattern() {
+        LLResult result = limelight.getLatestResult();
+        if (result == null || !result.isValid()) return null;
+
+        for (LLResultTypes.FiducialResult fiducial : result.getFiducialResults()) {
+            int id = fiducial.getFiducialId();
+            if (id == GPP_TAG_ID) return ArtifactPattern.GPP;
+            if (id == PGP_TAG_ID) return ArtifactPattern.PGP;
+            if (id == PPG_TAG_ID) return ArtifactPattern.PPG;
+        }
+
+        return null;
     }
 }
