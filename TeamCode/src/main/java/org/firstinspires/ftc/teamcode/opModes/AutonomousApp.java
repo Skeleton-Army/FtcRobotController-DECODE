@@ -635,6 +635,9 @@ public class AutonomousApp extends ComplexOpMode {
         shooter.updateVoltage(voltage);
         if (!isSorting) shooter.setUpdateFlywheel(distanceFromLaunchZone() < 20);
 
+        telemetry.addData("Robot Pedro X", follower.getPose().getX());
+        telemetry.addData("Robot Pedro Y", follower.getPose().getY());
+        telemetry.addData("Robot Pedro Heading (deg)", Math.toDegrees(follower.getPose().getHeading()));
         telemetry.addData("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
         telemetry.addData("Turret/Angle Target (deg)", Math.toDegrees(shooter.wrapped));
         telemetry.addData("Turret/Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
