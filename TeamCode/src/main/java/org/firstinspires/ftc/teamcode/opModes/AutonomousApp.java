@@ -198,7 +198,7 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower.getPose(),
                                 getRelative(new Pose(40, 82.348)),
-                                getRelative(new Pose(25.520, 117.174))
+                                getRelative(new Pose(30, 113))
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -731,9 +731,11 @@ public class AutonomousApp extends ComplexOpMode {
         gateSpike = 4;
 
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, obeliskInitialScorePath),
-                new ParallelCommandGroup(
-                        shoot(),
+                new ParallelDeadlineGroup(
+                        new SequentialCommandGroup(
+                                new FollowPathCommand(follower, obeliskInitialScorePath),
+                                shoot()
+                        ),
                         detectObelisk()
                 ),
 
@@ -918,7 +920,7 @@ public class AutonomousApp extends ComplexOpMode {
                         shooter.setVerticalManualMode(true);
                         shooter.setHorizontalManualMode(true);
 
-                        shooter.setRPM(300);
+                        shooter.setRPM(600);
                         shooter.setVerticalAngle(Math.toRadians(45));
                         shooter.setHorizontalAngle(Math.toRadians(0));
                     })
@@ -947,12 +949,13 @@ public class AutonomousApp extends ComplexOpMode {
                 new ShootCommand(
                         shooter, intake, transfer, drive,
                         SHOOTING_POWER,
-                        300,
+                        200,
                         false
                 ).asProxy(),
                 new InstantCommand(intake::collect),
                 new WaitCommand(500),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
+                        .withTimeout(2000)
         );
     }
 
@@ -964,7 +967,7 @@ public class AutonomousApp extends ComplexOpMode {
                 return true;
             }
             return false;
-        }).withTimeout(1000);
+        });
     }
 
     public boolean isInsideLaunchZone() {
