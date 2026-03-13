@@ -26,6 +26,7 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
@@ -108,7 +109,7 @@ public class TeleOpApp extends ComplexOpMode {
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
         kickstand = new Kickstand(hardwareMap);
-        vision = new Vision(hardwareMap, follower.poseTracker);
+        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
 
         vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
 
