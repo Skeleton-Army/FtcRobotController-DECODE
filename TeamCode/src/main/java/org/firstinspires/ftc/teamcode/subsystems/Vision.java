@@ -35,11 +35,14 @@ public class Vision extends SubsystemBase {
 
     private boolean firstRelocalization = true;
 
-    public Vision(HardwareMap hardwareMap, PoseTracker poseTracker) {
+    private final int pipeline;
+
+    public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
         this.poseTracker = poseTracker;
+        this.pipeline = pipelineIndex;
 
         limelight = hardwareMap.get(Limelight3A.class, LIMELIGHT_NAME);
-        limelight.pipelineSwitch(0);
+        limelight.pipelineSwitch(this.pipeline);
         limelight.start();
 
         relocalizeTimer.start();
@@ -81,6 +84,9 @@ public class Vision extends SubsystemBase {
     }
 
     public boolean relocalize() {
+        if (pipeline == OBELISK_PIPELINE) return false;
+        if (poseTracker.getPose().getY() < 72) return false;
+
         double velocity = poseTracker.getVelocity().getMagnitude();
         double angularVelocity = poseTracker.getAngularVelocity();
         if (Math.abs(velocity) > VELOCITY_THRESHOLD || Math.abs(angularVelocity) > VELOCITY_THRESHOLD) return false;
@@ -106,6 +112,8 @@ public class Vision extends SubsystemBase {
      * Returns null if no obelisk tag is currently visible.
      */
     public ArtifactPattern detectPattern() {
+        if (pipeline == APRILTAG_PIPELINE) return null;
+
         LLResult result = limelight.getLatestResult();
         if (result == null || !result.isValid()) return null;
 
