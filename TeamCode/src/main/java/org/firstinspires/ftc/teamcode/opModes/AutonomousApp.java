@@ -102,6 +102,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Pose nearDriveBack;
 
     private Pose gateOpenPose;
+    private Pose sortingPose;
 
     private boolean isSorting = false;
     private ArtifactPattern detectedPattern = ArtifactPattern.PPG; // fallback default
@@ -199,7 +200,24 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierCurve(
                                 follower.getPose(),
                                 getRelative(new Pose(40, 82.348)),
-                                getRelative(new Pose(30, 113))
+                                sortingPose
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        follower.getHeading(),
+                        getRelative(Math.toRadians(141.5))
+                )
+                .setGlobalDeceleration()
+                .build();
+    }
+
+    public PathChain sortAgain() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                sortingPose
                         )
                 )
                 .setLinearHeadingInterpolation(
@@ -243,6 +261,7 @@ public class AutonomousApp extends ComplexOpMode {
         farDriveBack = getRelative(new Pose(52, 15.862));
         nearDriveBack = getRelative(new Pose(50, 90));
         gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
+        sortingPose = getRelative(new Pose(30, 113));
 
         nearPathsReturn[0] = this::nearDriveBack;
         nearPathsReturn[1] = this::nearDriveBack;
@@ -840,7 +859,12 @@ public class AutonomousApp extends ComplexOpMode {
 
         return new SequentialCommandGroup(
                 new FollowPathCommand(follower, spike == 3 ? spike3Open : spike4Open),
-                new WaitCommand(100)
+                new InstantCommand(() -> {
+                    // Drive into the gate to make sure it stays open
+                    follower.startTeleOpDrive();
+                    follower.setTeleOpDrive(0.5, 0, 0, true);
+                }),
+                new WaitCommand(500)
         );
     }
 
@@ -926,7 +950,7 @@ public class AutonomousApp extends ComplexOpMode {
             );
 
             for (int i = 0; i < n; i++) {
-                seq.addCommands(goSortOnce());
+                seq.addCommands(goSortOnce(i == 0));
             }
 
             seq.addCommands(
@@ -942,9 +966,9 @@ public class AutonomousApp extends ComplexOpMode {
         }, null);
     }
 
-    private Command goSortOnce() {
+    private Command goSortOnce(boolean isFirst) {
         return new SequentialCommandGroup(
-                new DeferredCommand(() -> new FollowPathCommand(follower, goSort()), null),
+                new DeferredCommand(() -> new FollowPathCommand(follower, isFirst ? goSort() : sortAgain()), null),
                 new ShootCommand(
                         shooter, intake, transfer, drive,
                         SHOOTING_POWER,
@@ -952,7 +976,7 @@ public class AutonomousApp extends ComplexOpMode {
                         false
                 ).asProxy(),
                 new InstantCommand(intake::collect),
-                new WaitCommand(500),
+                new WaitCommand(1000),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
                         .withTimeout(2000)
         );
