@@ -731,12 +731,10 @@ public class AutonomousApp extends ComplexOpMode {
         gateSpike = 4;
 
         return new SequentialCommandGroup(
+                new FollowPathCommand(follower, obeliskInitialScorePath),
                 new ParallelDeadlineGroup(
-                        new SequentialCommandGroup(
-                                new FollowPathCommand(follower, obeliskInitialScorePath),
-                                shoot()
-                        ),
-                        detectObelisk()
+                        shoot(),
+                        detectObelisk().withTimeout(1000)
                 ),
 
                 new DeferredCommand(() -> new SequentialCommandGroup(
