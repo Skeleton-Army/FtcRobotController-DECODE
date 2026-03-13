@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
+import com.seattlesolvers.solverslib.command.ScheduleCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -134,6 +135,10 @@ public class TeleOpApp extends ComplexOpMode {
                         overrideTimer.restart();
                     }
                 }));
+
+        // Long press: fire immediately when entering zone
+        new Trigger(() -> gamepadEx1.isDown(GamepadKeys.Button.CROSS) && isShootingAllowed() && shooter.getCurrentCommand() == null)
+                .whenActive(new ScheduleCommand(new ShootCommand(shooter, intake, transfer, drive)));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(transfer.kick());
@@ -379,8 +384,9 @@ public class TeleOpApp extends ComplexOpMode {
 
     public boolean isInsideLaunchZonePredictive() {
         // Project future X and Y based on current velocity
-        double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * SHOT_LATENCY);
-        double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * SHOT_LATENCY);
+        final double PREDICTION_TIME = 0.3;
+        double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * PREDICTION_TIME);
+        double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * PREDICTION_TIME);
 
         // Create a temporary zone for the future position
         futureRobotZone.setPosition(futureX, futureY);
