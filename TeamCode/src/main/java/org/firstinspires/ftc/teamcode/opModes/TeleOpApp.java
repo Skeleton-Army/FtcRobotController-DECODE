@@ -291,7 +291,7 @@ public class TeleOpApp extends ComplexOpMode {
                 alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
         ) / INCHES_TO_METERS;
 
-        if (debugMode && loopCount % 5 == 0) {
+        if (debugMode) {
             Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
 
             telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
