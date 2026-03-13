@@ -263,7 +263,7 @@ public class TeleOpApp extends ComplexOpMode {
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
-        boolean isInsideLaunchZone = isInsideLaunchZonePredictive();
+        boolean isInsideLaunchZone = isInsideLaunchZone();
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
