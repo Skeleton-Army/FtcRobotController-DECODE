@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
+import static org.firstinspires.ftc.teamcode.utilities.ComplexOpMode.LOOP_TIME_MS;
 
 import androidx.core.math.MathUtils;
 
@@ -471,7 +472,7 @@ public class Shooter extends SubsystemBase {
         double dt = (currentTime - lastTargetUpdateTime) / 1e9;
 
         // This removes the jitter and jumps at the start of the OpMode
-        if (dt <= 0.005 || startupTimer.getElapsed() < 0.5) {
+        if (dt <= 0.005 || dt >= (LOOP_TIME_MS / 1000.0) || startupTimer.getElapsed() < 0.5) {
             lastTargetAngle = currentTargetAngle;
             lastTargetUpdateTime = currentTime;
             targetVel = 0;

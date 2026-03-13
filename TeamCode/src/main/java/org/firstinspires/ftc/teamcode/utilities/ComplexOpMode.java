@@ -5,6 +5,7 @@ import android.os.Environment;
 
 import com.qualcomm.hardware.lynx.LynxModule;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
+import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
@@ -28,6 +29,9 @@ import java.util.List;
  * to add PsiKit logging and a start function.
  */
 public abstract class ComplexOpMode extends LinearOpMode {
+    public static final int LOOP_TIME_MS = 35;
+
+    private final ElapsedTime loopTimer = new ElapsedTime();
 
     /**
      * Cancels all previous commands
@@ -75,6 +79,8 @@ public abstract class ComplexOpMode extends LinearOpMode {
             onStart();
 
             while (!isStopRequested() && opModeIsActive()) {
+                loopTimer.reset();
+
                 for (LynxModule hub : allHubs) {
                     hub.clearBulkCache();
                 }
@@ -85,6 +91,9 @@ public abstract class ComplexOpMode extends LinearOpMode {
 
                 CommandScheduler.getInstance().run();
                 run();
+
+                double remaining = LOOP_TIME_MS - loopTimer.milliseconds();
+                if (remaining > 0) sleep((long) remaining);
 
                 double afterUserStart = Logger.getTimestamp();
                 Logger.periodicAfterUser(
