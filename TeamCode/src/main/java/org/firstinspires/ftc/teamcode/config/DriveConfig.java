@@ -8,8 +8,8 @@ public class DriveConfig {
     public static double FORWARD_SPEED = 1.0;
     public static double STRAFE_SPEED = 1.0;
     public static double TURN_SPEED = 1.0;
-    public static double SHOOTING_FORWARD_SPEED = 0.7;
-    public static double SHOOTING_STRAFE_SPEED = 0.7;
-    public static double SHOOTING_TURN_SPEED = 0.6;
+    public static double SHOOTING_FORWARD_SPEED = 1.0;
+    public static double SHOOTING_STRAFE_SPEED = 1.0;
+    public static double SHOOTING_TURN_SPEED = 1.0;
     public static double HOLD_VELOCITY_THRESHOLD = 0.2;
 }
