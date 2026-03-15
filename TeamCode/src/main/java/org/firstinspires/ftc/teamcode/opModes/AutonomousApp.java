@@ -82,6 +82,7 @@ public class AutonomousApp extends ComplexOpMode {
     private final Supplier<PathChain>[] farPathsReturn = new Supplier[4];
     private PathChain farDriveBackEnd;
     private PathChain nearDriveBackEnd;
+    private PathChain sortEnd;
     private PathChain spike3Open;
     private PathChain spike4Open;
     private PathChain nearSpike3Open;
@@ -470,6 +471,18 @@ public class AutonomousApp extends ComplexOpMode {
                 .setReversed()
                 .build();
 
+        sortEnd = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                getRelative(new Pose(43, 123))
+                        )
+                )
+                .setTangentHeadingInterpolation()
+                .setReversed()
+                .build();
+
         spike3Open = follower
                 .pathBuilder()
                 .addPath(
@@ -754,12 +767,16 @@ public class AutonomousApp extends ComplexOpMode {
         gateSpike = 4;
 
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, obeliskInitialScorePath),
-                new WaitCommand(1000),
-                new ParallelDeadlineGroup(
-                        shoot(),
-                        detectObelisk().withTimeout(1000)
-                ),
+                new FollowPathCommand(follower, obeliskInitialScorePath)
+                        .alongWith(
+                                new SequentialCommandGroup(
+                                        new WaitCommand(500),
+                                        new ParallelDeadlineGroup(
+                                                shoot(),
+                                                detectObelisk().withTimeout(2000)
+                                        )
+                                )
+                        ),
 
                 new DeferredCommand(() -> new SequentialCommandGroup(
                         collectSortAndScore(4, detectedPattern),
@@ -904,6 +921,17 @@ public class AutonomousApp extends ComplexOpMode {
         ).asProxy();
     }
 
+    private Command shootWithKicker() {
+        return new SequentialCommandGroup(
+                new InstantCommand(() -> {
+                    intake.stop();
+                    transfer.release();
+                }),
+                transfer.kick(),
+                new InstantCommand(transfer::block)
+        );
+    }
+
     private PathChain getBackPath(int spike) {
         return (startingPosition == StartingPosition.FAR) ? farPathsReturn[spike - 1].get() : nearPathsReturn[spike - 1].get();
     }
@@ -917,21 +945,34 @@ public class AutonomousApp extends ComplexOpMode {
         int sorts = collectedPattern.sortsTo(target);
         boolean isLast = spike == 2;
 
+        Command shootCommand = new ShootCommand(
+                shooter, intake, transfer, drive,
+                SLOW_SHOOTING_POWER
+        );
+
+        Command shootWhileDriving =
+                new ParallelCommandGroup(
+                    new DeferredCommand(() -> new FollowPathCommand(follower,
+                            isLast ? sortEnd : getBackPath(1)
+                    ), null),
+                    shootCommand.asProxy()
+                );
+
+        Command driveThenShoot =
+                new SequentialCommandGroup(
+                    new InstantCommand(intake::collect),
+                    new DeferredCommand(() -> new FollowPathCommand(follower,
+                            isLast ? getFinalPath() : getBackPath(spike)
+                    ), null),
+                    new InstantCommand(intake::stop),
+                    shootCommand.asProxy()
+                );
+
         return new SequentialCommandGroup(
                 collect(spike),
                 openGate(spike),
                 sortNTimes(sorts),
-
-                new InstantCommand(intake::collect),
-                new DeferredCommand(() -> new FollowPathCommand(follower,
-                        isLast ? getFinalPath() : getBackPath(sorts > 0 ? 1 : spike)
-                ), null),
-                new InstantCommand(intake::stop),
-
-                new ShootCommand(
-                        shooter, intake, transfer, drive,
-                        SLOW_SHOOTING_POWER
-                ).asProxy()
+                sorts > 0 ? shootWhileDriving : driveThenShoot
         );
     }
 
@@ -953,9 +994,7 @@ public class AutonomousApp extends ComplexOpMode {
                     })
             );
 
-            for (int i = 0; i < n; i++) {
-                seq.addCommands(goSortOnce(i == 0));
-            }
+            seq.addCommands(n == 1 ? goSortOnce() : goSortTwice());
 
             seq.addCommands(
                     new InstantCommand(() -> {
@@ -970,18 +1009,27 @@ public class AutonomousApp extends ComplexOpMode {
         }, null);
     }
 
-    private Command goSortOnce(boolean isFirst) {
+    private Command goSortOnce() {
         return new SequentialCommandGroup(
-                new DeferredCommand(() -> new FollowPathCommand(follower, isFirst ? goSort() : sortAgain()).withTimeout(isFirst ? 5000 : 300), null),
+                new DeferredCommand(() -> new FollowPathCommand(follower, goSort()), null),
+                shootWithKicker(),
+                collectSortedArtifact()
+        );
+    }
 
-                // Shoot with the kicker
-                new InstantCommand(() -> {
-                    intake.stop();
-                    transfer.release();
-                }),
-                transfer.kick(),
-                new InstantCommand(transfer::block),
+    private Command goSortTwice() {
+        return new SequentialCommandGroup(
+                goSortOnce(),
+                new ParallelCommandGroup(
+                        new DeferredCommand(() -> new FollowPathCommand(follower, sortAgain()).withTimeout(300), null),
+                        shootWithKicker()
+                ),
+                collectSortedArtifact()
+        );
+    }
 
+    private Command collectSortedArtifact() {
+        return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
                 new WaitCommand(1000),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
