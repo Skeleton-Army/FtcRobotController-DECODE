@@ -224,6 +224,9 @@ public class AutonomousApp extends ComplexOpMode {
                         follower.getHeading(),
                         getRelative(Math.toRadians(141.5))
                 )
+                .setTValueConstraint(0.8)
+                .setTranslationalConstraint(3)
+                .setVelocityConstraint(3)
                 .setGlobalDeceleration()
                 .build();
     }
@@ -250,7 +253,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(12, 8.5));
-        Pose spike2End = getRelative(new Pose(18, 34.76673866090713));
+        Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
 
@@ -752,6 +755,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         return new SequentialCommandGroup(
                 new FollowPathCommand(follower, obeliskInitialScorePath),
+                new WaitCommand(1000),
                 new ParallelDeadlineGroup(
                         shoot(),
                         detectObelisk().withTimeout(1000)
@@ -944,7 +948,7 @@ public class AutonomousApp extends ComplexOpMode {
                         shooter.setHorizontalManualMode(true);
 
                         shooter.setRPM(600);
-                        shooter.setVerticalAngle(Math.toRadians(45));
+                        shooter.setVerticalAngle(Math.toRadians(90));
                         shooter.setHorizontalAngle(Math.toRadians(0));
                     })
             );
@@ -968,17 +972,20 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command goSortOnce(boolean isFirst) {
         return new SequentialCommandGroup(
-                new DeferredCommand(() -> new FollowPathCommand(follower, isFirst ? goSort() : sortAgain()), null),
-                new ShootCommand(
-                        shooter, intake, transfer, drive,
-                        SHOOTING_POWER,
-                        200,
-                        false
-                ).asProxy(),
+                new DeferredCommand(() -> new FollowPathCommand(follower, isFirst ? goSort() : sortAgain()).withTimeout(isFirst ? 5000 : 300), null),
+
+                // Shoot with the kicker
+                new InstantCommand(() -> {
+                    intake.stop();
+                    transfer.release();
+                }),
+                transfer.kick(),
+                new InstantCommand(transfer::block),
+
                 new InstantCommand(intake::collect),
                 new WaitCommand(1000),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
-                        .withTimeout(2000)
+                        .withTimeout(1000)
         );
     }
 
