@@ -398,6 +398,60 @@ public class Shooter extends SubsystemBase {
         turret.set(finalOutput);
     }
 
+    /**
+     * Calculates the total voltage and normalized power for the turret motor.
+     * * @param targetPosRad The desired turret position in radians.
+     * @param actualVelRad The current turret velocity in rad/s.
+     * @param batteryVoltage The current voltage of the battery (e.g., from voltageSensor).
+     * @return The normalized motor power (-1.0 to 1.0).
+     */
+    public double updateTurret(double targetPosRad,
+                               double actualVelRad, double batteryVoltage) {
+
+        double[] netKinematics = getNetTargetKinematics();
+        double targetVelRad = netKinematics[0];
+        double targetAccelRad = netKinematics[1];
+
+        // 1. Feedforward Gain Selection
+        // Directional kS (Static Friction) - using target velocity to determine direction
+        double currentKS = (targetVelRad >= 0) ? TURRET_KS_CCW_WITHOUT_KG : -TURRET_KS_CW_WITHOUT_KG;
+
+        // Linear fade for kS near zero velocity to prevent oscillation (Anti-Shock)
+        double velTolerance = 0.05;
+        if (Math.abs(targetVelRad) < velTolerance) {
+            currentKS *= (targetVelRad / velTolerance);
+        }
+        // Dynamic kG (Gyroscopic Gain) calculation
+        // kG_eff = (p1 * RPM) + p2
+        double effectiveKG = (TURRET_KG_SLOPE * filteredRPM) + TURRET_KG_INTERCEPT;
+
+        // 2. Full-State Feedforward Calculation (Volts)
+        // Formula: V_ff = kS + kV*v + kA*a + kG*RPM*v_turret
+        double vFF = currentKS
+                + (TURRET_KV_VOLTS * targetVelRad)
+                + (TURRET_KA_VOLTS * targetAccelRad)
+                + (effectiveKG * filteredRPM * actualVelRad);
+
+        // 3. PID Feedback Calculation (Volts)
+        double error = targetPosRad - currentPosRad;
+        errSum += error * loopTime; // Ensure you implement anti-windup in your actual loop
+
+        double vPID = (TURRET_KP_VOLTS * error)
+                + (TURRET_KI_VOLTS * errSum)
+                + (TURRET_KD_VOLTS * (targetVelRad - actualVelRad));
+
+        // 4. Sum and Battery Compensation
+        double totalVolts = vFF + vPID;
+
+        // Clamp to hardware limits (assume 12V bus)
+        totalVolts = Math.max(-12.0, Math.min(12.0, totalVolts));
+
+        // Conversion to Normalized Power (-1.0 to 1.0)
+        // This is critical: 6V on a 12V battery is 0.5 power,
+        // but 6V on a 10V battery is 0.6 power.
+        return totalVolts / batteryVoltage;
+    }
+
     private void updateTurretPID(boolean useDelayCompensation) {
         if (disabled || emergencyStop) {
             turret.set(0);

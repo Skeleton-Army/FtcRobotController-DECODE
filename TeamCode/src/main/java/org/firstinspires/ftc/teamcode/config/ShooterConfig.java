@@ -59,6 +59,18 @@ public class ShooterConfig {
     public static double TURRET_KA = 0;
     public static double TURRET_K_GYRO = 0;
 
+    public static double TURRET_KG_SLOPE = 0;
+    public static double TURRET_KG_INTERCEPT = 0;
+    public static double TURRET_KS_CCW_WITHOUT_KG = 0;
+    public static double TURRET_KS_CW_WITHOUT_KG = 0;
+    public static double TURRET_KV_VOLTS = 0;
+    public static double TURRET_KA_VOLTS = 0;
+    public static double TURRET_KP_VOLTS = 0;
+    public static double TURRET_KI_VOLTS = 0;
+    public static double TURRET_KD_VOLTS = 0;
+
+
+
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
