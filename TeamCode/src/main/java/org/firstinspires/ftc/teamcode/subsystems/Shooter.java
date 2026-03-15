@@ -112,6 +112,10 @@ public class Shooter extends SubsystemBase {
     private boolean voltageExternallySupplied = false;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
+        this(hardwareMap, poseTracker, shooterCalculator, alliance, alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL, alliance == Alliance.BLUE ? GoalPositions.TURRET_BLUE_GOAL : GoalPositions.TURRET_RED_GOAL);
+    }
+
+    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance, Pose goalPose, Pose turretGoalPose) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
 
@@ -144,8 +148,8 @@ public class Shooter extends SubsystemBase {
 
         this.shooterCalculator = shooterCalculator;
         this.alliance = alliance;
-        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
-        this.turretGoalPose = alliance == Alliance.BLUE ? GoalPositions.TURRET_BLUE_GOAL : GoalPositions.TURRET_RED_GOAL;
+        this.goalPose = goalPose;
+        this.turretGoalPose = turretGoalPose;
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);

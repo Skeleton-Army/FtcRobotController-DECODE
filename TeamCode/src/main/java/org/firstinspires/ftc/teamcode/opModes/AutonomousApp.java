@@ -1,7 +1,8 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SHOOTING_POWER;
 import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
+import static org.firstinspires.ftc.teamcode.consts.GoalPositions.BLUE_SORT_GOAL;
+import static org.firstinspires.ftc.teamcode.consts.GoalPositions.RED_SORT_GOAL;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -595,7 +596,12 @@ public class AutonomousApp extends ComplexOpMode {
         follower = FollowerManager.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
+        if (prompter.getOrDefault("sorted", false)) {
+            Pose goalPose = alliance == Alliance.BLUE ? BLUE_SORT_GOAL : RED_SORT_GOAL;
+            shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance, goalPose, goalPose);
+        } else {
+            shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
+        }
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);

@@ -17,5 +17,6 @@ public class GoalPositions {
     public final static Pose RED_GOAL_BUTTOM = new Pose(FIELD_LENGTH, 119);
     public final static Pose RED_GOAL_CORNER = new Pose(FIELD_LENGTH, FIELD_LENGTH);
 
-
+    public final static Pose BLUE_SORT_GOAL = new Pose(8, FIELD_LENGTH - 2);
+    public final static Pose RED_SORT_GOAL = new Pose(FIELD_LENGTH - BLUE_SORT_GOAL.getX(), BLUE_SORT_GOAL.getY());
 }
