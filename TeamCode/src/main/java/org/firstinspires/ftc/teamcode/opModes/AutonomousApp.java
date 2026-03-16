@@ -31,6 +31,7 @@ import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
+import com.skeletonarmy.marrow.prompts.ValuePrompt;
 import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
@@ -624,6 +625,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
+                .prompt("delay", new ValuePrompt("SELECT DELAY", 0, 0.5, 0, 5))
                 .prompt("sorted",
                         () -> {
                             if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
@@ -675,6 +677,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         boolean doCycle = prompter.getOrDefault("cycle", false);
         boolean sorted = prompter.getOrDefault("sorted", false);
+        double delay = prompter.get("delay");
 
         Command cycleRoutine = (startingPosition == StartingPosition.CLOSE)
                 ? closeCycleRoutine()
@@ -686,6 +689,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         schedule(
                 new SequentialCommandGroup(
+                        new WaitCommand((long)(delay * 1000)),
                         autonomousRoutine,
                         new WaitCommand(5000),
                         new InstantCommand(this::requestOpModeStop)
