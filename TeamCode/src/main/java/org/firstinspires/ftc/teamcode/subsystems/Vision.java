@@ -26,6 +26,7 @@ public class Vision extends SubsystemBase {
     private static final int PGP_TAG_ID = 22;
     private static final int PPG_TAG_ID = 23;
     private static final int FIELD_HALF_Y_LEVEL = 72;
+
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
 
@@ -92,7 +93,7 @@ public class Vision extends SubsystemBase {
 
         Pose tagPose = getAprilTagPose();
         if (tagPose.roughlyEquals(new Pose(), 0.001)) return false;
-        if (tagPose.getY() > FIELD_HALF_Y_LEVEL + Y_CALIBRATION_OFFSET) return false;
+        if (tagPose.getY() < FIELD_HALF_Y_LEVEL) return false;
 
         poseTracker.setPose(tagPose);
 
