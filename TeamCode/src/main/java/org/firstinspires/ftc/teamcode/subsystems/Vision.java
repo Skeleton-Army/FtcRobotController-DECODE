@@ -85,7 +85,6 @@ public class Vision extends SubsystemBase {
 
     public boolean relocalize() {
         if (pipeline == OBELISK_PIPELINE) return false;
-        if (poseTracker.getPose().getY() < 72) return false;
 
         double velocity = poseTracker.getVelocity().getMagnitude();
         double angularVelocity = poseTracker.getAngularVelocity();
