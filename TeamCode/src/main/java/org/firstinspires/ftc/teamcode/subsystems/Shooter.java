@@ -411,7 +411,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {
-        if (disabled || emergencyStop) {
+        if ((disabled || emergencyStop) && !horizontalManualMode) {
             turret.set(0);
             return;
         }

@@ -202,12 +202,14 @@ public class TeleOpApp extends ComplexOpMode {
                 .toggleWhenActive(
                         new InstantCommand(() -> {
                             kickstand.raise();
+                            shooter.setHorizontalManualMode(true);
                             shooter.setHorizontalAngle(0);
                             shooter.disable();
                             drive.disable();
                         }),
                         new InstantCommand(() -> {
                             kickstand.drop();
+                            shooter.setHorizontalManualMode(false);
                             shooter.enable();
                             drive.enable();
                         })
