@@ -56,6 +56,7 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
@@ -254,7 +255,7 @@ public class AutonomousApp extends ComplexOpMode {
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
-        Pose farSpike1End = getRelative(new Pose(12, 8.5));
+        Pose farSpike1End = getRelative(new Pose(12, 8));
         Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
@@ -842,8 +843,8 @@ public class AutonomousApp extends ComplexOpMode {
                 // Go to LOADING ZONE, collect, and go back to shoot
                 new InstantCommand(intake::collect),
                 new FollowPathCommand(follower, path)
-                        .withTimeout(3000)
-                        .interruptOn(() -> transfer.isArtifactDetected() && transfer.isArtifactInIntake()),
+                        .withTimeout(2500)
+                        .interruptOn(artifactDetected()),
                 returnAndScore(1, false)
         );
     }
@@ -936,6 +937,21 @@ public class AutonomousApp extends ComplexOpMode {
                 transfer.kick(),
                 new InstantCommand(transfer::block)
         );
+    }
+
+    private BooleanSupplier artifactDetected() {
+        TimerEx debounce = new TimerEx(0.2);
+        return () -> {
+            if (transfer.isArtifactDetected() && transfer.isArtifactInIntake()) {
+                if (!debounce.isOn()) debounce.restart();
+                return debounce.isDone();
+            } else {
+                if (debounce.isOn()) debounce.pause();
+                debounce.restart();
+                debounce.pause();
+                return false;
+            }
+        };
     }
 
     private PathChain getBackPath(int spike) {
