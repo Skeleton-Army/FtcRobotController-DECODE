@@ -12,6 +12,8 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculatorClose;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculatorFar;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -82,8 +84,9 @@ public class TurretTuner extends ComplexOpMode {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
 
         follower = Constants.createFollower(hardwareMap);
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, Alliance.RED);
+        IShooterCalculator shooterCalcClose = new ShooterCalculatorClose();
+        IShooterCalculator shooterCalcFar = new ShooterCalculatorFar();
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, Alliance.RED);
 
         shooter.setHorizontalManualMode(true);
         shooter.setVerticalManualMode(true);

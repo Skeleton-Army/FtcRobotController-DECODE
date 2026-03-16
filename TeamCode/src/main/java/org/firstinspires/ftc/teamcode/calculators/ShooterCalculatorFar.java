@@ -99,7 +99,7 @@ public class ShooterCalculatorFar implements IShooterCalculator {
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
         double distance = goalPoseMeters.distanceFrom(predictedPose);
-        double horizontalAngleToGoal = calculateTurretAngle(turretGoalPoseMeters, predictedPose);
+        double horizontalAngleToGoal = calculateTurretAngle(goalPoseMeters, predictedPose);
 
         Vector3D vRobot = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
 

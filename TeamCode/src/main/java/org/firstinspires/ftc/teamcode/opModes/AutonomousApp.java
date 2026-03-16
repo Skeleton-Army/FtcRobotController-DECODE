@@ -600,7 +600,6 @@ public class AutonomousApp extends ComplexOpMode {
 
         follower = Constants.createFollower(hardwareMap);
 
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
         IShooterCalculator shooterCalcClose = new ShooterCalculatorClose();
         IShooterCalculator shooterCalcFar = new ShooterCalculatorFar();
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
