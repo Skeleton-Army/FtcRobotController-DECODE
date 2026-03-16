@@ -297,58 +297,55 @@ public class TeleOpApp extends ComplexOpMode {
                 alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
         ) / INCHES_TO_METERS;
 
-        if (debugMode) {
-            Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
 
-            telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
-            telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
+        telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
+        telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
 
-            telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
-            telemetry.addData("!Reached angle", shooter.reachedAngle());
-            telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
-            telemetry.addData("!Can shoot", shooter.getCanShoot());
+        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
+        telemetry.addData("!Reached angle", shooter.reachedAngle());
+        telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
+        telemetry.addData("!Can shoot", shooter.getCanShoot());
 
-            telemetry.addData("Time remaining", matchTime.getRemaining());
+        telemetry.addData("Time remaining", matchTime.getRemaining());
 
-            double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
-            double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
-            telemetry.addData("Drift x", driftX);
-            telemetry.addData("Drift y", driftY);
-            telemetry.addData("Drift total", driftX + driftY);
+        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
+        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        telemetry.addData("Drift x", driftX);
+        telemetry.addData("Drift y", driftY);
+        telemetry.addData("Drift total", driftX + driftY);
 
-            telemetry.addData("Pedro Robot x", follower.getPose().getX());
-            telemetry.addData("Pedro Robot y", follower.getPose().getY());
-            telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
-            telemetry.addData("Robot x", -rotatedPose.getX());
-            telemetry.addData("Robot y", -rotatedPose.getY());
-            telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
-            telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-            telemetry.addData("Distance from GOAL", goalDistance);
-            telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-            telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
-            telemetry.addData("Turret target solution (deg)", Math.toDegrees(shooter.solution.getHorizontalAngle()));
-            telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
-            telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+        telemetry.addData("Pedro Robot x", follower.getPose().getX());
+        telemetry.addData("Pedro Robot y", follower.getPose().getY());
+        telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
+        telemetry.addData("Robot x", -rotatedPose.getX());
+        telemetry.addData("Robot y", -rotatedPose.getY());
+        telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
+        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+        telemetry.addData("Distance from GOAL", goalDistance);
+        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
+        telemetry.addData("Turret target solution (deg)", Math.toDegrees(shooter.solution.getHorizontalAngle()));
+        telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
 
-            telemetry.addData("hood pos", shooter.getRawHoodPosition());
-            telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
-            telemetry.addData("Flywheel RPM", shooter.getRPM());
-            telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
-            telemetry.addData("Target solution RPM", shooter.solution.getRPM());
-            telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+        telemetry.addData("hood pos", shooter.getRawHoodPosition());
+        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
+        telemetry.addData("Flywheel RPM", shooter.getRPM());
+        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
+        telemetry.addData("Target solution RPM", shooter.solution.getRPM());
+        telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
 
-            telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
-            telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
-            telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
-            telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
-            telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
-            telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
+        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
+        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
+        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
+        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+        telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
+        telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
 
-            telemetry.update();
-        }
+        telemetry.update();
 
         if (loopCount % 2 == 0) {
-            Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
             Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
 
             Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
