@@ -44,6 +44,7 @@ import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
@@ -594,7 +595,7 @@ public class AutonomousApp extends ComplexOpMode {
         telemetry.addData("Starting Position", startingPosition);
         telemetry.addData("Pickup Order", pickupOrder);
 
-        follower = FollowerManager.createFollower(hardwareMap);
+        follower = Constants.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
         if (prompter.getOrDefault("sorted", false)) {
@@ -744,6 +745,11 @@ public class AutonomousApp extends ComplexOpMode {
         prompter.run();
     }
 
+    @Override
+    public void end() {
+        Settings.set("pose", follower.getPose());
+    }
+
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.RED) {
             return originalPose.mirror();
@@ -814,12 +820,12 @@ public class AutonomousApp extends ComplexOpMode {
                 new ParallelDeadlineGroup(
                         new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
                         repeatIfTime(this::farCycle, 4.0)
-                ),
+                )
                 // Move forward at max speed
-                new InstantCommand(() -> {
-                    follower.startTeleOpDrive();
-                    follower.setTeleOpDrive(1, 0, 0, true);
-                })
+//                new InstantCommand(() -> {
+//                    follower.startTeleOpDrive();
+//                    follower.setTeleOpDrive(1, 0, 0, true);
+//                })
         );
     }
 

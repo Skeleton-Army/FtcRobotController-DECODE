@@ -94,11 +94,13 @@ public class TeleOpApp extends ComplexOpMode {
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
 
-        follower = FollowerManager.createFollower(hardwareMap);
+        follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
         Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        follower.setPose(Settings.get("pose", startPose));
+
         if (debugMode) follower.setPose(startPose);
 
 //        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
@@ -367,6 +369,11 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
             Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
         }
+    }
+
+    @Override
+    public void end() {
+        Settings.set("pose", follower.getPose());
     }
 
     private boolean isShootingAllowed() {
