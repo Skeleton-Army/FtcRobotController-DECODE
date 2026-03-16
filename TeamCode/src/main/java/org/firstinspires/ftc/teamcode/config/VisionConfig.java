@@ -9,5 +9,6 @@ public class VisionConfig {
     public static double RELOCALIZE_COOLDOWN = 60;
     public static int APRILTAG_PIPELINE = 0;
     public static int OBELISK_PIPELINE = 1;
+    public static double Y_CALIBRATION_OFFSET = 1;
 
 }
