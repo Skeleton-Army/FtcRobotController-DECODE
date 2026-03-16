@@ -16,6 +16,7 @@ import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.TimerEx;
+import com.skeletonarmy.marrow.zones.Zone;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -24,6 +25,7 @@ import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.utilities.Kinematics;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
@@ -45,7 +47,8 @@ public class Shooter extends SubsystemBase {
 
     private final VoltageSensor voltageSensor;
 
-    private final IShooterCalculator shooterCalculator;
+    private final IShooterCalculator shooterCalculatorClose;
+    private final IShooterCalculator shooterCalculatorFar;
     private final Alliance alliance;
     public Pose goalPose;
     public Pose turretGoalPose;
@@ -110,12 +113,10 @@ public class Shooter extends SubsystemBase {
 
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
+    private LaunchZone zoneCalculator = LaunchZone.CLOSE;
+    private double farIncrementX = GoalPositions.FAR_INCREMENT_X;
 
-    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
-        this(hardwareMap, poseTracker, shooterCalculator, alliance, alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL, alliance == Alliance.BLUE ? GoalPositions.TURRET_BLUE_GOAL : GoalPositions.TURRET_RED_GOAL);
-    }
-
-    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance, Pose goalPose, Pose turretGoalPose) {
+    public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculatorClose,IShooterCalculator shooterCalculatorFar, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
 
@@ -146,10 +147,12 @@ public class Shooter extends SubsystemBase {
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
 
-        this.shooterCalculator = shooterCalculator;
+        this.shooterCalculatorClose = shooterCalculatorClose;
+        this.shooterCalculatorFar = shooterCalculatorFar;
         this.alliance = alliance;
-        this.goalPose = goalPose;
-        this.turretGoalPose = turretGoalPose;
+        this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
+        this.turretGoalPose = alliance == Alliance.BLUE ? GoalPositions.TURRET_BLUE_GOAL : GoalPositions.TURRET_RED_GOAL;
+        this.farIncrementX = alliance == Alliance.BLUE ? farIncrementX : -farIncrementX;
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);
@@ -186,7 +189,13 @@ public class Shooter extends SubsystemBase {
 
         filteredRPM = getFilteredRPM(getRPM());
         //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
-        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+        if (zoneCalculator == LaunchZone.CLOSE)
+             solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+        else if (zoneCalculator == LaunchZone.FAR) {
+            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose.plus(new Pose(farIncrementX,0)), turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+
+        }
+
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
         canShootRPMCalc = solution.getCanShoot();
 
@@ -691,6 +700,7 @@ public class Shooter extends SubsystemBase {
     public void setVerticalOffset(double offset) {
         verticalOffset = offset;
     }
+    public void setZoneCalculator (LaunchZone zone) { zoneCalculator = zone;}
 
     public double getHorizontalOffset() {
         return horizontalOffset;

@@ -38,10 +38,13 @@ import com.skeletonarmy.marrow.zones.PolygonZone;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculatorClose;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculatorFar;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -598,12 +601,9 @@ public class AutonomousApp extends ComplexOpMode {
         follower = Constants.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
-        if (prompter.getOrDefault("sorted", false)) {
-            Pose goalPose = alliance == Alliance.BLUE ? BLUE_SORT_GOAL : RED_SORT_GOAL;
-            shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance, goalPose, goalPose);
-        } else {
-            shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
-        }
+        IShooterCalculator shooterCalcClose = new ShooterCalculatorClose();
+        IShooterCalculator shooterCalcFar = new ShooterCalculatorFar();
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
@@ -697,6 +697,7 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void run() {
         follower.update();
+        shooter.setZoneCalculator(getCalculatorZone());
 
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
@@ -1100,5 +1101,9 @@ public class AutonomousApp extends ComplexOpMode {
                 new InstantCommand(),
                 () -> matchTime.isMoreThan(threshold)
         );
+    }
+
+    public LaunchZone getCalculatorZone() {
+        return robotZone.distanceTo(closeLaunchZone) < robotZone.distanceTo(farLaunchZone) ? LaunchZone.CLOSE : LaunchZone.FAR;
     }
 }
