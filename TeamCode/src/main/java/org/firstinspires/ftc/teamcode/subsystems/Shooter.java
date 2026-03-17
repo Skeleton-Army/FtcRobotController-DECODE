@@ -382,7 +382,7 @@ public class Shooter extends SubsystemBase {
 
         // I-Zone Logic
         if (Math.abs(error) > TURRET_IZONE) {
-            turretPID.reset(); // Clears integral if too far away
+            turretPID.clearTotalError(); // Clears integral if too far away
         }
 
         // 2. Robot Motion Compensation (Feedforward)
