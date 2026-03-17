@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -17,21 +18,19 @@ public class FollowerManager {
      * If a previous Follower exists, it inherits its last known Pose.
      */
     public static Follower createFollower(HardwareMap hardwareMap) {
-        // 1. Capture the latest state from the previous OpMode's hardware
+        Pose lastPose = null;
+
         if (follower != null) {
-            try {
-                follower.update();
-            } catch (Exception e) {
-                // If the I2C bus is already closed, we just use the last cached pose
-            }
+            follower.updatePose(); // read while old driver still has clean I2C access
+            lastPose = follower.getPose();
+            follower = null; // release old driver before new one reconfigures the device
         }
 
-        // 2. Create the fresh hardware instance
         Follower newFollower = Constants.createFollower(hardwareMap);
 
-        // 3. Handoff the pose
-        if (follower != null) {
-            newFollower.setPose(follower.getPose());
+        if (lastPose != null) {
+            newFollower.setPose(lastPose);
+            newFollower.updatePose();
         }
 
         follower = newFollower;
