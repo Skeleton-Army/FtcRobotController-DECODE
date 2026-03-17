@@ -268,11 +268,9 @@ public class AutonomousApp extends ComplexOpMode {
                         getRelative(Math.toRadians(180))
                 )
                 .addPath(
-                        new BezierCurve(
+                        new BezierLine(
                                 getRelative(new Pose(12, 8)),
-                                getRelative(new Pose(9.01511879049676, 11.382289416846664)),
-                                getRelative(new Pose(9.341252699784018, 25.918825053995683)),
-                                getRelative(new Pose(9.036717062634992, 40.04319654427647))
+                                getRelative(new Pose(11, 35))
                         )
                 )
                 .setTranslationalConstraint(5)
