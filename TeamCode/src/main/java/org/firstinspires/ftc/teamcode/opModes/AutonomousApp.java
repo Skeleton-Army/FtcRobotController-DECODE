@@ -95,7 +95,6 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain nearSpike3Open;
     private PathChain nearSpike4Open;
     private PathChain driveToGate;
-    private PathChain farCycle;
     private PathChain obeliskInitialScorePath;
 
     private Alliance alliance;
@@ -255,6 +254,34 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
+    public PathChain getFarCyclePath() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower.getPose(),
+                                getRelative(new Pose(48, 9)),
+                                getRelative(new Pose(12, 8))
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .addPath(
+                        new BezierCurve(
+                                getRelative(new Pose(12, 8)),
+                                getRelative(new Pose(9.01511879049676, 11.382289416846664)),
+                                getRelative(new Pose(9.341252699784018, 25.918825053995683)),
+                                getRelative(new Pose(9.036717062634992, 40.04319654427647))
+                        )
+                )
+                .setTranslationalConstraint(5)
+                .setTValueConstraint(0.7)
+                .setTangentHeadingInterpolation()
+                .setGlobalDeceleration()
+                .build();
+    }
+
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55.61,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
@@ -296,32 +323,6 @@ public class AutonomousApp extends ComplexOpMode {
         farPathsReturn[1] = this::farDriveBack;
         farPathsReturn[2] = this::farDriveBack;
         farPathsReturn[3] = this::farDriveBack;
-
-        farCycle = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower::getPose,
-                                getRelative(new Pose(48, 9)),
-                                farSpike1End
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .addPath(
-                        new BezierCurve(
-                                follower::getPose,
-                                getRelative(new Pose(9.01511879049676, 11.382289416846664)),
-                                getRelative(new Pose(9.341252699784018, 25.918825053995683)),
-                                getRelative(new Pose(9.036717062634992, 40.04319654427647))
-                        )
-                )
-                .setTranslationalConstraint(5)
-                .setTValueConstraint(0.7)
-                .setTangentHeadingInterpolation()
-                .setGlobalDeceleration()
-                .build();
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -847,7 +848,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command farCycle() {
-        PathChain path = pickupOrder.contains(2) ? farCycle : farPaths[0];
+        PathChain path = pickupOrder.contains(2) ? getFarCyclePath() : farPaths[0];
 
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
