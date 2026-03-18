@@ -221,9 +221,6 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
-                .whenPressed(drive.goToCenter());
-
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
                 .whenPressed(() -> {
                     boolean success = vision.relocalize();
@@ -238,9 +235,12 @@ public class TeleOpApp extends ComplexOpMode {
                     );
         }
 
-        if (!tabletopMode && !debugMode) {
+        if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
-                    .whenPressed(this::resetPoseToNearestCorner);
+                    .whenPressed(() -> {
+                        try { follower.poseTracker.resetIMU(); } catch (InterruptedException ignored) {}
+                        resetPoseToNearestCorner();
+                    });
         }
 
         new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
@@ -409,16 +409,14 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private void resetPoseToNearestCorner() {
-        Pose currentPose = follower.getPose();
-
         Pose newPose;
         if (alliance == Alliance.RED) {
-            newPose = new Pose(X_OFFSET, Y_OFFSET);
+            newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         } else {
-            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET);
+            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         }
 
-        follower.setPose(new Pose(newPose.getX(), newPose.getY(), currentPose.getHeading()));
+        follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
         follower.startTeleopDrive(USE_BRAKE_MODE);
     }
 }
