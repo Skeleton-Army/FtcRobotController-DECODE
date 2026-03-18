@@ -70,17 +70,14 @@ public class ShootCommand extends SequentialCommandGroup {
         this.drive = drive;
 
         addCommands(
-                new InstantCommand(() -> {
-                    intake.setIntakeSpeed(intakeSpeed);
-                    intake.collect();
-                }),
-
                 waitUntilReady ? waitUntilCanShoot() : new InstantCommand(),
 
                 new InstantCommand(() -> {
                     recordShot();
                     drive.setShootingMode(true);
                     transfer.release();
+                    intake.setIntakeSpeed(intakeSpeed);
+                    intake.collect();
                 }),
 
                 new WaitCommand(waitMillis),
