@@ -9,6 +9,7 @@ import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.ReadWriteFile;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.controller.PIDController;
@@ -20,6 +21,7 @@ import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.robotcore.internal.system.AppUtil;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
@@ -39,7 +41,7 @@ public class Shooter extends SubsystemBase {
     private final ModifiedMotorEx flywheel1;
     private final ModifiedMotorEx flywheel2;
     public final ModifiedMotorGroup flywheel;
-    private final ModifiedMotorEx turret;
+    public final ModifiedMotorEx turret;
     private final ServoEx hood;
 
     private final PIDController turretPID;
@@ -111,6 +113,21 @@ public class Shooter extends SubsystemBase {
 
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
+
+    // Feedforward + friction coefficients.
+// Defaults mirror ShooterConfig constants.
+// loadTunedParams() overwrites these at init if turret_tuned.json exists.
+    private double turretKv    = TURRET_KV;
+    private double turretKa    = TURRET_KA;
+    private double turretKsCw  = TURRET_KS_CW;
+    private double turretKsCcw = TURRET_KS_CCW;
+    /**
+     * Gyroscopic feedforward gain.
+     * Units: V / (rad/s_flywheel × rad/s_turret)
+     * Zero by default (no gyro compensation) until the Kgyro phase has been run.
+     */
+    private double turretKgyro = 0.0;
+
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculator, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -431,26 +448,44 @@ public class Shooter extends SubsystemBase {
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
 
-        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
-        double totalRequest = pid + ffBase;
+        //double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
+        // totalRequest = pid + ffBase;
 
-        // --- 4. Static Friction (kS) ---
-        // Only apply kS if the baseRequest is actually trying to move the motor
-        // and apply it in the direction of that motion.
+        // --- 4. Static friction — tuned asymmetric values --------------------
+        // turretKsCw / turretKsCcw are loaded from turret_tuned.json at init.
+        // Default to ShooterConfig constants if no file exists.
         double staticComp = 0;
-
         if (Math.abs(netVel) > 0.3) {
-            // If the target is moving, apply kS in the direction of travel
-            staticComp = (netVel > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
+            // Target is moving: compensate in the direction of travel
+            staticComp = (netVel > 0) ? turretKsCcw : -turretKsCw;
         } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            // If the target is still, but we have error, use the error sign
-            // to help the PID break stiction to reach the final goal.
-            staticComp = (error > 0) ? TURRET_KS_CCW : -TURRET_KS_CW;
+            // Target is stationary but we have positional error:
+            // apply kS in the error direction to help break stiction
+            staticComp = (error > 0) ? turretKsCcw : -turretKsCw;
         }
 
-        // --- 5. Voltage Scaling & Output ---
+        // --- 5. Velocity + acceleration feedforward — tuned Kv / Ka ---------
+        // Replaces the original TURRET_KV / TURRET_KA config constants.
+        // turretKv and turretKa are derived analytically from the ARX model
+        // during system identification and loaded at init.
+        double ffBase = (netVel * turretKv) + (netAccel * turretKa);
+
+        // --- 6. Gyroscopic feedforward ---------------------------------------
+        // Model:  u_gyro = turretKgyro × ω_flywheel × ω_turret
+        //
+        // The spinning flywheel creates a gyroscopic reaction torque on the
+        // turret bearing whenever the turret rotates.  This term compensates
+        // the extra voltage the PID would otherwise need to correct it.
+        //
+        // turretKgyro is 0.0 until the Kgyro phase has been run, so this
+        // term is a guaranteed no-op on a fresh or skipped calibration.
+        double turretVelRads = turret.getVelocity();
+        double flywheelRads  = (filteredRPM * 2.0 * Math.PI) / 60.0;
+        double gyroFF        = turretKgyro * flywheelRads * turretVelRads;
+
+        // --- 7. Voltage scaling and output -----------------------------------
         double voltageScale = 12.0 / voltage;
-        double finalOutput = (totalRequest + staticComp) * voltageScale;
+        double finalOutput  = (pid + ffBase + staticComp + gyroFF) * voltageScale;
 
         turret.set(finalOutput);
     }
@@ -766,4 +801,152 @@ public class Shooter extends SubsystemBase {
         flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
         turretPID.setPID(TURRET_KP, TURRET_KI, TURRET_KD);
     }
+
+    // =============================================================================
+//  STEP 2 — Raw turret control + flywheel-only periodic
+// =============================================================================
+
+    /**
+     * Sets the turret motor to a normalised power in [−1, 1].
+     *
+     * Used by TurretTuningOpMode to bypass the turret PID during system
+     * identification.  Not intended for use during a match.
+     *
+     * @param normalizedPower  motor power, −1.0 (full CCW) to +1.0 (full CW)
+     */
+    public void setTurretRawPower(double normalizedPower) {
+        turret.set(normalizedPower);
+    }
+
+    /**
+     * Runs only the flywheel update cycle (PID + feedforward + voltage scaling).
+     *
+     * Used by TurretTuningOpMode during the Kgyro phase: the flywheel needs to
+     * run at a stable RPM while the tuning OpMode drives the turret directly with
+     * its own sweep controller.  Calling the full periodic() would also run
+     * updateTurretPID() and fight the sweep controller.
+     *
+     * Safe to call from any context; mirrors the logic in periodic() but omits
+     * the pose tracker, solution calculation, hood, and turret PID updates.
+     */
+    public void periodicFlywheelOnly() {
+        if (emergencyStop || disabled) return;
+        if (!voltageExternallySupplied) {
+            this.voltage = voltageSensor.getVoltage();
+        }
+        filteredRPM = getFilteredRPM(getRPM());
+        updateFlywheelPID(false);
+        voltageExternallySupplied = false;
+    }
+
+
+// =============================================================================
+//  STEP 3 — loadTunedParams() + parseJsonField()
+// =============================================================================
+
+    /**
+     * Loads RLS-identified parameters from /sdcard/FIRST/turret_tuned.json.
+     *
+     * Quality gate: PID gains are rejected and ShooterConfig defaults kept
+     * if the ARX prediction RMS exceeds 0.05 rad (indicates a poor fit, e.g.
+     * PRBS amplitude was too low or the turret hit hard stops during ID).
+     *
+     * Individual feedforward fields (Kv, Ka, KS, Kgyro) are applied
+     * independently — each has its own presence check.
+     *
+     * Call this at the end of the Shooter constructor, after turretPID is
+     * initialised.  Safe to call even if the file does not exist.
+     */
+    public void loadTunedParams() {
+        try {
+            java.io.File f = AppUtil.getInstance().getSettingsFile("turret_tuned.json");
+            if (!f.exists()) {
+                RobotLog.ii("Shooter", "No turret_tuned.json found — using ShooterConfig defaults.");
+                return;
+            }
+
+            String json = ReadWriteFile.readFile(f);
+
+            // ── PID — quality-gated on ARX prediction RMS ─────────────────────
+            double rms = parseJsonField(json, "rms");
+            if (rms > 0.05) {
+                RobotLog.ww("Shooter",
+                        "Tuned PID rejected: predRMS=%.5f > 0.05 rad. " +
+                                "Re-run the tuning OpMode. Keeping ShooterConfig defaults.", rms);
+            } else {
+                double Kp = parseJsonField(json, "Kp");
+                double Ki = parseJsonField(json, "Ki");
+                double Kd = parseJsonField(json, "Kd");
+                turretPID.setPID(Kp, Ki, Kd);
+                RobotLog.ii("Shooter", "Loaded PID: Kp=%.4f Ki=%.4f Kd=%.4f (RMS=%.5f)", Kp, Ki, Kd, rms);
+            }
+
+            // ── Kv ────────────────────────────────────────────────────────────
+            if (json.contains("\"Kv\"")) {
+                turretKv = parseJsonField(json, "Kv");
+                RobotLog.ii("Shooter", "Loaded Kv=%.5f", turretKv);
+            }
+
+            // ── Ka ────────────────────────────────────────────────────────────
+            if (json.contains("\"Ka\"")) {
+                turretKa = parseJsonField(json, "Ka");
+                RobotLog.ii("Shooter", "Loaded Ka=%.5f", turretKa);
+            }
+
+            // ── KS (asymmetric, per direction) ────────────────────────────────
+            if (json.contains("\"Ks_cw\"")) {
+                turretKsCw  = parseJsonField(json, "Ks_cw");
+                turretKsCcw = parseJsonField(json, "Ks_ccw");
+                RobotLog.ii("Shooter", "Loaded KsCW=%.4f  KsCCW=%.4f", turretKsCw, turretKsCcw);
+            }
+
+            // ── Kgyro — only apply if meaningfully non-zero ───────────────────
+            if (json.contains("\"Kgyro\"")) {
+                double kg = parseJsonField(json, "Kgyro");
+                if (kg > 1e-6) {
+                    turretKgyro = kg;
+                    RobotLog.ii("Shooter", "Loaded Kgyro=%.7f", turretKgyro);
+                } else {
+                    RobotLog.ii("Shooter", "Kgyro=%.7f below threshold — gyro FF disabled.", kg);
+                }
+            }
+
+        } catch (Exception e) {
+            RobotLog.ww("Shooter",
+                    "loadTunedParams failed: %s — all ShooterConfig defaults retained.",
+                    e.getMessage());
+        }
+    }
+
+    /**
+     * Minimal JSON field extractor.  Parses a double value from a flat JSON
+     * string without requiring Gson or any other JSON library.
+     *
+     * @param json  raw JSON string (single-level object, no nesting)
+     * @param key   field name without quotes
+     * @return parsed double value
+     * @throws RuntimeException if the key is absent
+     */
+    private double parseJsonField(String json, String key) {
+        int idx = json.indexOf("\"" + key + "\":");
+        if (idx < 0) throw new RuntimeException("Key not found: " + key);
+        int start = json.indexOf(':', idx) + 1;
+        int end   = json.indexOf(',', start);
+        if (end < 0) end = json.indexOf('}', start);
+        return Double.parseDouble(json.substring(start, end).trim());
+    }
+
+
+// =============================================================================
+//  STEP 4 — Constructor addition (shown in context)
+//
+//  // ... existing constructor code ...
+//  turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
+//  turretPID.setTolerance(TURRET_POSITION_TOLERANCE, TURRET_VELOCITY_TOLERANCE);
+//
+//  setHorizontalAngle(0);
+//
+//  // ← ADD THIS LINE:
+//  loadTunedParams();
+// =============================================================================
 }
