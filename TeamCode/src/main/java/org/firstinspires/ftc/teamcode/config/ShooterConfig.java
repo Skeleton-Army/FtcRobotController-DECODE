@@ -31,7 +31,7 @@ public class ShooterConfig {
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
     public static double TURRET_POSITION_TOLERANCE = Math.toRadians(0.3);
     public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(30);
-    public static double TURRET_IZONE = Math.toRadians(10);
+    public static double TURRET_IZONE = Math.toRadians(30);
     public static double ACCELERATION_SMOOTHING_GAIN = 0.7;
     public static double TURRET_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.8;
