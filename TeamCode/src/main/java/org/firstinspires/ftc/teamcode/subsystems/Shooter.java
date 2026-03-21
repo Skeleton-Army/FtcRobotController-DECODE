@@ -391,6 +391,7 @@ public class Shooter extends SubsystemBase {
         double netAccel = netKinematics[1];
 
         double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
+        double totalRequest = pidOutput + ffBase;
 
         // 3. Static Friction (kS)
         double[] ks = getBandedTurretKS();
@@ -398,10 +399,8 @@ public class Shooter extends SubsystemBase {
         double ks_ccw = ks[1];
         double staticComp = 0;
 
-        if (Math.abs(netVel) > 0.3) {
-            staticComp = (netVel > 0) ? ks_ccw : -ks_cw;
-        } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            staticComp = (error > 0) ? ks_ccw : -ks_cw;
+        if (Math.abs(totalRequest) > 0.05) {
+            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
         }
 
         double voltageScale = 12.0 / voltage;
@@ -454,10 +453,8 @@ public class Shooter extends SubsystemBase {
         double ks_ccw = ks[1];
         double staticComp = 0;
 
-        if (Math.abs(netVel) > 0.3) {
-            staticComp = (netVel > 0) ? ks_ccw : -ks_cw;
-        } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            staticComp = (error > 0) ? ks_ccw : -ks_cw;
+        if (Math.abs(totalRequest) > 0.05) {
+            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
         }
 
         // --- 5. Voltage Scaling & Output ---
