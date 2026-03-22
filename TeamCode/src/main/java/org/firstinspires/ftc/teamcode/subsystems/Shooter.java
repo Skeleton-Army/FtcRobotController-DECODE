@@ -190,10 +190,9 @@ public class Shooter extends SubsystemBase {
         filteredRPM = getFilteredRPM(getRPM());
         //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         if (zoneCalculator == LaunchZone.CLOSE)
-             solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+             solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         else if (zoneCalculator == LaunchZone.FAR) {
-            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose.plus(new Pose(farIncrementX,0)), turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
-
+            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose.plus(new Pose(farIncrementX,0)), poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         }
 
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);

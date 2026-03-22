@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
-import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -24,15 +22,14 @@ import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
-import org.firstinspires.ftc.teamcode.calculators.ShooterCalculatorClose;
-import org.firstinspires.ftc.teamcode.calculators.ShooterCalculatorFar;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
+import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
+import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
-import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -41,7 +38,6 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
-import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -105,10 +101,8 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (debugMode) follower.setPose(startPose);
 
-//        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
-        //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
-        IShooterCalculator shooterCalcClose = new ShooterCalculatorClose();
-        IShooterCalculator shooterCalcFar = new ShooterCalculatorFar();
+        IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
+        IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
 
         intake = new Intake(hardwareMap);
