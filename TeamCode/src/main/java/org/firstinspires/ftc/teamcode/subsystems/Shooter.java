@@ -51,7 +51,7 @@ public class Shooter extends SubsystemBase {
     private final IShooterCalculator shooterCalculatorFar;
     private final Alliance alliance;
     public Pose goalPose;
-    public Pose turretGoalPose;
+    public Pose goalPoseFar;
 
     public boolean isConfiguredCW = true;
     private double targetTPS;
@@ -114,7 +114,6 @@ public class Shooter extends SubsystemBase {
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
-    private double farIncrementX = GoalPositions.FAR_INCREMENT_X;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculatorClose,IShooterCalculator shooterCalculatorFar, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -151,8 +150,7 @@ public class Shooter extends SubsystemBase {
         this.shooterCalculatorFar = shooterCalculatorFar;
         this.alliance = alliance;
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
-        this.turretGoalPose = alliance == Alliance.BLUE ? GoalPositions.TURRET_BLUE_GOAL : GoalPositions.TURRET_RED_GOAL;
-        this.farIncrementX = alliance == Alliance.BLUE ? farIncrementX : -farIncrementX;
+        this.goalPoseFar = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL_FAR : GoalPositions.RED_GOAL_FAR;
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);
@@ -192,7 +190,7 @@ public class Shooter extends SubsystemBase {
         if (zoneCalculator == LaunchZone.CLOSE)
              solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         else if (zoneCalculator == LaunchZone.FAR) {
-            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose.plus(new Pose(farIncrementX,0)), poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         }
 
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
