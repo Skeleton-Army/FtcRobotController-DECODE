@@ -30,6 +30,7 @@ import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -264,6 +265,8 @@ public class TeleOpApp extends ComplexOpMode {
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
+        shooter.setZoneCalculator(getCalculatorZone());
+
         boolean isInsideLaunchZone = isInsideLaunchZone();
         double voltage = voltageSensor.getVoltage();
 
@@ -413,5 +416,9 @@ public class TeleOpApp extends ComplexOpMode {
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
         follower.startTeleopDrive(USE_BRAKE_MODE);
+    }
+
+    private LaunchZone getCalculatorZone() {
+        return robotZone.distanceTo(closeLaunchZone) < robotZone.distanceTo(farLaunchZone) ? LaunchZone.CLOSE : LaunchZone.FAR;
     }
 }
