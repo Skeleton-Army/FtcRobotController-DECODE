@@ -23,7 +23,7 @@ public class Intake extends SubsystemBase {
     }
 
     public double getRPM() {
-        double motorTPS = -intake.getCorrectedVelocity();
+        double motorTPS = intake.getCorrectedVelocity();
         return (motorTPS * 60.0) / intake.getCPR();
     }
 
