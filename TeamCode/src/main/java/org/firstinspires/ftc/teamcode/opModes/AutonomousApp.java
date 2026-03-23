@@ -746,7 +746,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void end() {
-        Settings.set("pose", follower.getPose());
+        Settings.set("pose", follower.getPose(), false);
     }
 
     private Pose getRelative(Pose originalPose) {
