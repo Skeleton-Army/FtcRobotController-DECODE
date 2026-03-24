@@ -145,7 +145,6 @@ public class TeleOpApp extends ComplexOpMode {
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isShootingAllowed))
-                .and(new Trigger(transfer::isArtifactDetected))
                 .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
