@@ -20,6 +20,10 @@ public class ShooterConfig {
     public static double FLYWHEEL_KA = 0.5;
     public static double FLYWHEEL_KA_DOWN = 0.6;
     public static double FLYWHEEL_KV = 2.8;
+
+    public static double BANGBANG_ERROR_THRESHOLD_RPM = 150;
+    public static double BANGBANG_ERROR_EXIT_THRESHOLD_RPM = 80;
+    public static double BANGBANG_POWER = 1.0;
     public static double BRAKE_ENTRY_THRESHOLD = -100; // Error must be THIS negative to start braking
     public static double BRAKE_EXIT_THRESHOLD = -50;   // Error must get back up to THIS to stop braking
     public static double FLYWHEEL_DELAY_SEC = 0.02; // ~2 control loops @ 20ms
