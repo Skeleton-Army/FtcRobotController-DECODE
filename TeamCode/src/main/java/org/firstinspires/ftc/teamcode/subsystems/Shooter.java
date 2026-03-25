@@ -117,6 +117,8 @@ public class Shooter extends SubsystemBase {
     private boolean voltageExternallySupplied = false;
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
 
+    private boolean isBangBang = false;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculatorClose,IShooterCalculator shooterCalculatorFar, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
@@ -223,6 +225,7 @@ public class Shooter extends SubsystemBase {
             rampTimer.pause();
             lastSpeedFlywheel = 0;
             lastLoopTime = System.nanoTime();
+            isBangBang = false;
             return;
         }
 
@@ -245,45 +248,64 @@ public class Shooter extends SubsystemBase {
             //speed += accel * FLYWHEEL_DELAY_SEC;
         }
 
-        // --- ASYMMETRIC P-GAIN LOGIC ---
+        // --- BANG-BANG LOGIC FOR LARGE ERRORS ---
         double error = speed - velocity;
+        double absError = Math.abs(error);
 
-        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
-            // We are overshooting by a lot: Trigger the Brakes
-            isBraking = true;
-        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
-            // We have slowed down enough: Return to normal control
-            isBraking = false;
+        // Convert TPS error to RPM for intuitive threshold checking
+        double absErrorRPM = (absError * 60.0) / flywheel.getCPR();
+
+        // Determine if we should use bang-bang control
+        if (absErrorRPM > BANGBANG_ERROR_THRESHOLD_RPM) {
+            isBangBang = true;
+        } else if (absErrorRPM < BANGBANG_ERROR_EXIT_THRESHOLD_RPM) {
+            isBangBang = false;
         }
 
-        // Apply the Kp based on the state
-        if (isBraking) {
-            flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
+        double finalPower;
+
+        if (isBangBang) {
+            // Bang-bang: Full power in the direction of the error
+            finalPower = error > 0 ? BANGBANG_POWER : -BANGBANG_POWER;
         } else {
-            flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+            // --- ASYMMETRIC P-GAIN LOGIC ---
+            if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
+                // We are overshooting by a lot: Trigger the Brakes
+                isBraking = true;
+            } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
+                // We have slowed down enough: Return to normal control
+                isBraking = false;
+            }
+
+            // Apply the Kp based on the state
+            if (isBraking) {
+                flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
+            } else {
+                flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+            }
+            // -------------------------------
+
+            // 2. Calculate Acceleration
+            double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
+            double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
+
+            // Calculate PID with the newly set coefficients
+            double pid = flywheelPID.calculate(velocity, speed);
+
+            // Feedforward
+            double ff = (FLYWHEEL_KS * Math.signum(speed)) +
+                    (FLYWHEEL_KV * speed) +
+                    (currentKA * targetAcceleration);
+
+            lastSpeedFlywheel = speed;
+            lastSpeedFlywheelFiltered = filteredRPM;
+
+            double velocityCmd = pid + ff;
+            finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+
+            // Safety: Clamp power between -1.0 and 1.0 before setting
+            finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
         }
-        // -------------------------------
-
-        // 2. Calculate Acceleration
-        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
-        double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
-
-        // Calculate PID with the newly set coefficients
-        double pid = flywheelPID.calculate(velocity, speed);
-
-        // Feedforward
-        double ff = (FLYWHEEL_KS * Math.signum(speed)) +
-                (FLYWHEEL_KV * speed) +
-                (currentKA * targetAcceleration);
-
-        lastSpeedFlywheel = speed;
-        lastSpeedFlywheelFiltered = filteredRPM;
-
-        double velocityCmd = pid + ff;
-        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
-
-        // Safety: Clamp power between -1.0 and 1.0 before setting
-        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
 
         flywheel.set(finalPower, voltage);
     }
@@ -295,6 +317,7 @@ public class Shooter extends SubsystemBase {
             rampTimer.pause();
             lastSpeedFlywheel = 0;
             lastLoopTime = System.nanoTime();
+            isBangBang = false;
             return;
         }
 
@@ -325,37 +348,58 @@ public class Shooter extends SubsystemBase {
             processVariable += accel * FLYWHEEL_DELAY_SEC;
         }
 
-        // --- ASYMMETRIC P-GAIN LOGIC ---
+        // --- BANG-BANG LOGIC FOR LARGE ERRORS ---
         double error = speed - processVariable;
+        double absError = Math.abs(error);
 
-        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD * tpsPerRPM) {
-            isBraking = true;
-        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD * tpsPerRPM) {
-            isBraking = false;
+        // Convert TPS error to RPM for intuitive threshold checking
+        double absErrorRPM = (absError * 60.0) / flywheel.getCPR();
+
+        // Determine if we should use bang-bang control
+        if (absErrorRPM > BANGBANG_ERROR_THRESHOLD_RPM) {
+            isBangBang = true;
+        } else if (absErrorRPM < BANGBANG_ERROR_EXIT_THRESHOLD_RPM) {
+            isBangBang = false;
         }
 
-        if (isBraking) {
-            flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
+        double desiredVoltage;
+
+        if (isBangBang) {
+            // Bang-bang: Full power in the direction of the error
+            desiredVoltage = error > 0 ? BANGBANG_POWER : -BANGBANG_POWER;
         } else {
-            flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+            // --- ASYMMETRIC P-GAIN LOGIC ---
+            double error2 = speed - processVariable;
+
+            if (!isBraking && error2 < BRAKE_ENTRY_THRESHOLD * tpsPerRPM) {
+                isBraking = true;
+            } else if (isBraking && error2 > BRAKE_EXIT_THRESHOLD * tpsPerRPM) {
+                isBraking = false;
+            }
+
+            if (isBraking) {
+                flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
+            } else {
+                flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+            }
+
+            // 3. Calculate Acceleration for Feedforward
+            double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
+            double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
+
+            // PID and FF now output volts directly
+            double pid = flywheelPID.calculate(processVariable, speed);
+
+            // Feedforward calculates based on TARGET (speed), not measurement
+            double ff = (FLYWHEEL_KS * Math.signum(speed)) +
+                    (FLYWHEEL_KV * speed) +
+                    (currentKA * targetAcceleration);
+
+            lastSpeedFlywheel = speed;
+
+            desiredVoltage = pid + ff;
+            desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
         }
-
-        // 3. Calculate Acceleration for Feedforward
-        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
-        double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
-
-        // PID and FF now output volts directly
-        double pid = flywheelPID.calculate(processVariable, speed);
-
-        // Feedforward calculates based on TARGET (speed), not measurement
-        double ff = (FLYWHEEL_KS * Math.signum(speed)) +
-                (FLYWHEEL_KV * speed) +
-                (currentKA * targetAcceleration);
-
-        lastSpeedFlywheel = speed;
-
-        double desiredVoltage = pid + ff;
-        desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
         flywheel.set(desiredVoltage / voltage);
     }
