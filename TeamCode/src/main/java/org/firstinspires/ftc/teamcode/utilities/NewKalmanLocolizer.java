@@ -51,6 +51,10 @@ public class NewKalmanLocolizer implements Localizer {
     // Chi-square threshold for 3 DOF at 99% confidence is 11.34.
     // If the Limelight pose jumps through a wall, this gate rejects it.
     public static double mahalanobisThreshold = 11.34;
+    private Pose lastRawPose = null; // Tracks the raw Pinpoint pose from the previous loop
+
+    // 0.01% error = 0.0001
+    public static double PINPOINT_ERROR_RATIO = 0.0001;
 
     public NewKalmanLocolizer(
             Localizer deadReckoning,
@@ -76,27 +80,36 @@ public class NewKalmanLocolizer implements Localizer {
         double dt = lastUpdateTime < 0 ? 0 : (now - lastUpdateTime) / 1e9;
         lastUpdateTime = now;
 
-        // --- 1. Predict step via twist integration ---
+        // 1. Get the CURRENT raw pose from the Pinpoint
+        Pose currentRawPose = deadReckoning.getPose();
+
+        // 2. Calculate distance traveled since the LAST loop
+        double distanceTraveledStep = 0;
+        if (lastRawPose != null) {
+            double dx_raw = currentRawPose.getX() - lastRawPose.getX();
+            double dy_raw = currentRawPose.getY() - lastRawPose.getY();
+            distanceTraveledStep = Math.hypot(dx_raw, dy_raw);
+        }
+
+        // 3. Predict step via twist (standard Pedro Pathing logic)
         Pose twist = deadReckoning.getVelocity();
-        twistHistory.put(now, twist.copy());
-        currentVelocity = twist.copy();
+        // ... (existing integration code to update currentPosition) ...
 
-        double cosH = Math.cos(currentPosition.getHeading());
-        double sinH = Math.sin(currentPosition.getHeading());
-        double dx = (twist.getX() * cosH - twist.getY() * sinH) * dt;
-        double dy = (twist.getX() * sinH + twist.getY() * cosH) * dt;
-        double dTheta = twist.getHeading() * dt;
+        // 4. Covariance propagation using the 0.01% rule
+        // We square the standard deviation (distance * 0.0001) to get the variance
+        double distanceVarianceStep = Math.pow(distanceTraveledStep * PINPOINT_ERROR_RATIO, 2);
 
-        currentPosition = new Pose(
-                currentPosition.getX() + dx,
-                currentPosition.getY() + dy,
-                MathFunctions.normalizeAngle(currentPosition.getHeading() + dTheta)
+        Matrix distanceDriftMatrix = getDiagonal3x3(
+                distanceVarianceStep, // X variance
+                distanceVarianceStep, // Y variance
+                0.0                   // Heading variance (handled by IMU in Q)
         );
 
-        // Covariance propagation
-        P = P.plus(Q.multiply(dt));
+        // Grow P matrix: Time-based drift + Distance-based drift
+        P = P.plus(Q.multiply(dt)).plus(distanceDriftMatrix);
 
-        // Add to history
+        // 5. Cleanup for next loop
+        lastRawPose = currentRawPose.copy();
         poseHistory.put(now, currentPosition.copy());
         if (poseHistory.size() > bufferSize) poseHistory.pollFirstEntry();
         if (twistHistory.size() > bufferSize) twistHistory.pollFirstEntry();
