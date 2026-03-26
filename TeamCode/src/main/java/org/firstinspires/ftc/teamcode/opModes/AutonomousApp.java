@@ -281,7 +281,7 @@ public class AutonomousApp extends ComplexOpMode {
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
-        Pose farSpike1End = getRelative(new Pose(12, 8));
+        Pose farSpike1End = getRelative(new Pose(11.5555, 8));
         Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
@@ -290,7 +290,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike3GateEnd = getRelative(new Pose(21, 66));
         Pose spike4GateEnd = getRelative(new Pose(21, 83.663));
 
-        farDriveBack = getRelative(new Pose(52, 15.862));
+        farDriveBack = getRelative(new Pose(52, 17.9901));
         nearDriveBack = getRelative(new Pose(50, 90));
         gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
         sortingPose = getRelative(new Pose(30, 113));
@@ -331,17 +331,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
-                )
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(18, 9.708060475161995))
-                        )
-                )
-                .setTranslationalConstraint(5)
-                .setTValueConstraint(0.7)
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(150))
                 )
                 .setGlobalDeceleration()
                 .build();
@@ -811,7 +800,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command farCycleRoutine() {
         return new SequentialCommandGroup(
-                initialScore(), // Score first 3 artifacts
+                shoot(), // Score first 3 artifacts
                 pickupSequence(),
                 collect(1)
                         .withTimeout(3000),
