@@ -15,6 +15,7 @@ import com.seattlesolvers.solverslib.controller.PIDController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.zones.Zone;
 
@@ -188,7 +189,7 @@ public class Shooter extends SubsystemBase {
         filteredRPM = getFilteredRPM(getRPM());
         //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         if (zoneCalculator == LaunchZone.CLOSE)
-             solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         else if (zoneCalculator == LaunchZone.FAR) {
             solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         }
@@ -308,7 +309,8 @@ public class Shooter extends SubsystemBase {
         //double rawVelocity = flywheel1.getCorrectedVelocity();
         //filteredVelocity = (VELOCITY_FILTER_ALPHA * rawVelocity) + (1.0 - VELOCITY_FILTER_ALPHA) * filteredVelocity;
 
-        double processVariable = (filteredRPM * flywheel.getCPR()) / 60.0;
+        double tpsPerRPM = flywheel.getCPR() / 60.0;
+        double processVariable = filteredRPM * tpsPerRPM;
 
         // 2. Delay Compensation (Lead Compensation)
         // We add predicted velocity gain to offset the phase lag of the filter and mechanical latency
@@ -320,9 +322,9 @@ public class Shooter extends SubsystemBase {
         // --- ASYMMETRIC P-GAIN LOGIC ---
         double error = speed - processVariable;
 
-        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
+        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD * tpsPerRPM) {
             isBraking = true;
-        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
+        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD * tpsPerRPM) {
             isBraking = false;
         }
 
