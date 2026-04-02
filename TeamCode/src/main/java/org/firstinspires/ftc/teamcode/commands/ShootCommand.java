@@ -40,11 +40,28 @@ public class ShootCommand extends SequentialCommandGroup {
     private final Drive drive;
 
     private final double inchesToMeters = 0.0254;
+
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive) {
-        this(shooter, intake, transfer, drive, () -> false);
+        this(shooter, intake, transfer, drive, SHOOTING_POWER);
     }
 
-    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, BooleanSupplier dontUpdate) {
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, int waitMillis) {
+        this(shooter, intake, transfer, drive, SHOOTING_POWER, waitMillis, true);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed) {
+        this(shooter, intake, transfer, drive, intakeSpeed, true);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, int waitMillis) {
+        this(shooter, intake, transfer, drive, intakeSpeed, waitMillis, true);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, boolean waitUntilReady) {
+        this(shooter, intake, transfer, drive, intakeSpeed, 1200, waitUntilReady);
+    }
+
+    public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, int waitMillis, boolean waitUntilReady) {
         addRequirements(shooter, intake, transfer);
 
         this.shooter = shooter;
@@ -53,27 +70,24 @@ public class ShootCommand extends SequentialCommandGroup {
         this.drive = drive;
 
         addCommands(
-                waitUntilCanShoot(),
-                new InstantCommand(this::recordShot),
-                new InstantCommand(() -> drive.setShootingMode(true)),
-                new InstantCommand(() -> intake.setIntakeSpeed(SHOOTING_POWER)),
-//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(false); }),
-                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) intake.setIntakeSpeed(SLOW_SHOOTING_POWER); }),
+                waitUntilReady ? waitUntilCanShoot() : new InstantCommand(),
 
-                new InstantCommand(transfer::release),
-                new InstantCommand(intake::collect),
-                new WaitCommand(1200),
-//                new ConditionalCommand(
-//                        transfer.kick(),
-//                        new InstantCommand(),
-//                        transfer::isArtifactDetected
-//                ),
-                new InstantCommand(transfer::block),
-                new InstantCommand(intake::stop),
+                new InstantCommand(() -> {
+                    recordShot();
+                    drive.setShootingMode(true);
+                    transfer.release();
+                    intake.setIntakeSpeed(intakeSpeed);
+                    intake.collect();
+                }),
 
-                new InstantCommand(() -> drive.setShootingMode(false)),
-                new InstantCommand(() -> intake.setIntakeSpeed(INTAKE_POWER))
-//                new InstantCommand(() -> { if (dontUpdate.getAsBoolean()) shooter.setUpdateHood(true); })
+                new WaitCommand(waitMillis),
+
+                new InstantCommand(() -> {
+                    transfer.block();
+                    intake.stop();
+                    drive.setShootingMode(false);
+                    intake.setIntakeSpeed(INTAKE_POWER);
+                })
         );
     }
 
@@ -81,7 +95,7 @@ public class ShootCommand extends SequentialCommandGroup {
         return new SequentialCommandGroup(
                 new WaitUntilCommand(() -> shooter.getCanShootRPMCalc() || shooter.getVerticalManualMode()),
                 new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
-        ).withTimeout(3000);
+        ).withTimeout(2000);
     }
 
     public void recordShot() {
@@ -110,8 +124,6 @@ public class ShootCommand extends SequentialCommandGroup {
         shooter.setUpdateHood(true);
         intake.setIntakeSpeed(INTAKE_POWER);
 
-        if (interrupted) {
-            transfer.kick().schedule();
-        }
+        if (interrupted) transfer.kick().schedule();
     }
 }
