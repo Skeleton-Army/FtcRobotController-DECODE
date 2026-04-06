@@ -13,8 +13,16 @@ import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 public class ArmControl extends OpMode
 {
     // ServoEx is a class that expends Servo to improve developer experience
-    private ServoEx vertical;//;p
-    private ServoEx horizontal;
+    private ServoEx vertical;// y
+    private ServoEx horizontal;//x
+    private  ServoEx clawPivot;
+
+    private  int verticalAdjustmentScale = 1000;
+    private  int HorizontalAdjustmentScale = 1000;
+    private  int clawPivotAdjustmentScale = 500;
+    private double minVertical = 0.05;
+    private double maxVertical = 0.65;
+    private double adjustmentAmout = 0.01;
 
     // Its better to use the Servo interface rather then a class
     private GamepadEx gamepad;
@@ -22,7 +30,7 @@ public class ArmControl extends OpMode
     // checks if right joystick was moved to either side
     private boolean wasMovedVertical()
     {
-        if (gamepad.getRightX() != 0)
+        if (gamepad.getRightY() != 0)
         {
             return true;
         }
@@ -32,7 +40,17 @@ public class ArmControl extends OpMode
     // checks if right joystick was moved up or down
     private boolean wasMovedHorizontal()
     {
-        if (gamepad.getRightY() != 0)
+        if (gamepad.getRightX() != 0)
+        {
+            return true;
+        }
+        return false;
+
+    }
+
+    private boolean wasMovedClawPivot()
+    {
+        if (gamepad.getLeftX() != 0)
         {
             return true;
         }
@@ -44,8 +62,9 @@ public class ArmControl extends OpMode
     public void init()
     {
         gamepad = new GamepadEx(gamepad1);
-        vertical =  new ServoEx(hardwareMap, "servo0");
-        horizontal = new ServoEx(hardwareMap, "servo1");
+        vertical =  new ServoEx(hardwareMap, "servo1");
+        horizontal = new ServoEx(hardwareMap, "servo0");
+        clawPivot = new ServoEx(hardwareMap, "servo2");
 
     }
 
@@ -54,29 +73,65 @@ public class ArmControl extends OpMode
     {
         if (wasMovedVertical())
         {
-            vertical.set(vertical.get() + (gamepad.getRightX() / 1000));
+            if (vertical.get() <= maxVertical && vertical.get() >= minVertical)
+            {
+                vertical.set(vertical.get() - (gamepad.getRightY() / verticalAdjustmentScale));
+            }
+            else if (vertical.get() < minVertical) {vertical.set(minVertical);}
+            else if (vertical.get() > maxVertical) {vertical.set(maxVertical);}
+
             //moves the arm to the sides
         }
 
         if (wasMovedHorizontal())
         {
-            horizontal.set(horizontal.get() + (gamepad.getRightY() / 20000));
-            //moves the arm up and down
+            if (horizontal.get() <= 0.78 && horizontal.get() >= 0.55)
+            {
+                horizontal.set(horizontal.get() + (gamepad.getRightX() / HorizontalAdjustmentScale));
+            }
+            else
+            {
+                if (vertical.get() < 0.4328)
+                {
+                    for (double i = vertical.get(); i < 0.5; i += 0.01)
+                    {
+                        vertical.set(i);
+                    }
+
+                }
+                horizontal.set(horizontal.get() + (gamepad.getRightX() / HorizontalAdjustmentScale));
+            }
+        }
+
+        if (wasMovedClawPivot())
+        {
+            clawPivot.set(clawPivot.get() + (gamepad.getLeftX() / clawPivotAdjustmentScale));
         }
 
         telemetry.addData("RightX", gamepad.getRightX());
         //prints out the joystick x
 
-        telemetry.addData("horizontal pos", horizontal.get());
+        telemetry.addData("horizontal pos", horizontal.get()); // checks the position of the servo that moves the arm horizontally
 
-        if (gamepad.gamepad.x)
+        telemetry.addData("vertical pos", vertical.get());
+
+        if (gamepad.gamepad.a)
         {
-            horizontal.set(0);
+            for (double i = vertical.get(); i >= minVertical; i -= adjustmentAmout)
+            {
+                vertical.set(i);
+            }
+            //vertical.set(0.05);
         }
 
-        if (gamepad.gamepad.circle)
+        if (gamepad.gamepad.b)
         {
-            horizontal.set(1);
+            for (double i = vertical.get(); i <= maxVertical; i += adjustmentAmout)
+            {
+               vertical.set(i);
+            }
+            //vertical.set(0.65);
+
         }
 
     }
