@@ -115,7 +115,7 @@ public class ArmControl extends OpMode
 
         telemetry.addData("vertical pos", vertical.get());
 
-        if (gamepad.gamepad.a)
+        if (gamepad.getButton(GamepadKeys.Button.A))
         {
             for (double i = vertical.get(); i >= minVertical; i -= adjustmentAmout)
             {
@@ -124,7 +124,7 @@ public class ArmControl extends OpMode
             //vertical.set(0.05);
         }
 
-        if (gamepad.gamepad.b)
+        if (gamepad.getButton(GamepadKeys.Button.B))
         {
             for (double i = vertical.get(); i <= maxVertical; i += adjustmentAmout)
             {
