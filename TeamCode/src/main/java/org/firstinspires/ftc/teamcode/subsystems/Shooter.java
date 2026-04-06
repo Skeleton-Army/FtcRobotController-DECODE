@@ -85,6 +85,7 @@ public class Shooter extends SubsystemBase {
     private boolean updateHood = true;
     private boolean updateFlywheel = true;
     public boolean disabled = false;
+    public boolean turretDisabled = false;
 
     public Pose currentPose;
 
@@ -205,7 +206,7 @@ public class Shooter extends SubsystemBase {
         updateFlywheelPIDFiltered(false);
         //updateFlywheelPID(false);
         //updateTurretPID(true);
-        updateTurretPID(false);
+        if (!turretDisabled) updateTurretPID(false);
 
         voltageExternallySupplied = false;
     }
@@ -754,8 +755,16 @@ public class Shooter extends SubsystemBase {
         flywheel.stopMotor();
     }
 
+    public void disableTurret() {
+        turretDisabled = true;
+    }
+
     public void enable() {
         disabled = false;
+    }
+
+    public void enableTurret() {
+        turretDisabled = false;
     }
 
     public void setTargetPose(Pose pose) {
