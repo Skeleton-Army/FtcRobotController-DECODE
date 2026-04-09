@@ -579,10 +579,6 @@ public class AutonomousApp extends ComplexOpMode {
 
         Settings.set("alliance", alliance);
 
-        telemetry.addData("Alliance", alliance);
-        telemetry.addData("Starting Position", startingPosition);
-        telemetry.addData("Pickup Order", pickupOrder);
-
         follower = Constants.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -624,6 +620,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .prompt("end_near_gate", new BooleanPrompt("END NEAR GATE?", true))
                     .showIf("sorted", false)
                     .showIf("starting_position", StartingPosition.CLOSE)
+                .showSummary()
                 .onComplete(this::afterPrompts);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
