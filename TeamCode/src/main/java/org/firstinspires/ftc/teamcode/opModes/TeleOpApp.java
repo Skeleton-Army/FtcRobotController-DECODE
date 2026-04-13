@@ -231,10 +231,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
-                    .whenPressed(() -> {
-                        try { follower.poseTracker.resetIMU(); } catch (InterruptedException ignored) {}
-                        resetPoseToNearestCorner();
-                    });
+                    .whenPressed(this::resetPoseToNearestCorner);
         }
 
         new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
