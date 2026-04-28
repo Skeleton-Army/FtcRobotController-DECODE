@@ -1,33 +1,27 @@
 package org.firstinspires.ftc.teamcode.pedroPathing;
 
-import com.pedropathing.control.FilteredPIDFCoefficients;
 import com.pedropathing.control.PIDFCoefficients;
+import com.pedropathing.control.PredictiveBrakingCoefficients;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.follower.FollowerConstants;
 import com.pedropathing.ftc.FollowerBuilder;
 import com.pedropathing.ftc.drivetrains.MecanumConstants;
 import com.pedropathing.ftc.localization.constants.PinpointConstants;
-import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathConstraints;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-import org.firstinspires.ftc.teamcode.utilities.KalmanPinpointLocalizer;
-
-import dev.frozenmilk.sinister.sdk.opmodes.OpModeScanner;
 
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(12.5)
-            .forwardZeroPowerAcceleration(-38.09392599155559)
-            .lateralZeroPowerAcceleration(-73.28635703737672)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.1,0,0.01,0.025))
-            .headingPIDFCoefficients(new PIDFCoefficients(1,0,0.025,0.025))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.1,0,0.01,0.6, 0.025))
-            .centripetalScaling(0.0006);
+            .mass(12.7)
+            .headingPIDFCoefficients(new PIDFCoefficients(0.8765432100,0,0.034846467000,0.025))
+            .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(1.584020000,0,0.018,0.025))
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.092330042498001, 0.120875783365483301, 0.001918244335958442334))
+            .centripetalScaling(0)
+            .useSecondaryHeadingPIDF(true);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
@@ -42,28 +36,22 @@ public class Constants {
             .xVelocity(68.00439212829109)
             .yVelocity(48.47157780204232);
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
 
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(-6.888)
-            .strafePodX(-0.204)
+            .forwardPodY(-6.889764)
+            .strafePodX(-0.254528)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
-    public static KalmanPinpointLocalizer sigmaKalmanPinpointLocalizer = new KalmanPinpointLocalizer(
-            OpModeManager.getHardwareMap(),
-            localizerConstants,
-            new Pose(72,72,Math.toRadians(180))
-    );
 
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
                 .mecanumDrivetrain(driveConstants)
-                //.pinpointLocalizer(localizerConstants)
-                .setLocalizer(sigmaKalmanPinpointLocalizer)
+                .pinpointLocalizer(localizerConstants)
                 .build();
     }
 }

@@ -8,7 +8,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
-import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -52,9 +52,9 @@ public class KalmanSigmaTuner extends LinearOpMode {
         //follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setPose(new Pose(72,72,0));
 
-        shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
+        shooterCalc = new ShooterCalculator(new ShooterCoefficients());
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, Alliance.RED);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, shooterCalc, Alliance.RED);
 
         // Optional: Initialize auxiliary motors to create vibration
         // flywheelMotor = hardwareMap.get(DcMotorEx.class, "flywheel");

@@ -92,12 +92,12 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(34, 29))
+                                            getRelative(new Pose(38.85, 26.72))
                                     )
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    getRelative(Math.toRadians(45))
+                                    Math.toRadians(0)
                             )
                             .setTranslationalConstraint(1)
                             .setBrakingStrength(1)
@@ -182,6 +182,12 @@ public class Drive extends SubsystemBase {
                     follower.setTeleOpDrive(0, 0, 0, isRobotCentric);
                 }
             }
+        }
+    }
+
+    public void holdPoint(Pose pose) {
+        if (isHoldingPosition) {
+            follower.holdPoint(pose);
         }
     }
 

@@ -1,15 +1,13 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MAX;
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_MIN;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.RPM_INTERPOLATION;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.VELOCITY_INTERPOLATION;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_LOOKUP;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.MIN_VEL_LIMITS;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.MAX_VEL_LIMITS;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.RANGE_BUFFER;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.INCH_TO_METERS;
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY_TURRET;
 
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
@@ -17,42 +15,48 @@ import com.pedropathing.math.Vector;
 
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
-public class ShooterCalculator implements IShooterCalculator {
-    private final double[] hoodCoeffs;
+import com.pedropathing.math.Vector;
+import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
+import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 
-    public ShooterCalculator(double[] hoodCoeffs) {
-        this.hoodCoeffs = hoodCoeffs.clone();
+public class ShooterCalculator implements IShooterCalculator {
+    private static final double INCH_TO_METERS = 0.0254;
+
+    private ShooterCoefficients coefficients;
+
+    public ShooterCalculator(ShooterCoefficients coefficients) {
+        this.coefficients = coefficients;
+    }
+
+    /**
+     * Generic helper to evaluate a polynomial of arbitrary degree.
+     * Expects coefficients in descending order (highest degree first), matching MATLAB's polyfit.
+     */
+    private double evaluatePolynomial(double[] coeffs, double x) {
+        double result = 0.0;
+        for (int exponent = 0; exponent < coeffs.length; exponent++) {
+            result += coeffs[exponent] * Math.pow(x, coeffs.length - exponent - 1);
+        }
+        return result;
     }
 
     protected double calculateVerticalAngle(double distanceFromGoal) {
-        double result = 0.0;
-        for (int exponent = 0; exponent < hoodCoeffs.length; exponent++) {
-            result += hoodCoeffs[exponent] * Math.pow(distanceFromGoal, hoodCoeffs.length - exponent - 1);
-        }
-        return result;
+        return evaluatePolynomial(coefficients.HOOD_COEFFS, distanceFromGoal);
     }
 
     protected double shooterVelocity(double distance) {
-        double result = 0.0;
-        for (int exponent = 0; exponent < VELOCITY_INTERPOLATION.length; exponent++) {
-            result += VELOCITY_INTERPOLATION[exponent] * Math.pow(distance, VELOCITY_INTERPOLATION.length - exponent - 1);
-        }
-        return result;
+        return evaluatePolynomial(coefficients.VELOCITY_INTERPOLATION, distance);
     }
 
     protected int velocityToRPM(double velocity) {
-        double result = 0.0;
-        for (int exponent = 0; exponent < RPM_INTERPOLATION.length; exponent++) {
-            result += RPM_INTERPOLATION[exponent] * Math.pow(velocity, RPM_INTERPOLATION.length - exponent - 1);
-        }
-        return (int) result;
+        return (int) evaluatePolynomial(coefficients.RPM_INTERPOLATION, velocity);
     }
 
     private double RPMToVelocity(int rpm) {
-        if (RPM_INTERPOLATION.length >= 2) {
-            return (rpm - RPM_INTERPOLATION[1]) / RPM_INTERPOLATION[0];
+        if (coefficients.RPM_INTERPOLATION.length >= 2) {
+            return (rpm - coefficients.RPM_INTERPOLATION[1]) / coefficients.RPM_INTERPOLATION[0];
         }
-        return 0.0;
+        throw new IllegalStateException("RPM_INTERPOLATION has to be a linear polynomial with 2 coefficients for RPM to velocity conversion.");
     }
 
     /**
@@ -61,39 +65,14 @@ public class ShooterCalculator implements IShooterCalculator {
     private HoodSolution lookup(double distance, double velocity) {
         double verticalAngle = calculateVerticalAngle(distance);
 
-        // Interpolate limits for the specific distance
-        double minLimit = linearInterpolate(DISTANCE_LOOKUP, MIN_VEL_LIMITS, distance);
-        double maxLimit = linearInterpolate(DISTANCE_LOOKUP, MAX_VEL_LIMITS, distance);
+        // Evaluate limits for the specific distance using polynomials
+        double minLimit = evaluatePolynomial(coefficients.MIN_VEL_COEFFS, distance);
+        double maxLimit = evaluatePolynomial(coefficients.MAX_VEL_COEFFS, distance);
 
         // Check if velocity is within the safe "corridor"
-        // We add a tiny epsilon to handle floating point errors if needed,
-        // but generally direct comparison is fine here.
         boolean isValid = (velocity >= minLimit - RANGE_BUFFER) && (velocity <= maxLimit + RANGE_BUFFER);
 
         return new HoodSolution(verticalAngle, isValid);
-    }
-
-    /**
-     * Helper to linearly interpolate values from the lookup tables.
-     */
-    private double linearInterpolate(double[] xTable, double[] yTable, double xVal) {
-        if (xTable.length == 0) return 0.0;
-        if (xVal <= xTable[0]) return yTable[0];
-        if (xVal >= xTable[xTable.length - 1]) return yTable[xTable.length - 1];
-
-        // Binary search to find the correct index (or linear scan since arrays are small)
-        int i = 0;
-        while (i < xTable.length - 1 && xTable[i + 1] < xVal) {
-            i++;
-        }
-
-        double x1 = xTable[i];
-        double x2 = xTable[i + 1];
-        double y1 = yTable[i];
-        double y2 = yTable[i + 1];
-
-        // Linear interpolation formula
-        return y1 + (xVal - x1) * (y2 - y1) / (x2 - x1);
     }
 
     public double calculateTurretAngle(Pose targetPose, Pose robotPose) {
@@ -104,25 +83,24 @@ public class ShooterCalculator implements IShooterCalculator {
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
 
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Pose turretGoalPose, Vector robotVel, double angularVel, int flywheelVel) {
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelVel) {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
-        Pose turretGoalPoseMeters = turretGoalPose.scale(INCH_TO_METERS);
 
         double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
         double predY = robotPoseMeters.getY() + robotVelMeters.getYComponent() * SHOT_LATENCY;
-        double predHeading = robotPoseMeters.getHeading();
+        double predHeading = robotPoseMeters.getHeading() + angularVel * SHOT_LATENCY_TURRET;
         Pose predictedPose = new Pose(predX, predY, predHeading);
 
         double distance = goalPoseMeters.distanceFrom(predictedPose);
-        double horizontalAngleToGoal = calculateTurretAngle(turretGoalPoseMeters, predictedPose);
+        double horizontalAngleToGoal = calculateTurretAngle(goalPoseMeters, predictedPose);
 
         Vector3D vRobot = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
 
         // 1. Calculate Ideal Shot
         double idealSpeed = shooterVelocity(distance);
-        HoodSolution idealHood = lookup(distance, idealSpeed); // Check ideal validity (usually true)
+        HoodSolution idealHood = lookup(distance, idealSpeed);
 
         Vector3D vLaunchIdeal = new Vector3D(
                 idealSpeed * Math.cos(idealHood.getHoodAngle()) * Math.cos(horizontalAngleToGoal),
@@ -135,7 +113,7 @@ public class ShooterCalculator implements IShooterCalculator {
 
         // 2. Check Actual Shot (Current Flywheel Speed)
         double currentSpeed = RPMToVelocity(flywheelVel);
-        HoodSolution currentHood = lookup(distance, currentSpeed); // This checks if current speed is safe
+        HoodSolution currentHood = lookup(distance, currentSpeed);
 
         Vector3D vLaunchActual = new Vector3D(
                 currentSpeed * Math.cos(currentHood.getHoodAngle()) * Math.cos(horizontalAngleToGoal),
@@ -149,11 +127,14 @@ public class ShooterCalculator implements IShooterCalculator {
         double aimHorizontalComp = Math.sqrt(vAim.getX() * vAim.getX() + vAim.getY() * vAim.getY());
         double aimVerticalAngle = Math.atan2(vAim.getZ(), aimHorizontalComp);
 
+        boolean isAngleValid = (aimVerticalAngle >= HOOD_MIN) && (aimVerticalAngle <= HOOD_MAX);
+        boolean isSolutionPossible = isAngleValid & currentHood.isValid();
+
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(aimHorizontalAngle),
                 aimVerticalAngle,
                 finalTargetRPM,
-                currentHood.isValid(), // Returns true only if we are within the safety tunnel
+                isSolutionPossible,
                 vRequired.getNorm()
         );
     }
