@@ -579,10 +579,6 @@ public class AutonomousApp extends ComplexOpMode {
 
         Settings.set("alliance", alliance);
 
-        telemetry.addData("Alliance", alliance);
-        telemetry.addData("Starting Position", startingPosition);
-        telemetry.addData("Pickup Order", pickupOrder);
-
         follower = Constants.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -609,47 +605,24 @@ public class AutonomousApp extends ComplexOpMode {
 
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
-                .prompt("delay", new ValuePrompt("SELECT DELAY", 0, 0.5, 0, 5))
-                .prompt("sorted",
-                        () -> {
-                            if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
-                            return new BooleanPrompt("RUN VIRTUAL SORTING?", false);
-                        }
-                )
-                .prompt("cycle",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            return new BooleanPrompt("RUN CYCLE ROUTINE?", false);
-                        }
-                )
-                .prompt("pickup_order",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            return new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4);
-                        }
-                )
-                .prompt("open_gate",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("cycle", false))) return null;
-                            return new BooleanPrompt("OPEN GATE?", false);
-                        }
-                )
-                .prompt("gate_spike",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("cycle", false))) return null;
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("open_gate", false))) {
-                                return new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4);
-                            }
-                            return null;
-                        }
-                )
-                .prompt("end_near_gate", () -> {
-                    if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                    if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
-                    return new BooleanPrompt("END NEAR GATE?", true);
-                })
+                .prompt("delay", new ValuePrompt<>("SELECT DELAY", Double.class, 0.0, 5.0, 0.0, 0.5))
+                .prompt("sorted", new BooleanPrompt("RUN VIRTUAL SORTING?", false))
+                    .showIf("starting_position", StartingPosition.CLOSE)
+                .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
+                    .showIf("sorted", false)
+                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
+                    .showIf("sorted", false)
+                .prompt("open_gate", new BooleanPrompt("OPEN GATE?", false))
+                    .showIf("sorted", false)
+                    .showIf("cycle", false)
+                .prompt("gate_spike", new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4))
+                    .showIf("sorted", false)
+                    .showIf("cycle", false)
+                    .showIf("open_gate", true)
+                .prompt("end_near_gate", new BooleanPrompt("END NEAR GATE?", true))
+                    .showIf("sorted", false)
+                    .showIf("starting_position", StartingPosition.CLOSE)
+                .showSummary()
                 .onComplete(this::afterPrompts);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();

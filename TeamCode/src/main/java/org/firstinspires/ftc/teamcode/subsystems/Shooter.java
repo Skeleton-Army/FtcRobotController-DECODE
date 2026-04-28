@@ -15,6 +15,7 @@ import com.seattlesolvers.solverslib.controller.PIDController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.zones.Zone;
 
@@ -84,6 +85,7 @@ public class Shooter extends SubsystemBase {
     private boolean updateHood = true;
     private boolean updateFlywheel = true;
     public boolean disabled = false;
+    public boolean turretDisabled = false;
 
     public Pose currentPose;
 
@@ -138,6 +140,7 @@ public class Shooter extends SubsystemBase {
         turret.setRunMode(Motor.RunMode.RawPower);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
+        turret.setInverted(TURRET_INVERTED);
 
         turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
         turretPID.setTolerance(TURRET_POSITION_TOLERANCE, TURRET_VELOCITY_TOLERANCE);
@@ -188,7 +191,7 @@ public class Shooter extends SubsystemBase {
         filteredRPM = getFilteredRPM(getRPM());
         //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         if (zoneCalculator == LaunchZone.CLOSE)
-             solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         else if (zoneCalculator == LaunchZone.FAR) {
             solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
         }
@@ -201,10 +204,10 @@ public class Shooter extends SubsystemBase {
         if (updateFlywheel) setRPM(solution.getRPM());
 
         //updateFlywheelPID(false);
-        //updateFlywheelPIDFiltered(true);
-        updateFlywheelPID(false);
+        updateFlywheelPIDFiltered(false);
+        //updateFlywheelPID(false);
         //updateTurretPID(true);
-        updateTurretPID(false);
+        if (!turretDisabled) updateTurretPID(false);
 
         voltageExternallySupplied = false;
     }
@@ -302,13 +305,14 @@ public class Shooter extends SubsystemBase {
         double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
 
         // 'speed' is our Target Velocity
-        double speed = (targetTPS) * rampMultiplier;
+        double speed = targetTPS * rampMultiplier;
 
         // Get raw measurement and apply Low Pass Filter to mitigate sensor noise
         //double rawVelocity = flywheel1.getCorrectedVelocity();
         //filteredVelocity = (VELOCITY_FILTER_ALPHA * rawVelocity) + (1.0 - VELOCITY_FILTER_ALPHA) * filteredVelocity;
 
-        double processVariable = filteredRPM;
+        double tpsPerRPM = flywheel.getCPR() / 60.0;
+        double processVariable = filteredRPM * tpsPerRPM;
 
         // 2. Delay Compensation (Lead Compensation)
         // We add predicted velocity gain to offset the phase lag of the filter and mechanical latency
@@ -320,9 +324,9 @@ public class Shooter extends SubsystemBase {
         // --- ASYMMETRIC P-GAIN LOGIC ---
         double error = speed - processVariable;
 
-        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
+        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD * tpsPerRPM) {
             isBraking = true;
-        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
+        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD * tpsPerRPM) {
             isBraking = false;
         }
 
@@ -752,8 +756,16 @@ public class Shooter extends SubsystemBase {
         flywheel.stopMotor();
     }
 
+    public void disableTurret() {
+        turretDisabled = true;
+    }
+
     public void enable() {
         disabled = false;
+    }
+
+    public void enableTurret() {
+        turretDisabled = false;
     }
 
     public void setTargetPose(Pose pose) {
