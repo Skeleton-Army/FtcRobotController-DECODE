@@ -12,8 +12,8 @@ public class ShooterConfig {
     public static boolean FLYWHEEL1_INVERTED = true;
     public static boolean FLYWHEEL2_INVERTED = false;
     public static int RPM_REACHED_THRESHOLD = 200;
-    public static double FLYWHEEL_KP = 5;
-    public static double FLYWHEEL_KP_DOWN = 16;
+    public static double FLYWHEEL_KP = 10;
+    public static double FLYWHEEL_KP_DOWN = 10;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0.2;
     public static double FLYWHEEL_KS = 150;
@@ -29,10 +29,11 @@ public class ShooterConfig {
     public static double FLYWHEEL_DELAY_SEC = 0.02; // ~2 control loops @ 20ms
     public static double FLYWHEEL_SHOOTING_DIFFRENCE = 0.02;
     public static int RPM_WINDOW_SIZE = 5;
-    public static double INITIAL_RAMP_DURATION = 1;
+    public static double INITIAL_RAMP_DURATION = 0.3;
 
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
+    public static boolean TURRET_INVERTED = true;
     public static double TURRET_POSITION_TOLERANCE = Math.toRadians(0.3);
     public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(30);
     public static double TURRET_IZONE = Math.toRadians(30);
@@ -62,7 +63,7 @@ public class ShooterConfig {
     public static double TURRET_KA = 0.01;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
-    public static double GEAR_RATIO = (double) 111 / 11;
+    public static double GEAR_RATIO = (double) 286 / 26;
     public static double TURRET_OFFSET_X = 0; // Positive = Front
     public static double TURRET_OFFSET_Y = 0; // Positive = Left
     public static boolean TURRET_WRAP = true;

@@ -281,7 +281,7 @@ public class AutonomousApp extends ComplexOpMode {
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
-        Pose farSpike1End = getRelative(new Pose(12, 8));
+        Pose farSpike1End = getRelative(new Pose(11.5555, 8));
         Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
         Pose spike3End = getRelative(new Pose(19, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
@@ -290,7 +290,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike3GateEnd = getRelative(new Pose(21, 66));
         Pose spike4GateEnd = getRelative(new Pose(21, 83.663));
 
-        farDriveBack = getRelative(new Pose(52, 15.862));
+        farDriveBack = getRelative(new Pose(52, 17.9901));
         nearDriveBack = getRelative(new Pose(50, 90));
         gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
         sortingPose = getRelative(new Pose(30, 113));
@@ -331,17 +331,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .setTValueConstraint(0.7)
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
-                )
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(18, 9.708060475161995))
-                        )
-                )
-                .setTranslationalConstraint(5)
-                .setTValueConstraint(0.7)
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(150))
                 )
                 .setGlobalDeceleration()
                 .build();
@@ -590,10 +579,6 @@ public class AutonomousApp extends ComplexOpMode {
 
         Settings.set("alliance", alliance);
 
-        telemetry.addData("Alliance", alliance);
-        telemetry.addData("Starting Position", startingPosition);
-        telemetry.addData("Pickup Order", pickupOrder);
-
         follower = Constants.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -620,47 +605,24 @@ public class AutonomousApp extends ComplexOpMode {
 
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
                 .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
-                .prompt("delay", new ValuePrompt("SELECT DELAY", 0, 0.5, 0, 5))
-                .prompt("sorted",
-                        () -> {
-                            if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
-                            return new BooleanPrompt("RUN VIRTUAL SORTING?", false);
-                        }
-                )
-                .prompt("cycle",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            return new BooleanPrompt("RUN CYCLE ROUTINE?", false);
-                        }
-                )
-                .prompt("pickup_order",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            return new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4);
-                        }
-                )
-                .prompt("open_gate",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("cycle", false))) return null;
-                            return new BooleanPrompt("OPEN GATE?", false);
-                        }
-                )
-                .prompt("gate_spike",
-                        () -> {
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("cycle", false))) return null;
-                            if (Boolean.TRUE.equals(prompter.getOrDefault("open_gate", false))) {
-                                return new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4);
-                            }
-                            return null;
-                        }
-                )
-                .prompt("end_near_gate", () -> {
-                    if (Boolean.TRUE.equals(prompter.getOrDefault("sorted", false))) return null;
-                    if (prompter.get("starting_position").equals(StartingPosition.FAR)) return null;
-                    return new BooleanPrompt("END NEAR GATE?", true);
-                })
+                .prompt("delay", new ValuePrompt<>("SELECT DELAY", Double.class, 0.0, 5.0, 0.0, 0.5))
+                .prompt("sorted", new BooleanPrompt("RUN VIRTUAL SORTING?", false))
+                    .showIf("starting_position", StartingPosition.CLOSE)
+                .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
+                    .showIf("sorted", false)
+                .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
+                    .showIf("sorted", false)
+                .prompt("open_gate", new BooleanPrompt("OPEN GATE?", false))
+                    .showIf("sorted", false)
+                    .showIf("cycle", false)
+                .prompt("gate_spike", new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4))
+                    .showIf("sorted", false)
+                    .showIf("cycle", false)
+                    .showIf("open_gate", true)
+                .prompt("end_near_gate", new BooleanPrompt("END NEAR GATE?", true))
+                    .showIf("sorted", false)
+                    .showIf("starting_position", StartingPosition.CLOSE)
+                .showSummary()
                 .onComplete(this::afterPrompts);
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
@@ -811,7 +773,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command farCycleRoutine() {
         return new SequentialCommandGroup(
-                initialScore(), // Score first 3 artifacts
+                shoot(), // Score first 3 artifacts
                 pickupSequence(),
                 collect(1)
                         .withTimeout(3000),
