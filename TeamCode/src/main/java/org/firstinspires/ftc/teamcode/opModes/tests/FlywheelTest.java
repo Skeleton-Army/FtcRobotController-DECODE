@@ -1,37 +1,88 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
+import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
+import static org.firstinspires.ftc.teamcode.config.TransferConfig.*;
+
 import com.acmerobotics.dashboard.config.Config;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.seattlesolvers.solverslib.command.CommandScheduler;
+import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
+import com.seattlesolvers.solverslib.gamepad.GamepadEx;
+import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
+import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.seattlesolvers.solverslib.util.MathUtils;
+import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
+import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
+
+import java.util.concurrent.TimeUnit;
 
 @Config
 @TeleOp(name = "Flywheel Test", group = "Tests")
 public class FlywheelTest extends OpMode {
-    private MotorEx motor;
+    public static int FLYWHEEL_TARGET = 3400;
+
+    private Intake intake;
+    private ModifiedMotorGroup motor;
 
     private boolean isPID = true;
-    public static double targetRPM = 4000;
     public static double targetPower = 1;
-    public static double kP = 2;
-    public static double kI = 0;
-    public static double kD = 0.05;
-    public static double kS = 0;
-    public static double kV = 1.45;
+    private ServoEx kicker;
+
+    private GamepadEx gamepadEx1;
+    TimerEx timerEx;
+    private double recoveryTime;
+
+    private VoltageSensor voltageSensor;
 
     @Override
     public void init() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+        gamepadEx1 = new GamepadEx(gamepad1);
 
-        motor = new MotorEx(hardwareMap, "motor", Motor.GoBILDA.BARE);
+        ModifiedMotorEx flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
+        flywheel1.setInverted(FLYWHEEL1_INVERTED);
+
+        ModifiedMotorEx flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
+        flywheel2.setInverted(FLYWHEEL2_INVERTED);
+
+        motor = new ModifiedMotorGroup(flywheel1, flywheel2);
+
         handlePID();
+
+        intake = new Intake(hardwareMap);
+        kicker = new ServoEx(hardwareMap, KICKER_NAME);
+        kicker.set(0);
+
+        ServoEx hood = new ServoEx(hardwareMap, "hood");
+        hood.set(0.1);
+
+        timerEx = new TimerEx(TimeUnit.SECONDS);
+
+        voltageSensor = hardwareMap.voltageSensor.iterator().next();
+
+        /*gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
+                .whenPressed(new InstantCommand(() -> CommandScheduler.getInstance().schedule(
+                        new SequentialCommandGroup(
+                                new InstantCommand(() -> kicker.set(KICKER_MAX)),
+                                new InstantCommand(() -> timerEx.restart()),
+                                new InstantCommand(() -> timerEx.start()),
+                                new WaitCommand(KICK_TIME),
+                                new InstantCommand(() -> kicker.set(KICKER_MIN))
+                        )
+                )));*/
     }
 
     @Override
@@ -42,36 +93,60 @@ public class FlywheelTest extends OpMode {
         }
 
         if (gamepad1.dpadUpWasPressed()) {
-            if (isPID) targetRPM = MathUtils.clamp(targetRPM + 100, 0, 6000);
+            if (isPID) FLYWHEEL_TARGET = MathUtils.clamp(FLYWHEEL_TARGET + 100, 0, 6000);
             else targetPower = MathUtils.clamp(targetPower + 0.1, 0, 1);
         }
 
         if (gamepad1.dpadDownWasPressed()) {
-            if (isPID) targetRPM = MathUtils.clamp(targetRPM - 100, 0, 6000);
+            if (isPID) FLYWHEEL_TARGET = MathUtils.clamp(FLYWHEEL_TARGET - 100, 0, 6000);
             else targetPower = MathUtils.clamp(targetPower - 0.1, 0, 1);
+        }
+        if (gamepad1.triangleWasPressed()) {
+            CommandScheduler.getInstance().schedule(
+                    new SequentialCommandGroup(
+                            new InstantCommand(() -> kicker.set(KICKER_MAX)),
+                            new InstantCommand(() -> timerEx.restart()),
+                            new InstantCommand(() -> timerEx.start()),
+                            new WaitCommand(KICK_TIME),
+                            new InstantCommand(() -> kicker.set(KICKER_MIN))
+                    )
+            );
+
+        }
+        if (gamepad1.rightBumperWasPressed()) {
+            intake.collect();
+        }
+        if (gamepad1.rightBumperWasReleased()) {
+            intake.stop();
         }
 
         if (isPID) {
-            double targetTPS = (targetRPM * motor.getCPR()) / 60.0;
-            motor.setVelocity(targetTPS);
-
-            telemetry.addData("Target", targetRPM);
+            double targetTPS = (FLYWHEEL_TARGET * motor.getCPR()) / 60.0;
+            double voltage = voltageSensor.getVoltage();
+            motor.setVelocity(targetTPS, voltage);
+            telemetry.addData("Target", FLYWHEEL_TARGET);
         }
         else {
             motor.set(targetPower);
 
             telemetry.addData("Target", targetPower);
         }
-
         // Get motor velocity in ticks per second
         double motorTPS = motor.getCorrectedVelocity();
 
         // Convert to RPM
         double motorRPM = (motorTPS * 60.0) / motor.getCPR();
 
+        if (FLYWHEEL_TARGET - motorRPM <= RPM_REACHED_THRESHOLD) {
+            recoveryTime = timerEx.getElapsed();
+            timerEx.pause();
+        }
+
         telemetry.addData("Velocity (ticks/sec)", motorTPS);
         telemetry.addData("Motor RPM", motorRPM);
-        telemetry.addData("Current (Amps)", motor.motorEx.getCurrent(CurrentUnit.AMPS));
+        telemetry.addData("error: ", FLYWHEEL_TARGET - motorRPM);
+        telemetry.addData("recovery time (sec)",recoveryTime);
+        telemetry.addData("Current (Amps)", motor.leader.getCurrent(CurrentUnit.AMPS));
         telemetry.addData("PID On?", isPID);
 
         telemetry.update();
@@ -80,8 +155,8 @@ public class FlywheelTest extends OpMode {
     private void handlePID() {
         if (isPID) {
             motor.setRunMode(Motor.RunMode.VelocityControl);
-            motor.setVeloCoefficients(kP, kI, kD);
-            motor.setFeedforwardCoefficients(kS, kV);
+            motor.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
+            motor.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
         }
         else {
             motor.setRunMode(Motor.RunMode.RawPower);
