@@ -18,6 +18,7 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
+import com.skeletonarmy.marrow.zones.Zone;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
@@ -27,6 +28,7 @@ import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.utilities.Kinematics;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
@@ -48,10 +50,11 @@ public class Shooter extends SubsystemBase {
 
     private final VoltageSensor voltageSensor;
 
-    private final IShooterCalculator shooterCalculator;
+    private final IShooterCalculator shooterCalculatorClose;
+    private final IShooterCalculator shooterCalculatorFar;
     private final Alliance alliance;
     public Pose goalPose;
-    public Pose turretGoalPose;
+    public Pose goalPoseFar;
 
     public boolean isConfiguredCW = true;
     private double targetTPS;
@@ -76,7 +79,7 @@ public class Shooter extends SubsystemBase {
 
     private double horizontalOffset = 0;
     private double verticalOffset = 0;
-    private double lastshotRPM;
+    private double lastShotRPM;
 
     private boolean canShootRPMCalc;
 
@@ -84,6 +87,7 @@ public class Shooter extends SubsystemBase {
     private boolean updateHood = true;
     private boolean updateFlywheel = true;
     public boolean disabled = false;
+    public boolean turretDisabled = false;
 
     public Pose currentPose;
 
@@ -113,10 +117,11 @@ public class Shooter extends SubsystemBase {
 
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
+    private LaunchZone zoneCalculator = LaunchZone.CLOSE;
 
     // Feedforward + friction coefficients.
-// Defaults mirror ShooterConfig constants.
-// loadTunedParams() overwrites these at init if turret_tuned.json exists.
+    // Defaults mirror ShooterConfig constants.
+    // loadTunedParams() overwrites these at init if turret_tuned.json exists.
     private double turretKv    = TURRET_KV;
     private double turretKa    = TURRET_KA;
     private double turretKsCw  = TURRET_KS_CW;
@@ -152,6 +157,7 @@ public class Shooter extends SubsystemBase {
         turret.setRunMode(Motor.RunMode.RawPower);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
+        turret.setInverted(TURRET_INVERTED);
 
         turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
         turretPID.setTolerance(TURRET_POSITION_TOLERANCE, TURRET_VELOCITY_TOLERANCE);
@@ -160,10 +166,11 @@ public class Shooter extends SubsystemBase {
 
         hood = new ServoEx(hardwareMap, HOOD_NAME);
 
-        this.shooterCalculator = shooterCalculator;
+        this.shooterCalculatorClose = shooterCalculatorClose;
+        this.shooterCalculatorFar = shooterCalculatorFar;
         this.alliance = alliance;
         this.goalPose = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL : GoalPositions.RED_GOAL;
-        this.turretGoalPose = alliance == Alliance.BLUE ? GoalPositions.TURRET_BLUE_GOAL : GoalPositions.TURRET_RED_GOAL;
+        this.goalPoseFar = alliance == Alliance.BLUE ? GoalPositions.BLUE_GOAL_FAR : GoalPositions.RED_GOAL_FAR;
 
         recoveryTimer = new TimerEx(TimeUnit.SECONDS);
         stallTimer = new TimerEx(TimeUnit.SECONDS);
@@ -200,7 +207,12 @@ public class Shooter extends SubsystemBase {
 
         filteredRPM = getFilteredRPM(getRPM());
         //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
-        solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+        if (zoneCalculator == LaunchZone.CLOSE)
+            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+        else if (zoneCalculator == LaunchZone.FAR) {
+            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+        }
+
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
         canShootRPMCalc = solution.getCanShoot();
 
@@ -209,10 +221,10 @@ public class Shooter extends SubsystemBase {
         if (updateFlywheel) setRPM(solution.getRPM());
 
         //updateFlywheelPID(false);
-        //updateFlywheelPIDFiltered(true);
-        updateFlywheelPID(false);
+        updateFlywheelPIDFiltered(false);
+        //updateFlywheelPID(false);
         //updateTurretPID(true);
-        updateTurretPID(false);
+        if (!turretDisabled) updateTurretPID(false);
 
         voltageExternallySupplied = false;
     }
@@ -310,13 +322,14 @@ public class Shooter extends SubsystemBase {
         double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
 
         // 'speed' is our Target Velocity
-        double speed = (targetTPS) * rampMultiplier;
+        double speed = targetTPS * rampMultiplier;
 
         // Get raw measurement and apply Low Pass Filter to mitigate sensor noise
         //double rawVelocity = flywheel1.getCorrectedVelocity();
         //filteredVelocity = (VELOCITY_FILTER_ALPHA * rawVelocity) + (1.0 - VELOCITY_FILTER_ALPHA) * filteredVelocity;
 
-        double processVariable = filteredRPM;
+        double tpsPerRPM = flywheel.getCPR() / 60.0;
+        double processVariable = filteredRPM * tpsPerRPM;
 
         // 2. Delay Compensation (Lead Compensation)
         // We add predicted velocity gain to offset the phase lag of the filter and mechanical latency
@@ -328,9 +341,9 @@ public class Shooter extends SubsystemBase {
         // --- ASYMMETRIC P-GAIN LOGIC ---
         double error = speed - processVariable;
 
-        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
+        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD * tpsPerRPM) {
             isBraking = true;
-        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
+        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD * tpsPerRPM) {
             isBraking = false;
         }
 
@@ -387,7 +400,7 @@ public class Shooter extends SubsystemBase {
 
         // I-Zone Logic
         if (Math.abs(error) > TURRET_IZONE) {
-            turretPID.reset(); // Clears integral if too far away
+            turretPID.clearTotalError(); // Clears integral if too far away
         }
 
         // 2. Robot Motion Compensation (Feedforward)
@@ -396,17 +409,16 @@ public class Shooter extends SubsystemBase {
         double netAccel = netKinematics[1];
 
         double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
+        double totalRequest = pidOutput + ffBase;
 
         // 3. Static Friction (kS)
+        double[] ks = getBandedTurretKS();
+        double ks_cw  = ks[0];
+        double ks_ccw = ks[1];
         double staticComp = 0;
 
-        if (Math.abs(netVel) > 0.01) {
-            // If the target is moving, apply kS in the direction of travel
-            staticComp = (netVel > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
-        } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            // If the target is still, but we have error, use the error sign
-            // to help the PID break stiction to reach the final goal.
-            staticComp = (error > 0) ? TURRET_KS_CW : -TURRET_KS_CCW;
+        if (Math.abs(totalRequest) > 0.05) {
+            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
         }
 
         double voltageScale = 12.0 / voltage;
@@ -416,7 +428,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {
-        if (disabled || emergencyStop) {
+        if ((disabled || emergencyStop) && !horizontalManualMode) {
             turret.set(0);
             return;
         }
@@ -448,20 +460,19 @@ public class Shooter extends SubsystemBase {
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
 
-        //double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
-        // totalRequest = pid + ffBase;
+        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
+        double totalRequest = pid + ffBase;
 
-        // --- 4. Static friction — tuned asymmetric values --------------------
-        // turretKsCw / turretKsCcw are loaded from turret_tuned.json at init.
-        // Default to ShooterConfig constants if no file exists.
+        // --- 4. Static Friction (kS) ---
+        // Only apply kS if the baseRequest is actually trying to move the motor
+        // and apply it in the direction of that motion.
+        double[] ks = getBandedTurretKS();
+        double ks_cw  = ks[0];
+        double ks_ccw = ks[1];
         double staticComp = 0;
-        if (Math.abs(netVel) > 0.3) {
-            // Target is moving: compensate in the direction of travel
-            staticComp = (netVel > 0) ? turretKsCcw : -turretKsCw;
-        } else if (Math.abs(error) > TURRET_POSITION_TOLERANCE) {
-            // Target is stationary but we have positional error:
-            // apply kS in the error direction to help break stiction
-            staticComp = (error > 0) ? turretKsCcw : -turretKsCw;
+
+        if (Math.abs(totalRequest) > 0.05) {
+            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
         }
 
         // --- 5. Velocity + acceleration feedforward — tuned Kv / Ka ---------
@@ -496,7 +507,7 @@ public class Shooter extends SubsystemBase {
      */
     public double[] getNetTargetKinematics() {
         long currentTime = System.nanoTime();
-        double currentTargetAngle = solution.getHorizontalAngle() + horizontalOffset;
+        double currentTargetAngle = turretPID.getSetPoint();
 
         if (lastTargetUpdateTime == 0) {
             lastTargetUpdateTime = currentTime;
@@ -535,6 +546,14 @@ public class Shooter extends SubsystemBase {
         double netAccel = filteredTargetAccel;
 
         return new double[] {netVel, netAccel};
+    }
+
+    private double[] getBandedTurretKS() {
+        double rpm = Math.abs(filteredRPM);
+        if      (rpm < 1000) return new double[]{ TURRET_KS_CW_0,    TURRET_KS_CCW_0    };
+        else if (rpm < 2000) return new double[]{ TURRET_KS_CW_1000, TURRET_KS_CCW_1000 };
+        else if (rpm < 3000) return new double[]{ TURRET_KS_CW_2000, TURRET_KS_CCW_2000 };
+        else                 return new double[]{ TURRET_KS_CW_3000, TURRET_KS_CCW_3000 };
     }
 
     public boolean isFlywheelDamaged() {
@@ -577,7 +596,7 @@ public class Shooter extends SubsystemBase {
     public double getRPMCorrectedTiming() {
         double motorTPS = flywheel.getVelocity();
         if (!Double.isNaN(flywheel1.getAcceleration())) {
-             motorTPS += flywheel1.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
+            motorTPS += flywheel1.getAcceleration() * FLYWHEEL_SHOOTING_DIFFRENCE;
             return (motorTPS * 60.0) / flywheel.getCPR();
         }
 
@@ -715,6 +734,7 @@ public class Shooter extends SubsystemBase {
     public void setVerticalOffset(double offset) {
         verticalOffset = offset;
     }
+    public void setZoneCalculator (LaunchZone zone) { zoneCalculator = zone;}
 
     public double getHorizontalOffset() {
         return horizontalOffset;
@@ -772,8 +792,16 @@ public class Shooter extends SubsystemBase {
         flywheel.stopMotor();
     }
 
+    public void disableTurret() {
+        turretDisabled = true;
+    }
+
     public void enable() {
         disabled = false;
+    }
+
+    public void enableTurret() {
+        turretDisabled = false;
     }
 
     public void setTargetPose(Pose pose) {
@@ -785,168 +813,12 @@ public class Shooter extends SubsystemBase {
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
     }
 
-    // returns true if we just shot, otherwise false
-    private boolean wasBallshot() {
-        if ((Math.abs(getTargetRPM() - getRPM()) > RPM_REACHED_THRESHOLD) && (Math.abs(lastshotRPM - getRPM()) > RPM_REACHED_THRESHOLD)) {
+    public boolean justShot() {
+        if ((Math.abs(getTargetRPM() - getRPM()) > RPM_REACHED_THRESHOLD) && (Math.abs(lastShotRPM - getRPM()) > RPM_REACHED_THRESHOLD)) {
             return true;
         }
 
-        lastshotRPM = getRPM();
+        lastShotRPM = getRPM();
         return false;
     }
-
-    public void updatePIDFCoefficients() {
-        flywheel.setVeloCoefficients(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        flywheel.setFeedforwardCoefficients(FLYWHEEL_KS, FLYWHEEL_KV, FLYWHEEL_KA);
-        flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        turretPID.setPID(TURRET_KP, TURRET_KI, TURRET_KD);
-    }
-
-    // =============================================================================
-//  STEP 2 — Raw turret control + flywheel-only periodic
-// =============================================================================
-
-    /**
-     * Sets the turret motor to a normalised power in [−1, 1].
-     *
-     * Used by TurretTuningOpMode to bypass the turret PID during system
-     * identification.  Not intended for use during a match.
-     *
-     * @param normalizedPower  motor power, −1.0 (full CCW) to +1.0 (full CW)
-     */
-    public void setTurretRawPower(double normalizedPower) {
-        turret.set(normalizedPower);
-    }
-
-    /**
-     * Runs only the flywheel update cycle (PID + feedforward + voltage scaling).
-     *
-     * Used by TurretTuningOpMode during the Kgyro phase: the flywheel needs to
-     * run at a stable RPM while the tuning OpMode drives the turret directly with
-     * its own sweep controller.  Calling the full periodic() would also run
-     * updateTurretPID() and fight the sweep controller.
-     *
-     * Safe to call from any context; mirrors the logic in periodic() but omits
-     * the pose tracker, solution calculation, hood, and turret PID updates.
-     */
-    public void periodicFlywheelOnly() {
-        if (emergencyStop || disabled) return;
-        if (!voltageExternallySupplied) {
-            this.voltage = voltageSensor.getVoltage();
-        }
-        filteredRPM = getFilteredRPM(getRPM());
-        updateFlywheelPID(false);
-        voltageExternallySupplied = false;
-    }
-
-
-// =============================================================================
-//  STEP 3 — loadTunedParams() + parseJsonField()
-// =============================================================================
-
-    /**
-     * Loads RLS-identified parameters from /sdcard/FIRST/turret_tuned.json.
-     *
-     * Quality gate: PID gains are rejected and ShooterConfig defaults kept
-     * if the ARX prediction RMS exceeds 0.05 rad (indicates a poor fit, e.g.
-     * PRBS amplitude was too low or the turret hit hard stops during ID).
-     *
-     * Individual feedforward fields (Kv, Ka, KS, Kgyro) are applied
-     * independently — each has its own presence check.
-     *
-     * Call this at the end of the Shooter constructor, after turretPID is
-     * initialised.  Safe to call even if the file does not exist.
-     */
-    public void loadTunedParams() {
-        try {
-            java.io.File f = AppUtil.getInstance().getSettingsFile("turret_tuned.json");
-            if (!f.exists()) {
-                RobotLog.ii("Shooter", "No turret_tuned.json found — using ShooterConfig defaults.");
-                return;
-            }
-
-            String json = ReadWriteFile.readFile(f);
-
-            // ── PID — quality-gated on ARX prediction RMS ─────────────────────
-            double rms = parseJsonField(json, "rms");
-            if (rms > 0.05) {
-                RobotLog.ww("Shooter",
-                        "Tuned PID rejected: predRMS=%.5f > 0.05 rad. " +
-                                "Re-run the tuning OpMode. Keeping ShooterConfig defaults.", rms);
-            } else {
-                double Kp = parseJsonField(json, "Kp");
-                double Ki = parseJsonField(json, "Ki");
-                double Kd = parseJsonField(json, "Kd");
-                turretPID.setPID(Kp, Ki, Kd);
-                RobotLog.ii("Shooter", "Loaded PID: Kp=%.4f Ki=%.4f Kd=%.4f (RMS=%.5f)", Kp, Ki, Kd, rms);
-            }
-
-            // ── Kv ────────────────────────────────────────────────────────────
-            if (json.contains("\"Kv\"")) {
-                turretKv = parseJsonField(json, "Kv");
-                RobotLog.ii("Shooter", "Loaded Kv=%.5f", turretKv);
-            }
-
-            // ── Ka ────────────────────────────────────────────────────────────
-            if (json.contains("\"Ka\"")) {
-                turretKa = parseJsonField(json, "Ka");
-                RobotLog.ii("Shooter", "Loaded Ka=%.5f", turretKa);
-            }
-
-            // ── KS (asymmetric, per direction) ────────────────────────────────
-            if (json.contains("\"Ks_cw\"")) {
-                turretKsCw  = parseJsonField(json, "Ks_cw");
-                turretKsCcw = parseJsonField(json, "Ks_ccw");
-                RobotLog.ii("Shooter", "Loaded KsCW=%.4f  KsCCW=%.4f", turretKsCw, turretKsCcw);
-            }
-
-            // ── Kgyro — only apply if meaningfully non-zero ───────────────────
-            if (json.contains("\"Kgyro\"")) {
-                double kg = parseJsonField(json, "Kgyro");
-                if (kg > 1e-6) {
-                    turretKgyro = kg;
-                    RobotLog.ii("Shooter", "Loaded Kgyro=%.7f", turretKgyro);
-                } else {
-                    RobotLog.ii("Shooter", "Kgyro=%.7f below threshold — gyro FF disabled.", kg);
-                }
-            }
-
-        } catch (Exception e) {
-            RobotLog.ww("Shooter",
-                    "loadTunedParams failed: %s — all ShooterConfig defaults retained.",
-                    e.getMessage());
-        }
-    }
-
-    /**
-     * Minimal JSON field extractor.  Parses a double value from a flat JSON
-     * string without requiring Gson or any other JSON library.
-     *
-     * @param json  raw JSON string (single-level object, no nesting)
-     * @param key   field name without quotes
-     * @return parsed double value
-     * @throws RuntimeException if the key is absent
-     */
-    private double parseJsonField(String json, String key) {
-        int idx = json.indexOf("\"" + key + "\":");
-        if (idx < 0) throw new RuntimeException("Key not found: " + key);
-        int start = json.indexOf(':', idx) + 1;
-        int end   = json.indexOf(',', start);
-        if (end < 0) end = json.indexOf('}', start);
-        return Double.parseDouble(json.substring(start, end).trim());
-    }
-
-
-// =============================================================================
-//  STEP 4 — Constructor addition (shown in context)
-//
-//  // ... existing constructor code ...
-//  turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
-//  turretPID.setTolerance(TURRET_POSITION_TOLERANCE, TURRET_VELOCITY_TOLERANCE);
-//
-//  setHorizontalAngle(0);
-//
-//  // ← ADD THIS LINE:
-//  loadTunedParams();
-// =============================================================================
 }

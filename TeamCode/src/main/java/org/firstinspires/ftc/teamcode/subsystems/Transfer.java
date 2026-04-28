@@ -3,22 +3,23 @@ package org.firstinspires.ftc.teamcode.subsystems;
 import static org.firstinspires.ftc.teamcode.config.TransferConfig.*;
 
 import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
-import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.hardware.SensorRevColorV3;
 import com.seattlesolvers.solverslib.hardware.SensorRevTOFDistance;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
-import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 import java.util.function.BooleanSupplier;
 
 public class Transfer extends SubsystemBase {
+    private static final int SENSOR_FAIL_THRESHOLD = 5;
+
     private final ServoEx kicker;
     private final ServoEx stopper;
     private final SensorRevColorV3 colorSensor;
@@ -26,13 +27,15 @@ public class Transfer extends SubsystemBase {
 
     private boolean colorSensorDisabled = false;
     private boolean distanceSensorDisabled = false;
+    private int colorSensorFailCount = 0;
+    private int distanceSensorFailCount = 0;
 
     public Transfer(final HardwareMap hardwareMap) {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
         kicker.set(KICKER_MIN);
 
         stopper = new ServoEx(hardwareMap, STOPPER_NAME);
-        stopper.set(STOPPER_MAX);
+        stopper.set(STOPPER_STOP);
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
         sensorDistance = new SensorRevTOFDistance(hardwareMap, DISTANCE_SENSOR_NAME);
@@ -51,11 +54,11 @@ public class Transfer extends SubsystemBase {
     }
 
     public void block() {
-        stopper.set(STOPPER_MAX);
+        stopper.set(STOPPER_STOP);
     }
 
     public void release() {
-        stopper.set(STOPPER_MIN);
+        stopper.set(STOPPER_RELEASE);
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
@@ -72,10 +75,14 @@ public class Transfer extends SubsystemBase {
 
         double dist = colorSensor.distance(DistanceUnit.CM);
         if (isSensorDisconnected(dist)) {
-            colorSensorDisabled = true;
+            if (++colorSensorFailCount >= SENSOR_FAIL_THRESHOLD) {
+                RobotLog.addGlobalWarningMessage("TRANSFER SENSOR DISCONNECTED.");
+                colorSensorDisabled = true;
+            }
             return -1;
         }
 
+        colorSensorFailCount = 0;
         return dist;
     }
 
@@ -85,10 +92,14 @@ public class Transfer extends SubsystemBase {
 
         double dist = sensorDistance.getDistance(DistanceUnit.CM);
         if (isSensorDisconnected(dist)) {
-            distanceSensorDisabled = true;
+            if (++distanceSensorFailCount >= SENSOR_FAIL_THRESHOLD) {
+                RobotLog.addGlobalWarningMessage("INTAKE SENSOR DISCONNECTED.");
+                distanceSensorDisabled = true;
+            }
             return -1;
         }
 
+        distanceSensorFailCount = 0;
         return dist;
     }
 

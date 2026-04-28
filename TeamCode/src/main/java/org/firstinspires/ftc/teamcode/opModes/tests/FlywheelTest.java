@@ -23,6 +23,7 @@ import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
+import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
 
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 public class FlywheelTest extends OpMode {
     public static int FLYWHEEL_TARGET = 3400;
 
+    private Intake intake;
     private ModifiedMotorGroup motor;
 
     private boolean isPID = true;
@@ -60,8 +62,12 @@ public class FlywheelTest extends OpMode {
 
         handlePID();
 
+        intake = new Intake(hardwareMap);
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
         kicker.set(0);
+
+        ServoEx hood = new ServoEx(hardwareMap, "hood");
+        hood.set(0.1);
 
         timerEx = new TimerEx(TimeUnit.SECONDS);
 
@@ -106,6 +112,12 @@ public class FlywheelTest extends OpMode {
                     )
             );
 
+        }
+        if (gamepad1.rightBumperWasPressed()) {
+            intake.collect();
+        }
+        if (gamepad1.rightBumperWasReleased()) {
+            intake.stop();
         }
 
         if (isPID) {
