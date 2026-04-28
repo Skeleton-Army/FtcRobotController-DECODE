@@ -16,6 +16,7 @@ public class ArmControl extends OpMode
     private ServoEx vertical;// y
     private ServoEx horizontal;//x
     private  ServoEx clawPivot;
+    private ServoEx clawHand;
 
     private  int verticalAdjustmentScale = 1000;
     private  int HorizontalAdjustmentScale = 1000;
@@ -23,6 +24,10 @@ public class ArmControl extends OpMode
     private double minVertical = 0.05;
     private double maxVertical = 0.65;
     private double adjustmentAmout = 0.01;
+
+     private  double minClaw = 0.1;
+     private double maxClaw = 0.6;
+
 
     // Its better to use the Servo interface rather then a class
     private GamepadEx gamepad;
@@ -65,7 +70,7 @@ public class ArmControl extends OpMode
         vertical =  new ServoEx(hardwareMap, "servo1");
         horizontal = new ServoEx(hardwareMap, "servo0");
         clawPivot = new ServoEx(hardwareMap, "servo2");
-
+        clawHand = new ServoEx(hardwareMap,  "servo3");
     }
 
     @Override
@@ -131,8 +136,20 @@ public class ArmControl extends OpMode
                vertical.set(i);
             }
             //vertical.set(0.65);
-
         }
-
+      if (gamepad.getButton(GamepadKeys.Button.X))
+    {
+        clawHand.set(0);
+         if (clawHand.get() == 0 ) {
+             clawHand.set(maxClaw);
+         }
+      }
+      if (gamepad.getButton(GamepadKeys.Button.Y))
+        {
+            if (clawHand.get() == maxClaw)
+            {
+                clawHand.set(minClaw);
+            }
+        }
     }
 }
