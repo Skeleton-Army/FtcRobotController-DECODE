@@ -140,6 +140,7 @@ public class Shooter extends SubsystemBase {
         turret.setRunMode(Motor.RunMode.RawPower);
         turret.setZeroPowerBehavior(Motor.ZeroPowerBehavior.BRAKE);
         turret.setDistancePerPulse((Math.PI * 2) / (turret.getCPR() * GEAR_RATIO));
+        turret.setInverted(TURRET_INVERTED);
 
         turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
         turretPID.setTolerance(TURRET_POSITION_TOLERANCE, TURRET_VELOCITY_TOLERANCE);
