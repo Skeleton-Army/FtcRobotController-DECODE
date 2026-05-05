@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
-import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -14,6 +12,7 @@ import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
+import com.seattlesolvers.solverslib.command.ScheduleCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -26,9 +25,12 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.VisionConfig;
+import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
+import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
-import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -37,7 +39,6 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
-import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -92,23 +93,24 @@ public class TeleOpApp extends ComplexOpMode {
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
 
-        follower = FollowerManager.createFollower(hardwareMap);
+        follower = Constants.createFollower(hardwareMap);
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
         Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        follower.setPose(Settings.get("pose", startPose));
+
         if (debugMode) follower.setPose(startPose);
 
-//        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.VEL_COEFFS);
-        //IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
-        IShooterCalculator shooterCalc = new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS);
+        IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
+        IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
         kickstand = new Kickstand(hardwareMap);
-        vision = new Vision(hardwareMap, follower.poseTracker);
+        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
 
         vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
 
@@ -134,12 +136,15 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 }));
 
+        // Long press: fire immediately when entering zone
+        new Trigger(() -> gamepadEx1.isDown(GamepadKeys.Button.CROSS) && isInsideLaunchZonePredictive() && shooter.getCurrentCommand() == null)
+                .whenActive(new ScheduleCommand(new ShootCommand(shooter, intake, transfer, drive)));
+
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(transfer.kick());
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
                 .and(new Trigger(this::isShootingAllowed))
-                .and(new Trigger(transfer::isArtifactDetected))
                 .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
@@ -191,12 +196,14 @@ public class TeleOpApp extends ComplexOpMode {
                 .toggleWhenActive(
                         new InstantCommand(() -> {
                             kickstand.raise();
+                            shooter.setHorizontalManualMode(true);
                             shooter.setHorizontalAngle(0);
                             shooter.disable();
                             drive.disable();
                         }),
                         new InstantCommand(() -> {
                             kickstand.drop();
+                            shooter.setHorizontalManualMode(false);
                             shooter.enable();
                             drive.enable();
                         })
@@ -207,9 +214,6 @@ public class TeleOpApp extends ComplexOpMode {
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
-
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
-                .whenPressed(drive.goToCenter());
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
                 .whenPressed(() -> {
@@ -225,7 +229,7 @@ public class TeleOpApp extends ComplexOpMode {
                     );
         }
 
-        if (!tabletopMode && !debugMode) {
+        if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                     .whenPressed(this::resetPoseToNearestCorner);
         }
@@ -257,7 +261,9 @@ public class TeleOpApp extends ComplexOpMode {
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
-        boolean isInsideLaunchZone = isInsideLaunchZonePredictive();
+        shooter.setZoneCalculator(getCalculatorZone());
+
+        boolean isInsideLaunchZone = isInsideLaunchZone();
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
@@ -291,58 +297,56 @@ public class TeleOpApp extends ComplexOpMode {
                 alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
         ) / INCHES_TO_METERS;
 
-        if (debugMode && loopCount % 5 == 0) {
-            Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
 
-            telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
-            telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
+        telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
+        telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
 
-            telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
-            telemetry.addData("!Reached angle", shooter.reachedAngle());
-            telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
-            telemetry.addData("!Can shoot", shooter.getCanShoot());
+        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
+        telemetry.addData("!Reached angle", shooter.reachedAngle());
+        telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
+        telemetry.addData("!Can shoot", shooter.getCanShoot());
 
-            telemetry.addData("Time remaining", matchTime.getRemaining());
+        telemetry.addData("Time remaining", matchTime.getRemaining());
 
-            double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
-            double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
-            telemetry.addData("Drift x", driftX);
-            telemetry.addData("Drift y", driftY);
-            telemetry.addData("Drift total", driftX + driftY);
+        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
+        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        telemetry.addData("Drift x", driftX);
+        telemetry.addData("Drift y", driftY);
+        telemetry.addData("Drift total", driftX + driftY);
 
-            telemetry.addData("Pedro Robot x", follower.getPose().getX());
-            telemetry.addData("Pedro Robot y", follower.getPose().getY());
-            telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
-            telemetry.addData("Robot x", -rotatedPose.getX());
-            telemetry.addData("Robot y", -rotatedPose.getY());
-            telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
-            telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-            telemetry.addData("Distance from GOAL", goalDistance);
-            telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-            telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
-            telemetry.addData("Turret target solution (deg)", Math.toDegrees(shooter.solution.getHorizontalAngle()));
-            telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
-            telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+        telemetry.addData("Pedro Robot x", follower.getPose().getX());
+        telemetry.addData("Pedro Robot y", follower.getPose().getY());
+        telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
+        telemetry.addData("Robot x", -rotatedPose.getX());
+        telemetry.addData("Robot y", -rotatedPose.getY());
+        telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
+        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+        telemetry.addData("Distance from GOAL", goalDistance);
+        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
+        telemetry.addData("Turret target solution (deg)", Math.toDegrees(shooter.solution.getHorizontalAngle()));
+        telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
+        telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
 
-            telemetry.addData("hood pos", shooter.getRawHoodPosition());
-            telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
-            telemetry.addData("Flywheel RPM", shooter.getRPM());
-            telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
-            telemetry.addData("Target solution RPM", shooter.solution.getRPM());
-            telemetry.addData("Flywheel error: ", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+        telemetry.addData("hood pos", shooter.getRawHoodPosition());
+        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
+        telemetry.addData("Flywheel RPM", shooter.getRPM());
+        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
+        telemetry.addData("Target solution RPM", shooter.getTargetRPM());
+        telemetry.addData("Flywheel error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+        telemetry.addData("Intake RPM", intake.getRPM());
 
-            telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
-            telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
-            telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
-            telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
-            telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
-            telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
+        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
+        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
+        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
+        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+        telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
+        telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
 
-            telemetry.update();
-        }
+        telemetry.update();
 
         if (loopCount % 2 == 0) {
-            Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
             Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
 
             Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
@@ -366,6 +370,11 @@ public class TeleOpApp extends ComplexOpMode {
         }
     }
 
+    @Override
+    public void end() {
+        Settings.set("pose", follower.getPose(), false);
+    }
+
     private boolean isShootingAllowed() {
         return isInsideLaunchZonePredictive() || isOverrideActive;
     }
@@ -378,8 +387,9 @@ public class TeleOpApp extends ComplexOpMode {
 
     public boolean isInsideLaunchZonePredictive() {
         // Project future X and Y based on current velocity
-        double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * SHOT_LATENCY);
-        double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * SHOT_LATENCY);
+        final double PREDICTION_TIME = 0.3;
+        double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * PREDICTION_TIME);
+        double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * PREDICTION_TIME);
 
         // Create a temporary zone for the future position
         futureRobotZone.setPosition(futureX, futureY);
@@ -393,16 +403,18 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private void resetPoseToNearestCorner() {
-        Pose currentPose = follower.getPose();
-
         Pose newPose;
         if (alliance == Alliance.RED) {
-            newPose = new Pose(X_OFFSET, Y_OFFSET);
+            newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         } else {
-            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET);
+            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         }
 
-        follower.setPose(new Pose(newPose.getX(), newPose.getY(), currentPose.getHeading()));
+        follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
         follower.startTeleopDrive(USE_BRAKE_MODE);
+    }
+
+    private LaunchZone getCalculatorZone() {
+        return robotZone.distanceTo(closeLaunchZone) < robotZone.distanceTo(farLaunchZone) ? LaunchZone.CLOSE : LaunchZone.FAR;
     }
 }

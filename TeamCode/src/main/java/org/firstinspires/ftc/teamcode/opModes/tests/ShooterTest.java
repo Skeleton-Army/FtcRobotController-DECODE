@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
-import static org.firstinspires.ftc.teamcode.consts.ShooterCoefficients.DISTANCE_THRESHOLD_METERS;
-
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -11,10 +9,10 @@ import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
-import org.firstinspires.ftc.teamcode.calculators.LookupTableCalculator;
+import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
-import org.firstinspires.ftc.teamcode.consts.GoalPositions;
-import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
+import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
+import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -89,12 +87,13 @@ public class ShooterTest extends ComplexOpMode   {
     @Override
     public void initialize() {
         Alliance alliance = Alliance.RED;
-        IShooterCalculator shooterCalc = new LookupTableCalculator(ShooterCoefficients.CLOSE_VEL_COEFFS, ShooterCoefficients.FAR_VEL_COEFFS);
+        IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
+        IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
 
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose(7.48, 8.26, Math.toRadians(0)));
 
-        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalc, alliance);
+        shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);

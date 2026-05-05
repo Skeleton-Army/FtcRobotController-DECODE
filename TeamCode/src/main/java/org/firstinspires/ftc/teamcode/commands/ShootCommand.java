@@ -75,8 +75,8 @@ public class ShootCommand extends SequentialCommandGroup {
                 new InstantCommand(() -> {
                     recordShot();
                     drive.setShootingMode(true);
-                    intake.setIntakeSpeed(intakeSpeed);
                     transfer.release();
+                    intake.setIntakeSpeed(intakeSpeed);
                     intake.collect();
                 }),
 
@@ -95,7 +95,7 @@ public class ShootCommand extends SequentialCommandGroup {
         return new SequentialCommandGroup(
                 new WaitUntilCommand(() -> shooter.getCanShootRPMCalc() || shooter.getVerticalManualMode()),
                 new WaitUntilCommand(() -> shooter.reachedAngle() || shooter.getHorizontalManualMode())
-        ).withTimeout(3000);
+        ).withTimeout(2000);
     }
 
     public void recordShot() {
@@ -123,6 +123,7 @@ public class ShootCommand extends SequentialCommandGroup {
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
         intake.setIntakeSpeed(INTAKE_POWER);
-        transfer.kick().schedule();
+
+        if (interrupted) transfer.kick().schedule();
     }
 }

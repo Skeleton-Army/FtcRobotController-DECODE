@@ -1,6 +1,12 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
 import com.pedropathing.follower.Follower;
+import com.pedropathing.geometry.Pose;
+import com.pedropathing.ftc.PoseConverter;
+import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
+import com.pedropathing.geometry.PedroCoordinates;
+import com.pedropathing.localization.Localizer;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -17,21 +23,32 @@ public class FollowerManager {
      * If a previous Follower exists, it inherits its last known Pose.
      */
     public static Follower createFollower(HardwareMap hardwareMap) {
-        // 1. Capture the latest state from the previous OpMode's hardware
+        Pose lastPose = null;
+
         if (follower != null) {
-            try {
-                follower.update();
-            } catch (Exception e) {
-                // If the I2C bus is already closed, we just use the last cached pose
+            Localizer localizer = follower.poseTracker.getLocalizer();
+
+            if (localizer instanceof PinpointLocalizer) {
+                PinpointLocalizer pinpointLocalizer = (PinpointLocalizer) localizer;
+                GoBildaPinpointDriver pinpoint = pinpointLocalizer.getPinpoint();
+
+                // Force fresh hardware read
+                pinpoint.update();
+
+                // Convert using Pedro's converter
+                lastPose = PoseConverter.pose2DToPose(
+                        pinpoint.getPosition(),
+                        PedroCoordinates.INSTANCE
+                );
             }
+
+            follower = null; // release old driver
         }
 
-        // 2. Create the fresh hardware instance
         Follower newFollower = Constants.createFollower(hardwareMap);
 
-        // 3. Handoff the pose
-        if (follower != null) {
-            newFollower.setPose(follower.getPose());
+        if (lastPose != null) {
+            newFollower.setPose(lastPose);
         }
 
         follower = newFollower;

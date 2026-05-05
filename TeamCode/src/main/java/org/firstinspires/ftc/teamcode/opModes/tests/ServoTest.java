@@ -26,11 +26,11 @@ public class ServoTest extends OpMode {
         switch (name) {
             case "stopper":
                 if (gamepad1.crossWasPressed()) {
-                    servo.setPosition(TransferConfig.STOPPER_MAX);
+                    servo.setPosition(TransferConfig.STOPPER_STOP);
                 }
 
                 if (gamepad1.squareWasPressed()) {
-                    servo.setPosition(TransferConfig.STOPPER_MIN);
+                    servo.setPosition(TransferConfig.STOPPER_RELEASE);
                 }
                 break;
 

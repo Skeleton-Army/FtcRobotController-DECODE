@@ -9,11 +9,9 @@ import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
-import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.hardware.SensorRevColorV3;
 import com.seattlesolvers.solverslib.hardware.SensorRevTOFDistance;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
-import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
@@ -37,7 +35,7 @@ public class Transfer extends SubsystemBase {
         kicker.set(KICKER_MIN);
 
         stopper = new ServoEx(hardwareMap, STOPPER_NAME);
-        stopper.set(STOPPER_MAX);
+        stopper.set(STOPPER_STOP);
 
         colorSensor = new SensorRevColorV3(hardwareMap, SENSOR_NAME);
         sensorDistance = new SensorRevTOFDistance(hardwareMap, DISTANCE_SENSOR_NAME);
@@ -56,11 +54,11 @@ public class Transfer extends SubsystemBase {
     }
 
     public void block() {
-        stopper.set(STOPPER_MAX);
+        stopper.set(STOPPER_STOP);
     }
 
     public void release() {
-        stopper.set(STOPPER_MIN);
+        stopper.set(STOPPER_RELEASE);
     }
 
     /* Do not call this function in a loop, as I2C calls reduce loop times greatly. */
