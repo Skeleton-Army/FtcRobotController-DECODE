@@ -30,6 +30,10 @@ public class DriftTest extends ComplexOpMode {
                                 )
                         )
                         .setConstantHeadingInterpolation(Math.toRadians(0))
+
+
+
+
                         .addPath(
                                 new BezierLine(
                                         new Pose(38.5, 33.5),
@@ -88,66 +92,8 @@ public class DriftTest extends ComplexOpMode {
                         )
                         .setConstantHeadingInterpolation(Math.toRadians(0))
 
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(38.5, 33.5),
-                                        new Pose(105.5, 33.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(0))
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(105.5, 33.5),
-                                        new Pose(105.5, 107.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(0))
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(105.5, 107.5),
-                                        new Pose(38.5, 107.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(0))
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(38.5, 107.5),
-                                        new Pose(38.5, 33.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(0))
 
 
-
-
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(38.5, 33.5),
-                                        new Pose(105.5, 33.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(0))
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(105.5, 33.5),
-                                        new Pose(105.5, 107.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(90))
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(105.5, 107.5),
-                                        new Pose(38.5, 107.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(180))
-                        .addPath(
-                                new BezierLine(
-                                        new Pose(38.5, 107.5),
-                                        new Pose(38.5, 33.5)
-                                )
-                        )
-                        .setConstantHeadingInterpolation(Math.toRadians(270))
 
                         .addPath(
                                 new BezierLine(
