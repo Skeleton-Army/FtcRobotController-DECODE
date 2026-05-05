@@ -63,7 +63,7 @@ public class ShooterConfig {
     public static double TURRET_KA = 0.01;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
-    public static double GEAR_RATIO = (double) 286 / 26;
+    public static double GEAR_RATIO = (double) 286 / 20;
     public static double TURRET_OFFSET_X = 0; // Positive = Front
     public static double TURRET_OFFSET_Y = 0; // Positive = Left
     public static boolean TURRET_WRAP = true;
