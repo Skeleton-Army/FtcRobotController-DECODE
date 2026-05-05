@@ -6,9 +6,11 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Matrix;
-import com.pedropathing.math.MatrixUtil;
 import com.pedropathing.math.Vector;
+import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 
+import java.util.List;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -46,6 +48,10 @@ public class NewKalmanLocolizer implements Localizer {
     public static double k_dy = 0.0001;  // Penalty multiplier for Y distance squared
     public static double k_dh = 0.0001;  // Penalty multiplier for Heading distance squared
 
+    public static double RegressionSlopeX = -0.004991;
+    public static double RegressionSlopeY =  -0.005617;
+    public static double  RegressionFreeX =  0.5512;
+    public static double  RegressionFreeY =  0.6071;
     public static double maxSpeedThreshold = 40.0; // Speed in inches/sec where we ignore vision completely
 
     // Chi-square threshold for 3 DOF at 99% confidence is 11.34.
@@ -118,10 +124,11 @@ public class NewKalmanLocolizer implements Localizer {
     /**
      * Adds a delayed vision measurement with ADAPTIVE covariance and OUTLIER rejection.
      * @param measuredPose The pose returned by the Limelight
-     * @param timestamp When the picture was taken (System.nanoTime() - latency)
-     * @param tagDistance The 3D distance from the camera to the tag in inches
+     * @param timestamp When the picture was taken (System.nanoTime() - latency.
+     *
+     * @param limelight3A don't do it like that, fix later pwease
      */
-    public void addVisionMeasurement(Pose measuredPose, long timestamp, double tagDistance) {
+    public void addVisionMeasurement(Pose measuredPose, long timestamp, Limelight3A limelight3A) {
         if (!poseHistory.containsKey(timestamp) || !twistHistory.containsKey(timestamp)) return;
 
         Pose twistAtMeasurement = twistHistory.get(timestamp);
@@ -133,11 +140,17 @@ public class NewKalmanLocolizer implements Localizer {
         double rotationalSpeed = Math.abs(twistAtMeasurement.getHeading());
 
         // 2. Compute Dynamic Covariance (R)
-        double distanceSquared = tagDistance * tagDistance;
 
-        double distancePenaltyX = k_dx * distanceSquared;
-        double distancePenaltyY = k_dy * distanceSquared;
-        double distancePenaltyH = k_dh * distanceSquared;
+        List<FiducialResult> fiducialResults = limelight3A.getLatestResult().getFiducialResults();
+        // add null check
+        Pose targetPose = new Pose(fiducialResults.get(0).getTargetXDegrees(), fiducialResults.get(0).getTargetYDegrees());
+        // use target pose to calculate dis from bot
+        // target pose is the degree x y of the apriltag
+        Pose disVector = null; //To remove errors
+
+        double distancePenaltyX = RegressionSlopeX * disVector.getX() + RegressionFreeX;
+        double distancePenaltyY = RegressionSlopeY * disVector.getY() + RegressionFreeY;
+        double distancePenaltyH = k_dh;
 
         double dynamicStdX = baseMeasurementStdDevs[0] + (k_v * translationalSpeed) + distancePenaltyX;
         double dynamicStdY = baseMeasurementStdDevs[1] + (k_v * translationalSpeed) + distancePenaltyY;
@@ -155,23 +168,22 @@ public class NewKalmanLocolizer implements Localizer {
         double y1 = measuredPose.getY() - pastPose.getY();
         double y2 = MathFunctions.normalizeAngle(measuredPose.getHeading() - pastPose.getHeading());
 
-        Matrix y = new Matrix(new double[][]{ {y0}, {y1}, {y2} });
+        Matrix y = new Matrix(new double[][]{{y0}, {y1}, {y2}});
 
         // 4. Compute Innovation Covariance (S) and its inverse
         Matrix S = P.plus(dynamicR);
         Matrix S_inv = invert3x3(S);
 
 
-
         // --- 5. THE INNOVATION GATE (MAHALANOBIS DISTANCE) ---
         // Manually calculating y^T * S_inv * y to avoid needing a transpose() method in Matrix.java
-        double s00 = S_inv.get(0,0), s01 = S_inv.get(0,1), s02 = S_inv.get(0,2);
-        double s10 = S_inv.get(1,0), s11 = S_inv.get(1,1), s12 = S_inv.get(1,2);
-        double s20 = S_inv.get(2,0), s21 = S_inv.get(2,1), s22 = S_inv.get(2,2);
+        double s00 = S_inv.get(0, 0), s01 = S_inv.get(0, 1), s02 = S_inv.get(0, 2);
+        double s10 = S_inv.get(1, 0), s11 = S_inv.get(1, 1), s12 = S_inv.get(1, 2);
+        double s20 = S_inv.get(2, 0), s21 = S_inv.get(2, 1), s22 = S_inv.get(2, 2);
 
-        double mahalanobisSquared = y0 * (s00*y0 + s01*y1 + s02*y2) +
-                y1 * (s10*y0 + s11*y1 + s12*y2) +
-                y2 * (s20*y0 + s21*y1 + s22*y2);
+        double mahalanobisSquared = y0 * (s00 * y0 + s01 * y1 + s02 * y2) +
+                y1 * (s10 * y0 + s11 * y1 + s12 * y2) +
+                y2 * (s20 * y0 + s21 * y1 + s22 * y2);
 
         // Reject the measurement if it's mathematically impossible
         if (mahalanobisSquared > mahalanobisThreshold) {
@@ -184,9 +196,9 @@ public class NewKalmanLocolizer implements Localizer {
         // 7. Update past pose
         Matrix K_y = K.multiply(y);
         Pose updatedPast = new Pose(
-                pastPose.getX() + K_y.get(0,0),
-                pastPose.getY() + K_y.get(1,0),
-                MathFunctions.normalizeAngle(pastPose.getHeading() + K_y.get(2,0))
+                pastPose.getX() + K_y.get(0, 0),
+                pastPose.getY() + K_y.get(1, 0),
+                MathFunctions.normalizeAngle(pastPose.getHeading() + K_y.get(2, 0))
         );
         poseHistory.put(timestamp, updatedPast);
 
