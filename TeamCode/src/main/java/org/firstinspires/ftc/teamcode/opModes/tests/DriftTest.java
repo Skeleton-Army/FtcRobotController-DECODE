@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
+import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.INCHES_TO_METERS;
 import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.X_OFFSET;
 import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.Y_OFFSET;
 
@@ -15,6 +16,8 @@ import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 @Autonomous
 public class DriftTest extends ComplexOpMode {
     private Follower follower;
+
+    private double totalDistanceTraveled = 0;
 
     @Override
     public void initialize() {
@@ -174,11 +177,15 @@ public class DriftTest extends ComplexOpMode {
         double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
         double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
 
+        totalDistanceTraveled += follower.poseTracker.getPreviousPose().distanceFrom(follower.poseTracker.getRawPose());
+
         telemetry.addData("Follower X", follower.getPose().getX());
         telemetry.addData("Follower Y", follower.getPose().getY());
         telemetry.addData("Drift X", driftX);
         telemetry.addData("Drift Y", driftY);
         telemetry.addData("Drift Total", driftX + driftY);
+        telemetry.addData("Total Distance Traveled (inches)", totalDistanceTraveled);
+        telemetry.addData("Total Distance Traveled (meters)", totalDistanceTraveled / INCHES_TO_METERS);
         telemetry.update();
     }
 }
