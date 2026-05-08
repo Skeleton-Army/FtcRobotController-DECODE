@@ -65,7 +65,7 @@ dependencies {
     implementation "org.solverslib:pedroPathing:0.3.3"
 
     implementation "com.skeletonarmyftc.marrow:core:1.1.0"
-    implementation 'com.pedropathing:ftc:2.1.1'
+    implementation 'com.pedropathing:ftc:2.1.2'
     implementation 'com.pedropathing:telemetry:1.0.0'
     implementation 'com.bylazar:fullpanels:1.0.12'
 
