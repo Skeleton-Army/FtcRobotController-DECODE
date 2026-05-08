@@ -4,7 +4,10 @@ import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.INCHES_TO_METERS;
 import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.X_OFFSET;
 import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.Y_OFFSET;
 
+import com.acmerobotics.dashboard.FtcDashboard;
+import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
@@ -21,6 +24,8 @@ public class DriftTest extends ComplexOpMode {
 
     @Override
     public void initialize() {
+        telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
+
         follower = Constants.createFollower(hardwareMap);
         follower.setStartingPose(new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0)));
 
@@ -179,8 +184,12 @@ public class DriftTest extends ComplexOpMode {
 
         totalDistanceTraveled += follower.poseTracker.getPreviousPose().distanceFrom(follower.poseTracker.getRawPose());
 
+        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+
         telemetry.addData("Follower X", follower.getPose().getX());
         telemetry.addData("Follower Y", follower.getPose().getY());
+        telemetry.addData("Robot x", -rotatedPose.getX());
+        telemetry.addData("Robot y", -rotatedPose.getY());
         telemetry.addData("Drift X", driftX);
         telemetry.addData("Drift Y", driftY);
         telemetry.addData("Drift Total", driftX + driftY);
