@@ -136,9 +136,13 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 }));
 
-        // Long press: fire immediately when entering zone
-        new Trigger(() -> gamepadEx1.isDown(GamepadKeys.Button.CROSS) && isInsideLaunchZonePredictive() && shooter.getCurrentCommand() == null)
-                .whenActive(new ScheduleCommand(new ShootCommand(shooter, intake, transfer, drive)));
+        // Fire immediately when entering zone
+        if (Settings.get("auto_fire", true)) {
+            new Trigger(() -> isInsideLaunchZonePredictive()
+                    && shooter.getCanShoot()
+                    && shooter.getCurrentCommand() == null)
+                    .whenActive(new ShootCommand(shooter, intake, transfer, drive));
+        }
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(transfer.kick());

@@ -15,5 +15,6 @@ public class SettingsApp extends SettingsOpMode {
         add("tabletop_mode", "Tabletop Mode", new BooleanPrompt("Enable tabletop mode?", false));
         add("alliance", "Select Alliance", new OptionPrompt<>("Select alliance", Alliance.RED, Alliance.BLUE));
         add("robot_centric", "Is Robot Centric", new BooleanPrompt("Is robot centric?", true));
+        add("auto_fire", "Auto Fire", new BooleanPrompt("Enable auto fire?", true));
     }
 }
