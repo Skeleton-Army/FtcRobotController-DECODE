@@ -15,9 +15,13 @@ import com.skeletonarmy.marrow.TimerEx;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
+import org.opencv.core.Mat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 public class Vision extends SubsystemBase {
@@ -126,5 +130,51 @@ public class Vision extends SubsystemBase {
         }
 
         return null;
+    }
+
+    public Pose getClosestArtifact() {
+        LLResult llResult = limelight.getLatestResult();
+        if (llResult == null || !llResult.isValid()) {
+            return new Pose(Double.NaN, Double.NaN);
+        }
+
+        Map<Double, Double> distanceMap = new TreeMap<>();
+        List<LLResultTypes.DetectorResult> detectorResults = llResult.getDetectorResults();
+
+        for (LLResultTypes.DetectorResult detectorResult : detectorResults) {
+            distanceMap.put(getDistance(detectorResult.getTargetYDegrees()), detectorResult.getTargetXDegrees());
+        }
+
+        double distance = (double) distanceMap.keySet().toArray()[0];
+        double tx;
+
+        if (distanceMap.containsKey(distance)) {
+            // should be safe
+            tx = distanceMap.get(distance);
+        } else {
+            return new Pose(Double.NaN, Double.NaN);
+        }
+
+        Pose relativePose = getRelativePose(distance, tx);
+        double theta = poseTracker.getPose().getHeading();
+
+        double x = relativePose.getX() * Math.cos(theta) - relativePose.getY() * Math.sin(theta);
+        double y = relativePose.getX() * Math.sin(theta) - relativePose.getY() * Math.cos(theta);
+
+        return new Pose(poseTracker.getPose().getX() + x, poseTracker.getPose().getY() + y, 0);
+    }
+
+    private double getDistance (double ty) {
+        double angleGoalRad = Math.toRadians(LIMELIGHT_MOUNT_ANGLE + ty);
+        return (ARTIFACT_HEIGHT_FROM_FLOOR - LENS_HEIGHT_INCHES) / Math.tan(angleGoalRad);
+    }
+
+    private Pose getRelativePose(double distance, double tx) {
+        double theta = Math.toRadians(tx);
+
+        double deltaX = (distance + X_OFFSET_INCHES) * Math.cos(theta);
+        double deltaY = (distance + Y_OFFSET_INCHES) * Math.sin(theta);
+
+        return new Pose(deltaX, deltaY);
     }
 }

@@ -9,6 +9,13 @@ public class VisionConfig {
     public static double RELOCALIZE_COOLDOWN = 60;
     public static int APRILTAG_PIPELINE = 0;
     public static int OBELISK_PIPELINE = 1;
+    public static int DETECTION_PIPELINE = 3;
     public static double Y_CALIBRATION_OFFSET = 1;
 
+    //BS for pos detection
+    public static double LIMELIGHT_MOUNT_ANGLE = -10.0;
+    public static double LENS_HEIGHT_INCHES = 9.25; //8.75
+    public static double ARTIFACT_HEIGHT_FROM_FLOOR = 2.5;
+    public static double Y_OFFSET_INCHES = 0; //-7.48
+    public static double X_OFFSET_INCHES = 13; //-7.67
 }
