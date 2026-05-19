@@ -124,6 +124,6 @@ public class ShootCommand extends SequentialCommandGroup {
         shooter.setUpdateHood(true);
         intake.setIntakeSpeed(INTAKE_POWER);
 
-        if (interrupted) transfer.kick().schedule();
+//        if (interrupted) transfer.kick().schedule();
     }
 }
