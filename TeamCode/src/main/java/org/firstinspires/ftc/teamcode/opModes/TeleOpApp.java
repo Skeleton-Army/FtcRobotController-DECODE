@@ -118,7 +118,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        aprilTagPipeline = new AprilTagPipeline();
+        AprilTagPipeline aprilTagPipeline = new AprilTagPipeline();
         CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
