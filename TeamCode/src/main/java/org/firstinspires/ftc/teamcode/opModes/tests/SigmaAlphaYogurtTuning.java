@@ -15,6 +15,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -54,7 +55,7 @@ public class SigmaAlphaYogurtTuning extends ComplexOpMode {
         limelight.start();
         yogurtList = new ArrayList<>();
 
-        shooter = new Shooter(hardwareMap, follower.getPoseTracker(), new ShooterCalculator(ShooterCoefficients.HOOD_COEFFS), Alliance.BLUE);
+        shooter = new Shooter(hardwareMap, follower.getPoseTracker(), new ShooterCalculator(new CloseShooterCoefficients()), new ShooterCalculator(new CloseShooterCoefficients()), Alliance.BLUE);
 
         csv = new File(String.format("%s/FIRST/pinpointNoMoveLimelight-%s.csv",
                 Environment.getExternalStorageDirectory().getPath(),getClass().getSimpleName()));
