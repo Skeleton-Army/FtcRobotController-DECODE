@@ -340,7 +340,7 @@ public class Shooter extends SubsystemBase {
         double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
         double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
 
-        // PID calculates based on filtered/compensated velocity
+        // PID and FF now output volts directly
         double pid = flywheelPID.calculate(processVariable, speed);
 
         // Feedforward calculates based on TARGET (speed), not measurement
@@ -350,11 +350,10 @@ public class Shooter extends SubsystemBase {
 
         lastSpeedFlywheel = speed;
 
-        double velocityCmd = pid + ff;
-        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+        double desiredVoltage = pid + ff;
+        desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
-        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
-        flywheel.set(finalPower, voltage);
+        flywheel.set(desiredVoltage / voltage);
     }
 
     private void updateTurretPIDTwoSides() {
