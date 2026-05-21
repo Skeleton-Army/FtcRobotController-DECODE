@@ -25,6 +25,8 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.function.Consumer;
 
+import kotlin.Pair;
+
 public class Vision extends SubsystemBase {
     private final double METERS_TO_INCHES = 39.37;
     private static final int GPP_TAG_ID = 21;
@@ -56,6 +58,7 @@ public class Vision extends SubsystemBase {
 
     @Override
     public void periodic() {
+        //TODO: Add class level LLResult
         double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
         limelight.updateRobotOrientation(orientationDeg);
 
@@ -139,5 +142,16 @@ public class Vision extends SubsystemBase {
         if (llResult == null || !llResult.isValid()) return null;
 
         return new LLLatncy(llResult, limelight.getTimeSinceLastUpdate());
+    }
+
+    /**
+        @return system timestamp of the Limelight result in milliseconds since Jan 1st, 1970 00:00(UTC)
+     */
+    public long getResultTimestamp() {
+        LLResult llResult = limelight.getLatestResult();
+
+        if (llResult == null) return Long.MIN_VALUE;
+
+        return System.currentTimeMillis() - llResult.getStaleness();
     }
 }
