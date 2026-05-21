@@ -1,13 +1,18 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+import static org.firstinspires.ftc.teamcode.config.VisionConfig.LIMELIGHT_NAME;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -21,6 +26,8 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -31,6 +38,7 @@ import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
+import org.firstinspires.ftc.teamcode.opModes.tests.EpochTimestampSyncOpMode2;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -52,6 +60,7 @@ public class TeleOpApp extends ComplexOpMode {
     public static final double ROBOT_LENGTH = 14.96; // Front-to-back
     public static final double X_OFFSET = ROBOT_LENGTH / 2.0;
     public static final double Y_OFFSET = ROBOT_WIDTH / 2.0;
+    private static final double METERS_TO_INCHES = 39.37;
 
     private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
@@ -65,6 +74,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Drive drive;
     private Kickstand kickstand;
     private Vision vision;
+    private Limelight3A limelight;
 
     private VoltageSensor voltageSensor;
 
@@ -82,6 +92,9 @@ public class TeleOpApp extends ComplexOpMode {
 
     private double lastLoopTime = 0;
     private int loopCount = 0;
+    private long nanoTimeToEpochMillisOffset = 0;
+
+    private EpochTimestampSyncOpMode2.TimestampedPinpoint pinpoint;
 
     @Override
     public void initialize() {
@@ -104,6 +117,15 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (debugMode) follower.setPose(startPose);
 
+        // 1. Calculate the real-time synchronization offset between clocks
+        long epochMillisSample = System.currentTimeMillis();
+        long nanoTimeSample = System.nanoTime();
+
+        // This converts any System.nanoTime() reading directly into an Epoch Millisecond timestamp
+        nanoTimeToEpochMillisOffset = epochMillisSample - (nanoTimeSample / 1_000_000);
+        I2cDeviceSynchSimple rawI2cClient = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint").getDeviceClient();
+        pinpoint = new EpochTimestampSyncOpMode2.TimestampedPinpoint(rawI2cClient);
+
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
@@ -112,9 +134,9 @@ public class TeleOpApp extends ComplexOpMode {
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
         kickstand = new Kickstand(hardwareMap);
-        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
+        //vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
 
-        vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
+        //vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
@@ -248,6 +270,10 @@ public class TeleOpApp extends ComplexOpMode {
                         drive
                 )
         );
+
+        limelight = hardwareMap.get(Limelight3A.class, LIMELIGHT_NAME);
+        limelight.pipelineSwitch(0);
+        limelight.start();
     }
 
     @Override
@@ -255,6 +281,36 @@ public class TeleOpApp extends ComplexOpMode {
         matchTime.start();
     }
 
+
+    public Pose getAprilTagPose() {
+        LLResult result = limelight.getLatestResult();
+        if (result != null && result.isValid()) {
+            Pose3D botPose = result.getBotpose_MT2();
+
+            if (botPose != null) {
+                double x = botPose.getPosition().x;
+                double y = botPose.getPosition().y;
+                double heading = botPose.getOrientation().getYaw(AngleUnit.RADIANS);
+
+                Pose standardFTCPose = new Pose(x, y, heading).scale(METERS_TO_INCHES);
+                Pose pedroPose = FTCCoordinates.INSTANCE.convertToPedro(standardFTCPose);
+
+                return pedroPose;
+            }
+        }
+
+        return new Pose();
+    }
+
+    public long getResultTimestamp() {
+        LLResult llResult = limelight.getLatestResult();
+
+        if (llResult == null || !llResult.isValid()) {
+            return Long.MIN_VALUE;
+        }
+
+        return System.currentTimeMillis() - (long) llResult.getStaleness();
+    }
     @Override
     public void run() {
         double currentTime = matchTime.getElapsed();
@@ -266,6 +322,36 @@ public class TeleOpApp extends ComplexOpMode {
         robotZone.setRotation(follower.getPose().getHeading());
 
         shooter.setZoneCalculator(getCalculatorZone());
+
+        double orientationDeg = Math.toDegrees(follower.getPose().getHeading()) + 90;
+        limelight.updateRobotOrientation(orientationDeg);
+
+        // --- 1. PINPOINT UPDATE & TIMESTAMPS ---
+        pinpoint.update();
+
+        // Grab the raw boot-based nanosecond timestamp from the hardware bus
+        long pinpointArrivalNanos = pinpoint.getLatestArrivalNanos();
+
+        // Convert to Epoch Milliseconds using our calculation offset
+        long pinpointArrivalEpochMs = (pinpointArrivalNanos / 1_000_000) + nanoTimeToEpochMillisOffset;
+
+        // --- 2. LIMELIGHT UPDATE & TIMESTAMPS ---
+        long limelightCaptureEpochMs = getResultTimestamp();
+
+        if (limelight.getLatestResult() != null && limelight.getLatestResult().isValid())
+        {
+            LLResult result = limelight.getLatestResult();
+        }
+
+        long trueSensorSkewMs = 0;
+        if (limelightCaptureEpochMs != Long.MIN_VALUE) {
+            // Because they are on the exact same scale, this subtraction represents absolute latency
+            trueSensorSkewMs = pinpointArrivalEpochMs - limelightCaptureEpochMs;
+            telemetry.addData("Visual Age relative to Odo (ms)", trueSensorSkewMs);
+        } else {
+            telemetry.addData("Limelight Status", "No Target Detected");
+        }
+
 
         boolean isInsideLaunchZone = isInsideLaunchZone();
         double voltage = voltageSensor.getVoltage();
@@ -350,28 +436,39 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry.update();
 
-        if (loopCount % 2 == 0) {
-            Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
+        Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
 
-            Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
-            Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
-            Logger.recordOutput("Robot Pose", robotPose);
-            Logger.recordOutput("Voltage", voltage);
-            Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone);
-            Logger.recordOutput("Reached Angle", shooter.reachedAngle());
-            Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
-            Logger.recordOutput("Can Shoot", shooter.getCanShoot());
-            Logger.recordOutput("Distance From Pose", goalDistance);
-            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
-            Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
-            Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
-            Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
-            Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
-            Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-            Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
-            Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
-            Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
-        }
+        Logger.recordOutput("Pinpoint Hardware Time (ms UTC)", "" + pinpointArrivalEpochMs);
+        Logger.recordOutput("Limelight Capture Time (ms UTC)", "" + limelightCaptureEpochMs);
+        Logger.recordOutput("skew/difference", trueSensorSkewMs);
+
+        Logger.recordOutput("Pinpoint x", pinpoint.getPosition().getX(DistanceUnit.INCH));
+        Logger.recordOutput("Pinpoint y", pinpoint.getPosition().getY(DistanceUnit.INCH));
+        Logger.recordOutput("Pinpoint heading", pinpoint.getPosition().getHeading(AngleUnit.DEGREES));
+
+        Pose apriltag = getAprilTagPose();
+        Logger.recordOutput("Apriltag pose x", apriltag.getX());
+        Logger.recordOutput("Apriltag pose y", apriltag.getY());
+        Logger.recordOutput("Apriltag pose heading", apriltag.getHeading());
+
+        Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
+        Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
+        Logger.recordOutput("Robot Pose", robotPose);
+        Logger.recordOutput("Voltage", voltage);
+        Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone);
+        Logger.recordOutput("Reached Angle", shooter.reachedAngle());
+        Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
+        Logger.recordOutput("Can Shoot", shooter.getCanShoot());
+        Logger.recordOutput("Distance From Pose", goalDistance);
+        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
+        Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
+        Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
+        Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
+        Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
+        Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+        Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+        Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
     }
 
     @Override
