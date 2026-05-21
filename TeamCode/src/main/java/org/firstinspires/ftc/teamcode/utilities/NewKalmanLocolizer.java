@@ -7,6 +7,7 @@ import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Matrix;
 import com.pedropathing.math.Vector;
+import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes.FiducialResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 
@@ -60,7 +61,7 @@ public class NewKalmanLocolizer implements Localizer {
     private Pose lastRawPose = null; // Tracks the raw Pinpoint pose from the previous loop
 
     // 0.01% error = 0.0001
-    public static double PINPOINT_ERROR_RATIO = 0.0001;
+    public static double PINPOINT_ERROR_RATIO = 0.0001; // 0.00094 0.002
 
     public NewKalmanLocolizer(
             Localizer deadReckoning,
@@ -126,9 +127,8 @@ public class NewKalmanLocolizer implements Localizer {
      * @param measuredPose The pose returned by the Limelight
      * @param timestamp When the picture was taken (System.nanoTime() - latency.
      *
-     * @param limelight3A don't do it like that, fix later pwease
      */
-    public void addVisionMeasurement(Pose measuredPose, long timestamp, Limelight3A limelight3A) {
+    public void addVisionMeasurement(Pose measuredPose, long timestamp, LLResult result) {
         if (!poseHistory.containsKey(timestamp) || !twistHistory.containsKey(timestamp)) return;
 
         Pose twistAtMeasurement = twistHistory.get(timestamp);
@@ -141,26 +141,7 @@ public class NewKalmanLocolizer implements Localizer {
 
         // 2. Compute Dynamic Covariance (R)
 
-        List<FiducialResult> fiducialResults = limelight3A.getLatestResult().getFiducialResults();
-        // add null check
-        Pose targetPose = new Pose(fiducialResults.get(0).getTargetXDegrees(), fiducialResults.get(0).getTargetYDegrees());
-        // use target pose to calculate dis from bot
-        // target pose is the degree x y of the apriltag
-        Pose disVector = null; //To remove errors
-
-        double distancePenaltyX = RegressionSlopeX * disVector.getX() + RegressionFreeX;
-        double distancePenaltyY = RegressionSlopeY * disVector.getY() + RegressionFreeY;
-        double distancePenaltyH = k_dh;
-
-        double dynamicStdX = baseMeasurementStdDevs[0] + (k_v * translationalSpeed) + distancePenaltyX;
-        double dynamicStdY = baseMeasurementStdDevs[1] + (k_v * translationalSpeed) + distancePenaltyY;
-        double dynamicStdH = baseMeasurementStdDevs[2] + (k_omega * rotationalSpeed) + distancePenaltyH;
-
-        Matrix dynamicR = getDiagonal3x3(
-                dynamicStdX * dynamicStdX,
-                dynamicStdY * dynamicStdY,
-                dynamicStdH * dynamicStdH
-        );
+        Matrix dynamicR = dynamicStdevR(result.getFiducialResults(),translationalSpeed, rotationalSpeed);
 
         // 3. Compute innovation (y) - The difference between vision and our past history
         Pose pastPose = poseHistory.get(timestamp);
@@ -233,6 +214,28 @@ public class NewKalmanLocolizer implements Localizer {
         );
     }
 
+    public Matrix dynamicStdevR(List<FiducialResult> fiducialResults, double translationalSpeed, double rotationalSpeed) {
+        //List<FiducialResult> fiducialResults = limelight3A.getLatestResult().getFiducialResults();
+        // add null check
+        Pose targetPose = new Pose(fiducialResults.get(0).getTargetXDegrees(), fiducialResults.get(0).getTargetYDegrees());
+        // use target pose to calculate dis from bot
+        // target pose is the degree x y of the apriltag
+        Pose disVector = null; //To remove errors
+
+        double distancePenaltyX = RegressionSlopeX * disVector.getX() + RegressionFreeX;
+        double distancePenaltyY = RegressionSlopeY * disVector.getY() + RegressionFreeY;
+        double distancePenaltyH = k_dh;
+
+        double dynamicStdX = baseMeasurementStdDevs[0] + (k_v * translationalSpeed) + distancePenaltyX;
+        double dynamicStdY = baseMeasurementStdDevs[1] + (k_v * translationalSpeed) + distancePenaltyY;
+        double dynamicStdH = baseMeasurementStdDevs[2] + (k_omega * rotationalSpeed) + distancePenaltyH;
+
+          return getDiagonal3x3(
+                dynamicStdX * dynamicStdX,
+                dynamicStdY * dynamicStdY,
+                dynamicStdH * dynamicStdH
+        );
+    }
     @Override
     public Pose getPose() { return currentPosition; }
 
