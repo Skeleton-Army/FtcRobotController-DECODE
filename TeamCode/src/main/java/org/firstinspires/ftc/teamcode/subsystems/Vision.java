@@ -38,6 +38,8 @@ public class Vision extends SubsystemBase {
 
     private final int pipeline;
 
+   private LLResult llResult;
+
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
         this.poseTracker = poseTracker;
         this.pipeline = pipelineIndex;
@@ -45,6 +47,7 @@ public class Vision extends SubsystemBase {
         limelight = hardwareMap.get(Limelight3A.class, LIMELIGHT_NAME);
         limelight.pipelineSwitch(this.pipeline);
         limelight.start();
+        llResult = null;
 
         relocalizeTimer.start();
     }
@@ -53,7 +56,7 @@ public class Vision extends SubsystemBase {
     public void periodic() {
         double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
         limelight.updateRobotOrientation(orientationDeg);
-
+        llResult = limelight.getLatestResult();
         // Check if it's the first run OR if the timer is done
         if (relocalizeTimer.isDone() || firstRelocalization) {
             boolean success = relocalize();
@@ -65,9 +68,8 @@ public class Vision extends SubsystemBase {
     }
 
     public Pose getAprilTagPose() {
-        LLResult result = limelight.getLatestResult();
-        if (result != null && result.isValid()) {
-            Pose3D botPose = result.getBotpose_MT2();
+        if (llResult != null && llResult.isValid()) {
+            Pose3D botPose = llResult.getBotpose_MT2();
 
             if (botPose != null) {
                 double x = botPose.getPosition().x;
@@ -115,10 +117,9 @@ public class Vision extends SubsystemBase {
     public ArtifactPattern detectPattern() {
         if (pipeline == APRILTAG_PIPELINE) return null;
 
-        LLResult result = limelight.getLatestResult();
-        if (result == null || !result.isValid()) return null;
+        if (llResult == null || !llResult.isValid()) return null;
 
-        for (LLResultTypes.FiducialResult fiducial : result.getFiducialResults()) {
+        for (LLResultTypes.FiducialResult fiducial : llResult.getFiducialResults()) {
             int id = fiducial.getFiducialId();
             if (id == GPP_TAG_ID) return ArtifactPattern.GPP;
             if (id == PGP_TAG_ID) return ArtifactPattern.PGP;
