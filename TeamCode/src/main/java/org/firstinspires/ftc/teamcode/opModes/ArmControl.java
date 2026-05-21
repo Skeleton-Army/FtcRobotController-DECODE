@@ -5,9 +5,12 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.ServoImplEx;
+import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+
+import org.firstinspires.ftc.teamcode.subsystems.Claw;
 
 @TeleOp(name = "arm")
 public class ArmControl extends OpMode
@@ -17,6 +20,7 @@ public class ArmControl extends OpMode
     private ServoEx horizontal;//x
     private  ServoEx clawPivot;
     private ServoEx clawHand;
+    private Claw claw;
 
     private  int verticalAdjustmentScale = 1000;
     private  int HorizontalAdjustmentScale = 1000;
@@ -71,6 +75,16 @@ public class ArmControl extends OpMode
         horizontal = new ServoEx(hardwareMap, "servo0");
         clawPivot = new ServoEx(hardwareMap, "servo2");
         clawHand = new ServoEx(hardwareMap,  "servo3");
+        GamepadEx toolOp = new GamepadEx(gamepad2);
+
+        claw = new Claw(hardwareMap);
+
+        toolOp.getGamepadButton(GamepadKeys.Button.DPAD_UP)
+                .whenPressed(new InstantCommand(() -> claw.rotata(), claw));
+
+        toolOp.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
+                .whenPressed(new InstantCommand(() -> claw.useClaw(), claw));
+
     }
 
     @Override
