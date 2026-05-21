@@ -15,9 +15,14 @@ import com.skeletonarmy.marrow.TimerEx;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
+import org.firstinspires.ftc.teamcode.utilities.LLLatncy;
+import org.opencv.core.Mat;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
 import java.util.function.Consumer;
 
 public class Vision extends SubsystemBase {
@@ -126,5 +131,13 @@ public class Vision extends SubsystemBase {
         }
 
         return null;
+    }
+
+    public LLLatncy getLatency() {
+        LLResult llResult = limelight.getLatestResult();
+
+        if (llResult == null || !llResult.isValid()) return null;
+
+        return new LLLatncy(llResult, limelight.getTimeSinceLastUpdate());
     }
 }
