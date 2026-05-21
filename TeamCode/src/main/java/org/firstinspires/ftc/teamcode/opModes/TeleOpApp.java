@@ -81,6 +81,9 @@ public class TeleOpApp extends ComplexOpMode {
     private double lastLoopTime = 0;
     private int loopCount = 0;
 
+    private double totalTraveledX = 0;
+    private double totalTraveledY = 0;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -258,6 +261,14 @@ public class TeleOpApp extends ComplexOpMode {
         lastLoopTime = currentTime;
         loopCount++;
 
+        if (loopCount > 1) {
+            double deltaX = Math.abs(follower.poseTracker.getRawPose().getX() - follower.poseTracker.getPreviousPose().getX());
+            double deltaY = Math.abs(follower.poseTracker.getRawPose().getY() - follower.poseTracker.getPreviousPose().getY());
+
+            if (deltaX > 0.05) totalTraveledX += deltaX;
+            if (deltaY > 0.05) totalTraveledY += deltaY;
+        }
+
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
@@ -314,6 +325,10 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
         telemetry.addData("Drift total", driftX + driftY);
+
+        telemetry.addData("Total Traveled X", totalTraveledX);
+        telemetry.addData("Total Traveled Y", totalTraveledY);
+        telemetry.addData("Total Traveled XY", totalTraveledX + totalTraveledY);
 
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
