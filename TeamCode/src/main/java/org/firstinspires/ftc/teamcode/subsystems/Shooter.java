@@ -453,15 +453,15 @@ public class Shooter extends SubsystemBase {
         double ks_ccw = ks[1];
         double staticComp = 0;
 
-        if (Math.abs(totalRequest) > 0.05) {
-            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
+        if (Math.abs(totalRequest) > TURRET_MIN_VOLTAGE) {
+            staticComp = (totalRequest > 0) ? TURRET_KS : -TURRET_KS;
         }
 
-        // --- 5. Voltage Scaling & Output ---
-        double voltageScale = 12.0 / voltage;
-        double finalOutput = (totalRequest + staticComp) * voltageScale;
+        // PID and FF now output volts directly
+        double desiredVoltage = totalRequest + staticComp;
+        desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
-        turret.set(finalOutput);
+        turret.set(desiredVoltage / voltage);
     }
 
     /**
