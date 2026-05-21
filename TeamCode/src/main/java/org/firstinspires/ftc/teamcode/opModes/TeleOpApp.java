@@ -147,6 +147,10 @@ public class TeleOpApp extends ComplexOpMode {
                     .whenActive(new ShootCommand(shooter, intake, transfer, drive));
         }
 
+        // Kick automatically when exiting the launch zone
+        new Trigger(this::isInsideLaunchZone)
+                .whenInactive(transfer.kick());
+
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(transfer.kick());
 
