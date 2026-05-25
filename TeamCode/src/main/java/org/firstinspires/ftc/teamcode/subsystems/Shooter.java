@@ -410,7 +410,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {
-        if ((disabled || emergencyStop) && !horizontalManualMode) {
+        if ((disabled || emergencyStop || filteredRPM < 200) && !horizontalManualMode) {
             turret.set(0);
             return;
         }
