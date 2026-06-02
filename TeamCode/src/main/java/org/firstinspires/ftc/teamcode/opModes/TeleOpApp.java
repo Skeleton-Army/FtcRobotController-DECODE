@@ -21,6 +21,7 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -313,6 +314,9 @@ public class TeleOpApp extends ComplexOpMode {
         ) / INCHES_TO_METERS;
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+
+        telemetry.addData("flywheel current measured", shooter.flywheel.getCurrent(CurrentUnit.AMPS));
+        telemetry.addData("flywheel current calculated", shooter.flywheel.getEstimatedCurrent(voltage));
 
         telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
         telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
