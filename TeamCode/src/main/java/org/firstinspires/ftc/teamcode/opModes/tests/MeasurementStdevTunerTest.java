@@ -10,6 +10,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
+import org.firstinspires.ftc.teamcode.utilities.AprilTagPipeline;
+import org.firstinspires.ftc.teamcode.utilities.CameraUtil;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.firstinspires.ftc.teamcode.utilities.WelfordVariance;
 import org.firstinspires.ftc.vision.VisionPortal;
@@ -24,16 +26,16 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
 
     private static final Position cameraPosition = new Position(
             DistanceUnit.INCH,
-            2.204,
-            5.96,
-            8.82,
+            0,
+            0,
+            0,
             0
     );
     private static final YawPitchRollAngles cameraOrientation = new YawPitchRollAngles(
             AngleUnit.DEGREES,
             0,
-            -70,
-            180,
+            -70, //-70
+            0,
             0
     );
     public static boolean on = false;
@@ -45,12 +47,20 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
     private final WelfordVariance varianceHeading = new WelfordVariance();
     private AprilTagProcessor processor;
 
+    AprilTagPipeline aprilTagPipeline;
 
     @Override
     public void initialize() {
-        processor = new AprilTagProcessor.Builder()
+
+        aprilTagPipeline = new AprilTagPipeline();
+        CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
+
+        /*rocessor = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraPosition, cameraOrientation)
-                .setLensIntrinsics(496.040455195, 496.912794034, 322.226720938, 179.36243685)
+                .setLensIntrinsics(700.34, 697.2591, 615.85, 359.44)
+                .setDrawCubeProjection(true)
+                .setDrawAxes(false)
+                .setDrawTagOutline(false)
                 .build();
 
         VisionPortal visionPortal = new VisionPortal.Builder()
@@ -58,14 +68,16 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
                 .setCameraResolution(new Size(640, 480))
                 .setStreamFormat(VisionPortal.StreamFormat.MJPEG)
                 .addProcessor(processor)
-                .build();
+                .enableLiveView(true)
+                .build();*/
+
     }
 
     @Override
     public void run() {
 
             if (on) {
-                List<AprilTagDetection> detections = processor.getDetections();
+                List<AprilTagDetection> detections = aprilTagPipeline.getProcessor().getDetections();
                 telemetry.addData("AprilTag/Detections", detections.size());
 
                 for (AprilTagDetection detection : detections) {
@@ -96,6 +108,8 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
             telemetry.addData("mean x", varianceX.mean());
             telemetry.addData("mean y", varianceY.mean());
             telemetry.addData("mean heading", varianceHeading.mean());
+
+            CameraUtil.printStats();
 
             telemetry.update();
     }

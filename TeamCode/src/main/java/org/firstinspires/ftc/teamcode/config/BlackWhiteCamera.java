@@ -5,10 +5,10 @@ public class BlackWhiteCamera {
     public static double offsetX_turret = 0; // 174.5mm
     public static double offsetY_turret = 6.87007874 + ShooterConfig.TURRET_OFFSET_X;
     public static double offsetZ = 12.38189; //314.5 mm
-    public static double pitchAngle = 60;
+    public static double pitchAngle = 20;
 
-    public static int WIDTH = 640;
-    public static int HEIGHT = 480;
+    public static int WIDTH = 1280;
+    public static int HEIGHT = 720;
 
     public static final double[] cameraMatrix = {
             688.9972, 0, 613.914,  // fx, 0, cx
@@ -17,7 +17,7 @@ public class BlackWhiteCamera {
     };
 
     public static final double[] distCoeffs = {
-            -0.3246, 0.1010, 0.0, 0.0, 0.0};
+            -0.3295, 0.1029, 0.0, 0.0, 0.0};
 
     /*public static final double[] cameraMatrix = {
             496.040455195, 0, 322.226720938, 0, 496.912794034, 179.36243685, 0, 0, 1                      // 0, 0, 1
