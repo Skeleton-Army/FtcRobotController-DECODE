@@ -39,13 +39,16 @@ private boolean isClawAtMax = false;
             clawOpen();
         }
     }
-    public void rotata(){
-clawHand.set(ADJUST_CLAW);
-isClawAtMax = true;
+    public void clawRotateBy(double howMuchToMove ){
+        clawPivot.set(clawPivot.get()+howMuchToMove);
     }
-    public  void baseRotata(){
+    public void clawRotateTo(double whereToMove){
+        if (whereToMove>MIN_CLAW && whereToMove<MAX_CLAW){
+            clawPivot.set(whereToMove);
+        }
+    }
 
-    }
+
 
 
 

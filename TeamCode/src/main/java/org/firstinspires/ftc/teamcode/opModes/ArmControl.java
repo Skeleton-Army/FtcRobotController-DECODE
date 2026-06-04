@@ -79,8 +79,10 @@ public class ArmControl extends OpMode
 
         claw = new Claw(hardwareMap);
 
-        toolOp.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .whenPressed(new InstantCommand(() -> claw.rotata(), claw));
+        toolOp.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
+                .whenPressed(new InstantCommand(() -> claw.clawRotateBy(0.1), claw));
+        toolOp.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
+                .whenPressed(new InstantCommand(() -> claw.clawRotateBy(-0.1), claw));
 
         toolOp.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
                 .whenPressed(new InstantCommand(() -> claw.useClaw(), claw));
