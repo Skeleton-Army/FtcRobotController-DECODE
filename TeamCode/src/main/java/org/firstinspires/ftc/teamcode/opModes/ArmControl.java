@@ -33,6 +33,8 @@ public class ArmControl extends OpMode
      private double maxClaw = 0.6;
 
 
+
+
     // Its better to use the Servo interface rather then a class
     private GamepadEx gamepad;
 
@@ -47,7 +49,7 @@ public class ArmControl extends OpMode
     }
 
     // checks if right joystick was moved up or down
-    private boolean wasMovedHorizontal()
+    private Boolean wasMovedHorizontal()
     {
         if (gamepad.getRightX() != 0)
         {
@@ -90,6 +92,7 @@ public class ArmControl extends OpMode
     @Override
     public void loop()
     {
+
         if (wasMovedVertical())
         {
             if (vertical.get() <= maxVertical && vertical.get() >= minVertical)
@@ -99,7 +102,7 @@ public class ArmControl extends OpMode
             else if (vertical.get() < minVertical) {vertical.set(minVertical);}
             else if (vertical.get() > maxVertical) {vertical.set(maxVertical);}
 
-            //moves the arm to the sides
+            //moves the arm up and down
         }
 
         if (wasMovedHorizontal())
@@ -151,13 +154,14 @@ public class ArmControl extends OpMode
             }
             //vertical.set(0.65);
         }
-      if (gamepad.getButton(GamepadKeys.Button.X))
-    {
-        clawHand.set(0);
-         if (clawHand.get() == 0 ) {
-             clawHand.set(maxClaw);
-         }
-      }
+        if (gamepad.getButton(GamepadKeys.Button.X))
+        {
+            clawHand.set(0);
+             if (clawHand.get() == 0 )
+             {
+                 clawHand.set(maxClaw);
+             }
+        }
       if (gamepad.getButton(GamepadKeys.Button.Y))
         {
             if (clawHand.get() == maxClaw)

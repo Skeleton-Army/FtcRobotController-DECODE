@@ -8,9 +8,8 @@ public class Claw extends SubsystemBase {
 
     private ServoEx clawPivot;
     private ServoEx clawHand;
-    private ServoEx clawBase;
     private boolean isClawOpen = false;
-private boolean isClawAtMax = false;
+    private boolean isClawAtMax = false;
     private final double MIN_CLAW = 0.1;
     private final double MAX_CLAW = 0.6;
     private final int ADJUST_CLAW = 1;
@@ -18,9 +17,10 @@ private boolean isClawAtMax = false;
     public Claw(final HardwareMap hardwareMap) {
         clawPivot = new ServoEx(hardwareMap, "servo2");
         clawHand = new ServoEx(hardwareMap,  "servo3");
-        clawBase = new ServoEx(hardwareMap, "servo0");
         clawHand.set(MIN_CLAW);
     }
+
+
 
     private void clawOpen() {
         clawHand.set(MAX_CLAW);
@@ -35,13 +35,15 @@ private boolean isClawAtMax = false;
     public void useClaw() {
         if (isClawOpen) {
             clawClose();
-        } else {
+            //open claw
+        }
+        else {
             clawOpen();
         }
     }
     public void rotata(){
-clawHand.set(ADJUST_CLAW);
-isClawAtMax = true;
+        clawHand.set(ADJUST_CLAW);
+        isClawAtMax = true;
     }
     public  void baseRotata(){
 
