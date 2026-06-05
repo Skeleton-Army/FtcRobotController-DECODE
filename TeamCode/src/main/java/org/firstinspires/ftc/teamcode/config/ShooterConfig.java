@@ -12,13 +12,13 @@ public class ShooterConfig {
     public static boolean FLYWHEEL1_INVERTED = false;
     public static boolean FLYWHEEL2_INVERTED = true;
     public static int RPM_REACHED_THRESHOLD = 200;
-    public static double FLYWHEEL_KP = 0.02;
-    public static double FLYWHEEL_KP_DOWN = 0.02;
+    public static double FLYWHEEL_KP = 0.01;
+    public static double FLYWHEEL_KP_DOWN = 0.01;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
     public static double FLYWHEEL_KS = 1.5;
-    public static double FLYWHEEL_KA = 0.001;
-    public static double FLYWHEEL_KA_DOWN = 0.001;
+    public static double FLYWHEEL_KA = 0.004;
+    public static double FLYWHEEL_KA_DOWN = 0.004;
     public static double FLYWHEEL_KV = 0.00475;
     public static double BRAKE_ENTRY_THRESHOLD = -100; // Error must be THIS negative to start braking
     public static double BRAKE_EXIT_THRESHOLD = -50;   // Error must get back up to THIS to stop braking
