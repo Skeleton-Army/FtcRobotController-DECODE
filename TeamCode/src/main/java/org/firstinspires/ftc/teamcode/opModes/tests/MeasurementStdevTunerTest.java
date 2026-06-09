@@ -1,15 +1,23 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
+import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+
 import android.util.Size;
 import com.acmerobotics.dashboard.config.Config;
+import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.seattlesolvers.solverslib.command.RunCommand;
+
 import org.firstinspires.ftc.robotcore.external.hardware.camera.WebcamName;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 
+import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.utilities.AprilTagPipeline;
 import org.firstinspires.ftc.teamcode.utilities.CameraUtil;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
@@ -49,12 +57,29 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
 
     AprilTagPipeline aprilTagPipeline;
 
+    private Follower follower;
+
+    private Drive drive;
     @Override
     public void initialize() {
 
         aprilTagPipeline = new AprilTagPipeline();
         CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
 
+        follower = Constants.createFollower(hardwareMap);
+        follower.startTeleopDrive(USE_BRAKE_MODE);
+        follower.setMaxPower(1);
+
+        follower.setPose(new Pose());
+
+        drive = new Drive(follower, Alliance.BLUE);
+
+        drive.setDefaultCommand(
+                new RunCommand(
+                        () -> drive.teleOpDrive(gamepad1),
+                        drive
+                )
+        );
         /*rocessor = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraPosition, cameraOrientation)
                 .setLensIntrinsics(700.34, 697.2591, 615.85, 359.44)
@@ -111,6 +136,8 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
 
             CameraUtil.printStats();
 
+            follower.update();
             telemetry.update();
     }
+
 }
