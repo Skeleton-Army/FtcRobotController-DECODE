@@ -49,7 +49,7 @@ public class ArmControl extends OpMode
     }
 
     // checks if right joystick was moved up or down
-    private Boolean wasMovedHorizontal()
+    private boolean wasMovedHorizontal()
     {
         if (gamepad.getRightX() != 0)
         {
@@ -158,7 +158,7 @@ public class ArmControl extends OpMode
         }
         if (gamepad.getButton(GamepadKeys.Button.X))
         {
-            clawHand.set(0);
+            //clawHand.set(0);
              if (clawHand.get() == 0 )
              {
                  clawHand.set(maxClaw);
