@@ -1,11 +1,15 @@
 package org.firstinspires.ftc.teamcode.config;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Position;
+
 public class BlackWhiteCamera {
 
     public static double offsetX_turret = 0; // 174.5mm
     public static double offsetY_turret = 6.87007874 + ShooterConfig.TURRET_OFFSET_X;
     public static double offsetZ = 12.38189; //314.5 mm
     public static double pitchAngle = 20;
+    public static Position relativePos = new Position(DistanceUnit.MM, -50.306, 222.1702, 239.321, 0);
 
     public static int WIDTH = 1280;
     public static int HEIGHT = 720;

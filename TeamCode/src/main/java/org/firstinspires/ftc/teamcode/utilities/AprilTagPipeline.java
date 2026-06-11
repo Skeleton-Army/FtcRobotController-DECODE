@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.cameraMatri
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.distCoeffs;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetX_turret;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetY_turret;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.relativePos;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -77,9 +78,9 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         this.processor = new AprilTagProcessor.Builder()
                 .setDrawAxes(false)
                 .setDrawCubeProjection(false)
-                .setDrawTagOutline(true)
+                .setDrawTagOutline(false)
                 .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
-                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
+                .setCameraPose(relativePos, new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
                 .setLensIntrinsics(baseFx, baseFy, baseCx, baseCy)
                 .build();
 
