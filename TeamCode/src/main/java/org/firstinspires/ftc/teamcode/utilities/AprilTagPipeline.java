@@ -73,6 +73,9 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     private final double baseCx = BlackWhiteCamera.cameraMatrix[2];
     private final double baseCy = BlackWhiteCamera.cameraMatrix[5];
 
+    private double tagSizeX = 0;
+    private double tagSizeY = 0;
+    private double tagSizeArea = 0;
     public AprilTagPipeline()
     {
         this.processor = new AprilTagProcessor.Builder()
@@ -203,6 +206,11 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
             double w = maxX - minX;
             double h = maxY - minY;
+
+            tagSizeX = w;
+            tagSizeY = h;
+            tagSizeArea = h * w;
+
             int padX = (int) (w * (TAG_PADDING_PERCENT + TAG_PADDING_PERCENT_WIDTH));
             int padY = (int) (h * TAG_PADDING_PERCENT);
 
@@ -298,5 +306,17 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
     public AprilTagProcessor getProcessor() {
         return processor;
+    }
+
+    public double getTagSizeArea() {
+        return tagSizeArea;
+    }
+
+    public double getTagSizeY() {
+        return tagSizeY;
+    }
+
+    public double getTagSizeX() {
+        return tagSizeX;
     }
 }

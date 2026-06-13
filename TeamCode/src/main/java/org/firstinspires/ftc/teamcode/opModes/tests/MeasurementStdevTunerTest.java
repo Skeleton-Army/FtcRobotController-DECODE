@@ -134,6 +134,9 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
             telemetry.addData("mean y", varianceY.mean());
             telemetry.addData("mean heading", varianceHeading.mean());
 
+            telemetry.addData("tag size x", aprilTagPipeline.getTagSizeX());
+            telemetry.addData("tag size Y", aprilTagPipeline.getTagSizeY());
+            telemetry.addData("tag Area", aprilTagPipeline.getTagSizeArea());
             CameraUtil.printStats();
 
             follower.update();
