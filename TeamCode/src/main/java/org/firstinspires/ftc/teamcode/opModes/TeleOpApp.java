@@ -49,6 +49,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.AprilTagPipeline;
 import org.firstinspires.ftc.teamcode.utilities.CameraUtil;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
+import org.firstinspires.ftc.teamcode.utilities.FusionLocalizer;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -66,7 +67,6 @@ public class TeleOpApp extends ComplexOpMode {
     private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
     private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH); // Length maps to X-axis and width maps to Y-axis relative to 0° heading
     private final PolygonZone futureRobotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH); // Length maps to X-axis and width maps to Y-axis relative to 0° heading
-
     private Follower follower;
     private Intake intake;
     private Shooter shooter;
