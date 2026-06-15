@@ -6,7 +6,6 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
-import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -334,11 +333,6 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Total Traveled X", totalTraveledX);
         telemetry.addData("Total Traveled Y", totalTraveledY);
         telemetry.addData("Total Traveled XY", totalTraveledX + totalTraveledY);
-
-        telemetry.addData("Pitch", ((PinpointLocalizer)follower.getPoseTracker().getLocalizer())
-                .getPinpoint().getPitch(AngleUnit.DEGREES));
-        telemetry.addData("Roll", ((PinpointLocalizer)follower.getPoseTracker().getLocalizer())
-                .getPinpoint().getRoll(AngleUnit.DEGREES));
 
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
