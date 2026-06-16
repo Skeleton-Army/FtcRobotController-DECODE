@@ -32,7 +32,6 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
-import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
@@ -94,6 +93,7 @@ public class TeleOpApp extends ComplexOpMode {
     private int loopCount = 0;
     private long nanoTimeToEpochMillisOffset = 0;
 
+    AprilTagPipeline aprilTagPipeline;
     private EpochTimestampSyncOpMode2.TimestampedPinpoint pinpoint;
 
     @Override
@@ -140,7 +140,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
-        AprilTagPipeline aprilTagPipeline = new AprilTagPipeline();
+        aprilTagPipeline = new AprilTagPipeline();
         CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
@@ -302,6 +302,30 @@ public class TeleOpApp extends ComplexOpMode {
         return new Pose();
     }
 
+
+
+    // updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
+    public void updateKFApriltagReading() {
+        if(aprilTagPipeline.getApriltagDetection() != null) {
+            long time = System.nanoTime();
+
+            double sigmaBase = 1500/(Math.pow((aprilTagPipeline.getTagSizeArea()),1.1));
+
+            double sizeVarianceX = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeY() / aprilTagPipeline.getTagSizeX()), 2);
+            double sizeVarianceY = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeX() / aprilTagPipeline.getTagSizeY()), 2);
+            double sizeVarianceAngle = Math.pow(0.001, 2);
+
+//            double sizeVarianceX = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffX;
+//            double sizeVarianceY = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffY;
+//            double sizeVarianceAngle = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffAngle;
+
+            Pose pose = new Pose(sizeVarianceX, sizeVarianceY, sizeVarianceAngle);
+
+            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera(), pose);
+        }
+
+    }
+
     public long getResultTimestamp() {
         LLResult llResult = limelight.getLatestResult();
 
@@ -317,6 +341,8 @@ public class TeleOpApp extends ComplexOpMode {
         double loopTimeMs = (currentTime - lastLoopTime) * 1000.0;
         lastLoopTime = currentTime;
         loopCount++;
+
+        updateKFApriltagReading();
 
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());

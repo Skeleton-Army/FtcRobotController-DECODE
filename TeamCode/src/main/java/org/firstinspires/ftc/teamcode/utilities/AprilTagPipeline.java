@@ -83,7 +83,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
                 .setDrawCubeProjection(false)
                 .setDrawTagOutline(false)
                 .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
-                .setCameraPose(relativePos, new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
+                .setCameraPose(relativePos, new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 - BlackWhiteCamera.pitchAngle, 0, 0))
                 .setLensIntrinsics(baseFx, baseFy, baseCx, baseCy)
                 .build();
 
@@ -185,6 +185,8 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         return fullBlackCanvas;
     }
 
+
+
     private void updateRoi(int maxAllowedHeight) {
         List<AprilTagDetection> detections = processor.getDetections();
 
@@ -236,6 +238,10 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     public void setUseDynamicRoi(boolean useDynamicRoi) {
         this.useDynamicRoi = useDynamicRoi;
     }
+
+
+
+
 
     @Override
     public void onDrawFrame(Canvas canvas, int onscreenWidth, int onscreenHeight, float scaleBmpPxToCanvasPx, float scaleCanvasDensity, Object userContext)
@@ -306,6 +312,26 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
     public AprilTagProcessor getProcessor() {
         return processor;
+    }
+
+    public Pose getPose() {
+        List<AprilTagDetection> detections = processor.getDetections();
+        if (detections == null || detections.isEmpty()) return new Pose(0, 0, 0);
+
+        AprilTagDetection detection = detections.get(0);
+        if (detection.robotPose == null) return new Pose(0, 0, 0);
+
+        // 1. Force the SDK to return position in INCHES to match Pedro Pathing
+        Position pose = detection.robotPose.getPosition().toUnit(DistanceUnit.INCH);
+        YawPitchRollAngles orientation = detection.robotPose.getOrientation();
+
+        // 2. Construct using FTC coordinates, then let Pedro convert it safely
+        return new Pose(
+                pose.x,
+                pose.y,
+                orientation.getYaw(AngleUnit.RADIANS),
+                FTCCoordinates.INSTANCE
+        ).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
     }
 
     public double getTagSizeArea() {

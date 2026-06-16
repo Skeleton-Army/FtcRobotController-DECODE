@@ -44,6 +44,13 @@ public class CameraUtil {
         });
     }
 
+    public static double getLatencyCamera() {
+        return webcam.getTotalFrameTimeMs();
+    }
+
+    public static double getFPSCamera() {
+        return webcam.getFps();
+    }
     public static void printStats() {
         OpModeManager.getTelemetry().addData("Camera FPS", webcam.getFps());
         OpModeManager.getTelemetry().addData("Camera Latency/ms", webcam.getTotalFrameTimeMs());

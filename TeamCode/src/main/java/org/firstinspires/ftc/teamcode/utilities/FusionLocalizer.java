@@ -260,10 +260,11 @@ public class FusionLocalizer implements Localizer {
         currentPosition = setPose.copy();
         deadReckoning.setPose(setPose);
 
-        if (poseHistory.lastEntry() != null)
-            poseHistory.lastEntry().setValue(setPose.copy());
+        if (!poseHistory.isEmpty())
+            poseHistory.put(poseHistory.lastKey(), setPose.copy());
         else
             setStartPose(setPose);
+
     }
 
     @Override
