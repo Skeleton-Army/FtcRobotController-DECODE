@@ -16,4 +16,13 @@ public class Pair<T1, T2> {
     public T2 getLeft() {
         return second;
     }
+
+    public T1 getFirst() {
+        return first;
+    }
+
+    public T2 getSecond() {
+        return second;
+    }
+
 }
