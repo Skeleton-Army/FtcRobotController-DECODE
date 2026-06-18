@@ -116,6 +116,10 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
                             detection.robotPose.getOrientation().getYaw(AngleUnit.RADIANS)
                     );
 
+                    telemetry.addData("Apriltag x", pose.getX());
+                    telemetry.addData("Apriltag y", pose.getY());
+                    telemetry.addData("Apriltag angle", pose.getHeading());
+
                     varianceX.update(actualX - pose.getX());
                     varianceY.update(actualY - pose.getY());
                     varianceHeading.update(actualHeading - pose.getHeading());

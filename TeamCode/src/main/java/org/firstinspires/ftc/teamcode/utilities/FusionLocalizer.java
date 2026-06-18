@@ -41,6 +41,10 @@ public class FusionLocalizer implements Localizer {
         twistHistory.put(0L, new Pose());
     }
 
+    public Localizer GetDeadReckoning(){ return deadReckoning; }
+
+    public Matrix getP() { return P; }
+
     @Override
     public void update() {
         //Updates odometry

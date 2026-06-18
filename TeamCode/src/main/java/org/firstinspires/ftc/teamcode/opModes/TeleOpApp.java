@@ -96,6 +96,10 @@ public class TeleOpApp extends ComplexOpMode {
     AprilTagPipeline aprilTagPipeline;
     private EpochTimestampSyncOpMode2.TimestampedPinpoint pinpoint;
 
+    private double sizeVarianceX;
+    private double sizeVarianceY;
+    private double sizeVarianceAngle;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -302,18 +306,56 @@ public class TeleOpApp extends ComplexOpMode {
         return new Pose();
     }
 
+    // kalman debugging, that includes the following:
+    // pinpoint and apriltag poses v
+    // covariance of the model v
+    // the calculated stdevs
+
+    public void kalmanDebug(){
+        telemetry.addData("apriltag pose x", aprilTagPipeline.getPose().getX());
+        telemetry.addData("apriltag pose y", aprilTagPipeline.getPose().getY());
+        telemetry.addData("apriltag pose heading", aprilTagPipeline.getPose().getHeading());
+
+        telemetry.addData("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getX());
+        telemetry.addData("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getY());
+        telemetry.addData("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getHeading());
+
+        telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(0, 0));
+        telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(1, 1));
+        telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(2, 2));
+
+        telemetry.addData("stdev x", sizeVarianceX);
+        telemetry.addData("stdev y", sizeVarianceX);
+        telemetry.addData("stdev heading", sizeVarianceAngle);
+
+        Logger.recordOutput("apriltag pose x", aprilTagPipeline.getPose().getX());
+        Logger.recordOutput("apriltag pose y", aprilTagPipeline.getPose().getY());
+        Logger.recordOutput("apriltag pose heading", aprilTagPipeline.getPose().getHeading());
+
+        Logger.recordOutput("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getX());
+        Logger.recordOutput("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getY());
+        Logger.recordOutput("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getHeading());
+
+        Logger.recordOutput("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(0, 0));
+        Logger.recordOutput("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(1, 1));
+        Logger.recordOutput("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(2, 2));
+
+        Logger.recordOutput("stdev x", sizeVarianceX);
+        Logger.recordOutput("stdev y", sizeVarianceY);
+        Logger.recordOutput("stdev heading", sizeVarianceAngle);
+    }
 
 
     // updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
     public void updateKFApriltagReading() {
-        if(aprilTagPipeline.getApriltagDetection() != null) {
+        if (aprilTagPipeline.getApriltagDetection() != null) {
             long time = System.nanoTime();
 
             double sigmaBase = 1500/(Math.pow((aprilTagPipeline.getTagSizeArea()),1.1));
 
-            double sizeVarianceX = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeY() / aprilTagPipeline.getTagSizeX()), 2);
-            double sizeVarianceY = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeX() / aprilTagPipeline.getTagSizeY()), 2);
-            double sizeVarianceAngle = Math.pow(0.001, 2);
+            sizeVarianceX = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeY() / aprilTagPipeline.getTagSizeX()), 2);
+            sizeVarianceY = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeX() / aprilTagPipeline.getTagSizeY()), 2);
+            sizeVarianceAngle = Math.pow(0.001, 2);
 
 //            double sizeVarianceX = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffX;
 //            double sizeVarianceY = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffY;
