@@ -16,6 +16,7 @@ import com.pedropathing.ftc.InvertedFTCCoordinates;
 import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
@@ -327,11 +328,10 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
         // 2. Construct using FTC coordinates, then let Pedro convert it safely
         return new Pose(
-                pose.x,
-                pose.y,
-                orientation.getYaw(AngleUnit.RADIANS),
-                FTCCoordinates.INSTANCE
-        ).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
+                pose.y + 72,
+                -pose.x + 72,
+                orientation.getYaw(AngleUnit.RADIANS)
+        );
     }
 
     public double getTagSizeArea() {

@@ -473,6 +473,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Drift y", driftY);
         telemetry.addData("Drift total", driftX + driftY);
 
+        kalmanDebug();
+
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
@@ -513,11 +515,6 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("Pinpoint x", pinpoint.getPosition().getX(DistanceUnit.INCH));
         Logger.recordOutput("Pinpoint y", pinpoint.getPosition().getY(DistanceUnit.INCH));
         Logger.recordOutput("Pinpoint heading", pinpoint.getPosition().getHeading(AngleUnit.DEGREES));
-
-        Pose apriltag = getAprilTagPose();
-        Logger.recordOutput("Apriltag pose x", apriltag.getX());
-        Logger.recordOutput("Apriltag pose y", apriltag.getY());
-        Logger.recordOutput("Apriltag pose heading", apriltag.getHeading());
 
         Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
         Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
