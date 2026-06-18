@@ -11,6 +11,7 @@ public class ShooterConfig {
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL1_INVERTED = false;
     public static boolean FLYWHEEL2_INVERTED = true;
+    public static double FLYWHEEL_GEAR_RATIO = 52.0 / 51.0; // Motor teeth / Flywheel teeth
     public static int RPM_REACHED_THRESHOLD = 200;
     public static double FLYWHEEL_KP = 0.05;
     public static double FLYWHEEL_KP_DOWN = 0.05;

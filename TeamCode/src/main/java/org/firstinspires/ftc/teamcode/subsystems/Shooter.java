@@ -121,10 +121,14 @@ public class Shooter extends SubsystemBase {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
 
-        flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
+        flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME,
+                FLYWHEEL_MOTOR.getCPR() * FLYWHEEL_GEAR_RATIO,
+                FLYWHEEL_MOTOR.getRPM() / FLYWHEEL_GEAR_RATIO);
         flywheel1.setInverted(FLYWHEEL1_INVERTED);
 
-        flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
+        flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME,
+                FLYWHEEL_MOTOR.getCPR() * FLYWHEEL_GEAR_RATIO,
+                FLYWHEEL_MOTOR.getRPM() / FLYWHEEL_GEAR_RATIO);
         flywheel2.setInverted(FLYWHEEL2_INVERTED);
 
         flywheel = new ModifiedMotorGroup(flywheel1, flywheel2);
