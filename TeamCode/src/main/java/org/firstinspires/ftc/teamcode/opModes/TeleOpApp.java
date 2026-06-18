@@ -391,34 +391,34 @@ public class TeleOpApp extends ComplexOpMode {
 
         shooter.setZoneCalculator(getCalculatorZone());
 
-        double orientationDeg = Math.toDegrees(follower.getPose().getHeading()) + 90;
-        limelight.updateRobotOrientation(orientationDeg);
-
-        // --- 1. PINPOINT UPDATE & TIMESTAMPS ---
-        pinpoint.update();
-
-        // Grab the raw boot-based nanosecond timestamp from the hardware bus
-        long pinpointArrivalNanos = pinpoint.getLatestArrivalNanos();
-
-        // Convert to Epoch Milliseconds using our calculation offset
-        long pinpointArrivalEpochMs = (pinpointArrivalNanos / 1_000_000) + nanoTimeToEpochMillisOffset;
-
-        // --- 2. LIMELIGHT UPDATE & TIMESTAMPS ---
-        long limelightCaptureEpochMs = getResultTimestamp();
-
-        if (limelight.getLatestResult() != null && limelight.getLatestResult().isValid())
-        {
-            LLResult result = limelight.getLatestResult();
-        }
-
-        long trueSensorSkewMs = 0;
-        if (limelightCaptureEpochMs != Long.MIN_VALUE) {
-            // Because they are on the exact same scale, this subtraction represents absolute latency
-            trueSensorSkewMs = pinpointArrivalEpochMs - limelightCaptureEpochMs;
-            telemetry.addData("Visual Age relative to Odo (ms)", trueSensorSkewMs);
-        } else {
-            telemetry.addData("Limelight Status", "No Target Detected");
-        }
+//        double orientationDeg = Math.toDegrees(follower.getPose().getHeading()) + 90;
+//        limelight.updateRobotOrientation(orientationDeg);
+//
+//        // --- 1. PINPOINT UPDATE & TIMESTAMPS ---
+//        pinpoint.update();
+//
+//        // Grab the raw boot-based nanosecond timestamp from the hardware bus
+//        long pinpointArrivalNanos = pinpoint.getLatestArrivalNanos();
+//
+//        // Convert to Epoch Milliseconds using our calculation offset
+//        long pinpointArrivalEpochMs = (pinpointArrivalNanos / 1_000_000) + nanoTimeToEpochMillisOffset;
+//
+//        // --- 2. LIMELIGHT UPDATE & TIMESTAMPS ---
+//        long limelightCaptureEpochMs = getResultTimestamp();
+//
+//        if (limelight.getLatestResult() != null && limelight.getLatestResult().isValid())
+//        {
+//            LLResult result = limelight.getLatestResult();
+//        }
+//
+//        long trueSensorSkewMs = 0;
+//        if (limelightCaptureEpochMs != Long.MIN_VALUE) {
+//            // Because they are on the exact same scale, this subtraction represents absolute latency
+//            trueSensorSkewMs = pinpointArrivalEpochMs - limelightCaptureEpochMs;
+//            telemetry.addData("Visual Age relative to Odo (ms)", trueSensorSkewMs);
+//        } else {
+//            telemetry.addData("Limelight Status", "No Target Detected");
+//        }
 
 
         boolean isInsideLaunchZone = isInsideLaunchZone();
@@ -460,20 +460,17 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
         telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
 
-        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
-        telemetry.addData("!Reached angle", shooter.reachedAngle());
-        telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
-        telemetry.addData("!Can shoot", shooter.getCanShoot());
+//        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
+//        telemetry.addData("!Reached angle", shooter.reachedAngle());
+//        telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
+//        telemetry.addData("!Can shoot", shooter.getCanShoot());
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
 
-        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
-        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
-        telemetry.addData("Drift x", driftX);
-        telemetry.addData("Drift y", driftY);
-        telemetry.addData("Drift total", driftX + driftY);
-
         kalmanDebug();
+
+        telemetry.addData("Image size x",aprilTagPipeline.getTagSizeX());
+        telemetry.addData("Image size y",aprilTagPipeline.getTagSizeY());
 
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
@@ -481,36 +478,42 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Robot x", -rotatedPose.getX());
         telemetry.addData("Robot y", -rotatedPose.getY());
         telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
-        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
-        telemetry.addData("Distance from GOAL", goalDistance);
-        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-        telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
-        telemetry.addData("Turret target solution (deg)", Math.toDegrees(shooter.solution.getHorizontalAngle()));
-        telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
-        telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
 
-        telemetry.addData("hood pos", shooter.getRawHoodPosition());
-        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
-        telemetry.addData("Flywheel RPM", shooter.getRPM());
-        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
-        telemetry.addData("Target solution RPM", shooter.getTargetRPM());
-        telemetry.addData("Flywheel error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
-        telemetry.addData("Intake RPM", intake.getRPM());
-
-        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
-        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
-        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
-        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
-        telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
-        telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
+        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
+        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        telemetry.addData("Drift x", driftX);
+        telemetry.addData("Drift y", driftY);
+        telemetry.addData("Drift total", driftX + driftY);
+//        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+//        telemetry.addData("Distance from GOAL", goalDistance);
+//        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+//        telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
+//        telemetry.addData("Turret target solution (deg)", Math.toDegrees(shooter.solution.getHorizontalAngle()));
+//        telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
+//        telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+//
+//        telemetry.addData("hood pos", shooter.getRawHoodPosition());
+//        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
+//        telemetry.addData("Flywheel RPM", shooter.getRPM());
+//        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
+//        telemetry.addData("Target solution RPM", shooter.getTargetRPM());
+//        telemetry.addData("Flywheel error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+//        telemetry.addData("Intake RPM", intake.getRPM());
+//
+//        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
+//        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
+//        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
+//        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+//        telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
+//        telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
 
         telemetry.update();
 
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
 
-        Logger.recordOutput("Pinpoint Hardware Time (ms UTC)", "" + pinpointArrivalEpochMs);
-        Logger.recordOutput("Limelight Capture Time (ms UTC)", "" + limelightCaptureEpochMs);
-        Logger.recordOutput("skew/difference", trueSensorSkewMs);
+//        Logger.recordOutput("Pinpoint Hardware Time (ms UTC)", "" + pinpointArrivalEpochMs);
+//        Logger.recordOutput("Limelight Capture Time (ms UTC)", "" + limelightCaptureEpochMs);
+//        Logger.recordOutput("skew/difference", trueSensorSkewMs);
 
         Logger.recordOutput("Pinpoint x", pinpoint.getPosition().getX(DistanceUnit.INCH));
         Logger.recordOutput("Pinpoint y", pinpoint.getPosition().getY(DistanceUnit.INCH));
