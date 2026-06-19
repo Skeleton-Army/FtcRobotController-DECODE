@@ -117,6 +117,10 @@ public class Shooter extends SubsystemBase {
     private boolean voltageExternallySupplied = false;
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
 
+<<<<<<< HEAD
+=======
+    // Bang-bang control parameters
+>>>>>>> 271c911e81b9bfeaaa737e0c820b1d2943579076
     private boolean isBangBang = false;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculatorClose,IShooterCalculator shooterCalculatorFar, Alliance alliance) {
@@ -362,18 +366,32 @@ public class Shooter extends SubsystemBase {
             isBangBang = false;
         }
 
+<<<<<<< HEAD
         double desiredVoltage;
 
         if (isBangBang) {
             // Bang-bang: Full power in the direction of the error
             desiredVoltage = error > 0 ? BANGBANG_POWER : -BANGBANG_POWER;
+=======
+        double finalPower;
+
+        if (isBangBang) {
+            // Bang-bang: Full power in the direction of the error
+            finalPower = error > 0 ? BANGBANG_POWER : -BANGBANG_POWER;
+>>>>>>> 271c911e81b9bfeaaa737e0c820b1d2943579076
         } else {
             // --- ASYMMETRIC P-GAIN LOGIC ---
             double error2 = speed - processVariable;
 
+<<<<<<< HEAD
             if (!isBraking && error2 < BRAKE_ENTRY_THRESHOLD * tpsPerRPM) {
                 isBraking = true;
             } else if (isBraking && error2 > BRAKE_EXIT_THRESHOLD * tpsPerRPM) {
+=======
+            if (!isBraking && error2 < BRAKE_ENTRY_THRESHOLD) {
+                isBraking = true;
+            } else if (isBraking && error2 > BRAKE_EXIT_THRESHOLD) {
+>>>>>>> 271c911e81b9bfeaaa737e0c820b1d2943579076
                 isBraking = false;
             }
 
@@ -387,7 +405,11 @@ public class Shooter extends SubsystemBase {
             double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
             double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
 
+<<<<<<< HEAD
             // PID and FF now output volts directly
+=======
+            // PID calculates based on filtered/compensated velocity
+>>>>>>> 271c911e81b9bfeaaa737e0c820b1d2943579076
             double pid = flywheelPID.calculate(processVariable, speed);
 
             // Feedforward calculates based on TARGET (speed), not measurement
@@ -397,11 +419,21 @@ public class Shooter extends SubsystemBase {
 
             lastSpeedFlywheel = speed;
 
+<<<<<<< HEAD
             desiredVoltage = pid + ff;
             desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
         }
 
         flywheel.set(desiredVoltage / voltage);
+=======
+            double velocityCmd = pid + ff;
+            finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+
+            finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
+        }
+
+        flywheel.set(finalPower, voltage);
+>>>>>>> 271c911e81b9bfeaaa737e0c820b1d2943579076
     }
 
     private void updateTurretPIDTwoSides() {
