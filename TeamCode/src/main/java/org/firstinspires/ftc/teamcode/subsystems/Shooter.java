@@ -464,6 +464,7 @@ public class Shooter extends SubsystemBase {
         // PID and FF now output volts directly
         double desiredVoltage = totalRequest + staticComp;
         desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
+        desiredVoltage = Math.max(-TURRET_MAX_VOLTAGE, Math.min(TURRET_MAX_VOLTAGE, desiredVoltage));
 
         turret.set(desiredVoltage / voltage);
     }

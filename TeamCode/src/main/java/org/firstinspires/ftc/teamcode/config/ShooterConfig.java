@@ -39,6 +39,7 @@ public class ShooterConfig {
     public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_DELAY = 0.02;
     public static double TURRET_MIN_VOLTAGE = 0.4;
+    public static double TURRET_MAX_VOLTAGE = 6.0;
     public static double TURRET_KP = 5;
     public static double TURRET_KI = 0;
     public static double TURRET_KD = 0.1;
