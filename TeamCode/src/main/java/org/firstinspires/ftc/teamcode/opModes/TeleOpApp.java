@@ -316,9 +316,9 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("apriltag pose y", aprilTagPipeline.getPose().getY());
         telemetry.addData("apriltag pose heading", aprilTagPipeline.getPose().getHeading());
 
-        telemetry.addData("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getX());
-        telemetry.addData("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getY());
-        telemetry.addData("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getHeading());
+        telemetry.addData("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getX());
+        telemetry.addData("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getY());
+        telemetry.addData("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getHeading());
 
         telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(0, 0));
         telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(1, 1));
@@ -332,9 +332,9 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("apriltag pose y", aprilTagPipeline.getPose().getY());
         Logger.recordOutput("apriltag pose heading", aprilTagPipeline.getPose().getHeading());
 
-        Logger.recordOutput("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getX());
-        Logger.recordOutput("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getY());
-        Logger.recordOutput("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getHeading());
+        Logger.recordOutput("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getX());
+        Logger.recordOutput("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getY());
+        Logger.recordOutput("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getHeading());
 
         Logger.recordOutput("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(0, 0));
         Logger.recordOutput("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(1, 1));
@@ -350,20 +350,7 @@ public class TeleOpApp extends ComplexOpMode {
     public void updateKFApriltagReading() {
         if (aprilTagPipeline.getApriltagDetection() != null) {
             long time = System.nanoTime();
-
-            double sigmaBase = 1500/(Math.pow((aprilTagPipeline.getTagSizeArea()),1.1));
-
-            sizeVarianceX = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeY() / aprilTagPipeline.getTagSizeX()), 2);
-            sizeVarianceY = Math.pow(sigmaBase * Math.sqrt(aprilTagPipeline.getTagSizeX() / aprilTagPipeline.getTagSizeY()), 2);
-            sizeVarianceAngle = Math.pow(0.001, 2);
-
-//            double sizeVarianceX = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffX;
-//            double sizeVarianceY = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffY;
-//            double sizeVarianceAngle = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffAngle;
-
-            Pose pose = new Pose(sizeVarianceX, sizeVarianceY, sizeVarianceAngle);
-
-            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera(), pose);
+            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
         }
 
     }
