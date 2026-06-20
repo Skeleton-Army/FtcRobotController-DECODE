@@ -4,6 +4,7 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
+import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.math.Matrix;
 
@@ -25,7 +26,7 @@ public class FusionLocalizer implements Localizer {
         }
     }
 
-    public static double EPSILON = 1e-6; //floor for covariance matrices
+    public static double EPSILON = 1e-10; //floor for covariance matrices
     private final Localizer deadReckoning;
     private Pose currentRawPose;
     private Pose currentPosition;
@@ -34,6 +35,11 @@ public class FusionLocalizer implements Localizer {
     private Matrix P; //State Covariance
     private final Matrix Q; //Process Noise Covariance
     private final Matrix R; //Measurement Noise Covariance
+    private Matrix S;
+
+    private Matrix K;
+
+    private Matrix cov;
     private long lastUpdateTime = -1;
     private final NavigableMap<Long, KalmanState> history = new TreeMap<>();
     private final int bufferSize;
@@ -196,12 +202,13 @@ public class FusionLocalizer implements Localizer {
         Matrix Pm = interpolatedData.covariance;
 
         // Innovation covariance S = P + R
-        Matrix S = Pm.plus(measurementR);
+        S = Pm.plus(measurementR);
 
         // Apply gain K = P * (P + R)^(-1)
         Matrix S_inv = invert(S);
         if (S_inv == null) return;
-        Matrix K = Pm.multiply(S_inv);
+        K = Pm.multiply(S_inv);
+
 
         // Apply mask
         K = M.multiply(K);
@@ -218,7 +225,7 @@ public class FusionLocalizer implements Localizer {
         // Joseph-form covariance update
         Matrix I = Matrix.identity(3);
         Matrix IK = I.minus(K);
-        Matrix cov = IK.multiply(Pm).multiply(IK.transposed()).plus(K.multiply(measurementR).multiply(K.transposed()));
+        cov = IK.multiply(Pm).multiply(IK.transposed()).plus(K.multiply(measurementR).multiply(K.transposed()));
         clampCovariance(cov);
         history.put(timestamp, new KalmanState(updatedPast, interpolatedData.twist, interpolatedData.relativeTransform, cov));
 
@@ -380,6 +387,18 @@ public class FusionLocalizer implements Localizer {
 
     public Matrix getP() {
         return this.P;
+    }
+
+    public Matrix getInnovationCovariance() {
+        return S;
+    }
+
+    public Matrix getKalmanGain() {
+        return K;
+    }
+
+    public Matrix getcov() {
+        return cov;
     }
 
     @Override

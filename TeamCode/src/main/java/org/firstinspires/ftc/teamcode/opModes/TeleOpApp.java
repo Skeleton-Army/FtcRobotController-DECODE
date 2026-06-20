@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static com.pedropathing.ftc.PoseConverter.poseToPose2D;
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.LIMELIGHT_NAME;
 
@@ -7,6 +8,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -27,6 +29,7 @@ import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
@@ -99,6 +102,7 @@ public class TeleOpApp extends ComplexOpMode {
     private double sizeVarianceX;
     private double sizeVarianceY;
     private double sizeVarianceAngle;
+    public static boolean testings = true;
 
     @Override
     public void initialize() {
@@ -108,7 +112,8 @@ public class TeleOpApp extends ComplexOpMode {
         matchTime = new TimerEx(120);
         overrideTimer = new TimerEx(1);
 
-        debugMode = Settings.get("debug_mode", false);
+//        debugMode = Settings.get("debug_mode", false);
+        debugMode = true;
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
 
@@ -259,6 +264,13 @@ public class TeleOpApp extends ComplexOpMode {
                     );
         }
 
+
+        if (testings) {
+            new InstantCommand(() -> shooter.disable());
+            new InstantCommand(() -> shooter.enable());
+
+        }
+
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                     .whenPressed(this::resetPoseToNearestCorner);
@@ -312,17 +324,31 @@ public class TeleOpApp extends ComplexOpMode {
     // the calculated stdevs
 
     public void kalmanDebug(){
-        telemetry.addData("apriltag pose x", aprilTagPipeline.getPose().getX());
-        telemetry.addData("apriltag pose y", aprilTagPipeline.getPose().getY());
-        telemetry.addData("apriltag pose heading", aprilTagPipeline.getPose().getHeading());
 
-        telemetry.addData("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getX());
-        telemetry.addData("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getY());
-        telemetry.addData("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getHeading());
+        Pose2D apriltagPose2D = PoseConverter.poseToPose2D(aprilTagPipeline.getPose(), FTCCoordinates.INSTANCE);
+        telemetry.addData("apriltag pose x", -apriltagPose2D.getX(DistanceUnit.INCH));
+        telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
+        telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
+
+        Pose2D pinpointPose2D = PoseConverter.poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
+        telemetry.addData("pinpoint pose x", -pinpointPose2D.getX(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose y", -pinpointPose2D.getY(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose heading", pinpointPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
         telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(0, 0));
         telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(1, 1));
         telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(2, 2));
+
+        if (((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getInnovationCovariance() != null) {
+            telemetry.addData("Innovation x", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getInnovationCovariance().get(0, 0));
+            telemetry.addData("Innovation y", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getInnovationCovariance().get(1, 1));
+            telemetry.addData("Innovation heading", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getInnovationCovariance().get(2, 2));
+
+            telemetry.addData("cov x", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(0, 0));
+            telemetry.addData("cov y", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(1, 1));
+            telemetry.addData("cov heading", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(2, 2));
+        }
+
 
         telemetry.addData("stdev x", sizeVarianceX);
         telemetry.addData("stdev y", sizeVarianceX);
@@ -462,9 +488,9 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());
         telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
-        telemetry.addData("Robot x", -rotatedPose.getX());
-        telemetry.addData("Robot y", -rotatedPose.getY());
-        telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
+        telemetry.addData("Kalman x", -rotatedPose.getX());
+        telemetry.addData("Kalman y", -rotatedPose.getY());
+        telemetry.addData("Kalman heading", rotatedPose.getHeading() - Math.PI);
 
         double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
         double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());

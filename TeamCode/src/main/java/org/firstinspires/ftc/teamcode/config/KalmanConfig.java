@@ -11,9 +11,9 @@ public class KalmanConfig {
 
     // the stdev-squared for each asix - x,y and heading
     // TODO: These are not
-    public static Pose initialCovariance = new Pose(0.25, 0.25, Math.toRadians(2)); // the initial covariance for pinpoint - how much we trust our first positioning of the robot when placing it on the field
-    public static Pose processVariance = new Pose(0.0001,0.0001, Math.toRadians(0.5) / 60); // the drift covariance
-    public static Pose measurementVariance = new Pose(2, 2, Math.toRadians(3)); // the apriltag covariance
+    public static Pose initialCovariance = new Pose(0.1, 0.1, Math.toRadians(0.05)); // the initial covariance for pinpoint - how much we trust our first positioning of the robot when placing it on the field
+    public static Pose processVariance = new Pose(0.0000000001,0.0000000001, Math.toRadians(0.5) / 60); // the drift covariance
+    public static Pose measurementVariance = new Pose(10000, 10000, Math.toRadians(10)); // the apriltag covariance
     public static int bufferSize = 100;
     public static double apriltagDistanceCoeff = 0;
     public static double apriltagTagSizeCoeff = 0;
