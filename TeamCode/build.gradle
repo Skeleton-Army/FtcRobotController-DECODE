@@ -80,3 +80,19 @@ dependencies {
     implementation 'org.psilynx.psikit:core:0.1.0-beta2'
     implementation 'org.psilynx.psikit:ftc:0.1.0-beta2'
 }
+
+tasks.register('adbDisconnect', Exec) {
+    group = 'verification'
+    description = 'Disconnects all active wireless ADB connections'
+
+    def adbExe = android.getAdbExecutable().absolutePath;
+    commandLine adbExe, 'disconnect'
+
+    ignoreExitValue = true
+}
+
+afterEvaluate {
+    tasks.named('deploySloth').configure {
+        finalizedBy('adbDisconnect')
+    }
+}
