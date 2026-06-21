@@ -741,7 +741,7 @@ public class Shooter extends SubsystemBase {
     public void setHorizontalAngle(double targetAngleRad) {
         double lastCmd = hasWrappedTarget ? lastWrappedTarget : turret.getDistance();
 
-        wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP, lastCmd);
+        wrapped = IShooterCalculator.wrapToTarget(lastCmd, targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP, lastCmd);
 
         lastWrappedTarget = wrapped;
         hasWrappedTarget = true;

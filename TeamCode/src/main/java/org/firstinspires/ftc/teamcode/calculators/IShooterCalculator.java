@@ -37,8 +37,8 @@ public interface IShooterCalculator {
         if (closestInRange) {
             // Overlap band: both sides are technically legal. Stick with
             // whichever is closer to what we last commanded, to avoid flip-flop.
-            double distToClosest = Math.abs(MathFunctions.normalizeAngleSigned(closest - lastCommanded));
-            double distToWrapped = Math.abs(MathFunctions.normalizeAngleSigned(wrapped - lastCommanded));
+            double distToClosest = Math.abs(closest - lastCommanded);
+            double distToWrapped = Math.abs(wrapped - lastCommanded);
             return (distToClosest <= distToWrapped) ? closest : wrapped;
         }
 
