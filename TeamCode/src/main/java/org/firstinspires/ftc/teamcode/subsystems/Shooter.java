@@ -113,6 +113,9 @@ public class Shooter extends SubsystemBase {
     private final double VELOCITY_FILTER_ALPHA = 0.7; // Adjust (0.1 = heavy filter, 0.9 = light)
     private boolean isBraking = false;
 
+    private double lastWrappedTarget = 0;
+    private boolean hasWrappedTarget = false;
+
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
@@ -736,7 +739,13 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
-        wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
+        double lastCmd = hasWrappedTarget ? lastWrappedTarget : turret.getDistance();
+
+        wrapped = IShooterCalculator.wrapToTarget(lastCmd, targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP, lastCmd);
+
+        lastWrappedTarget = wrapped;
+        hasWrappedTarget = true;
+
         turretPID.setSetPoint(wrapped);
         turret.setTargetDistance(wrapped);
     }

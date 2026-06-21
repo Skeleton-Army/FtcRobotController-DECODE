@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.calculators;
 
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
 import com.seattlesolvers.solverslib.util.MathUtils;
 
@@ -17,21 +18,31 @@ public interface IShooterCalculator {
      * @param max     maximal allowed angle (radians)
      * @return the target equivalent nearest to current, clamped to [min, max]
      */
-    static double wrapToTarget(double current, double target, double min, double max, boolean wrap) {
+    static double wrapToTarget(double current, double target, double min, double max, boolean wrap, double lastCommanded) {
         double delta = Math.atan2(Math.sin(target - current), Math.cos(target - current));
         double closest = current + delta;
 
         if (!wrap) return MathUtils.clamp(closest, min, max);
 
-        // If within limits, use it
-        if (closest >= min && closest <= max) return closest;
+        boolean closestInRange = closest >= min && closest <= max;
 
-        // Check if wrapping to the other side puts us within limits
         double wrapped = (closest < min) ? closest + 2 * Math.PI : closest - 2 * Math.PI;
-        if (wrapped >= min && wrapped <= max) return wrapped;
+        boolean wrappedInRange = wrapped >= min && wrapped <= max;
 
-        // If both are outside limits, the target is in a deadzone
-        // Clamp to the nearest limit to stop the side-to-side jumping
+        // Only one side is valid -> unambiguous
+        if (closestInRange && !wrappedInRange) return closest;
+        if (!closestInRange && wrappedInRange) return wrapped;
+
+        // From here on, only two cases remain: both valid (overlap band) or neither valid (deadzone).
+        if (closestInRange) {
+            // Overlap band: both sides are technically legal. Stick with
+            // whichever is closer to what we last commanded, to avoid flip-flop.
+            double distToClosest = Math.abs(closest - lastCommanded);
+            double distToWrapped = Math.abs(wrapped - lastCommanded);
+            return (distToClosest <= distToWrapped) ? closest : wrapped;
+        }
+
+        // Neither side reachable -> true deadzone, clamp to nearest limit
         return (closest < min) ? min : max;
     }
 }

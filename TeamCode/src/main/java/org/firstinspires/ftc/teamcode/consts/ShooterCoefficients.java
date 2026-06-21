@@ -4,9 +4,9 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class ShooterCoefficients {
-    public double[] RPM_INTERPOLATION = {480, 0};
-    public double[] VELOCITY_INTERPOLATION = {1, 3.7};
-    public double[] MIN_VEL_COEFFS = {0.03051737, -0.39733680, 1.92515700, -4.17389950, 4.66861781, 2.67109537};
-    public double[] MAX_VEL_COEFFS = {0.00899242, -0.13875104, 0.83303624, -2.41515766, 4.33287142, 2.07668995};
-    public double[] HOOD_COEFFS = {-0.01340167, 0.19520493, -1.10985582, 3.07826998, -4.20510022, 3.08414438};
+    public double[] RPM_INTERPOLATION = {475, 0};
+    public double[] VELOCITY_INTERPOLATION = {0.9722, 3.7194};
+    public static final double[] MIN_VEL_COEFFS = {-0.01508226, 0.21624210, -1.20411612, 3.23962373, -3.19567987, 5.49066643};
+    public static final double[] MAX_VEL_COEFFS = {0.01038346, -0.13950784, 0.71383673, -1.71093057, 2.82016923, 3.14727338};
+    public static final double[] HOOD_COEFFS = {-0.00526129, 0.07453143, -0.41918836, 1.17898518, -1.68283754, 1.83040709};
 }
