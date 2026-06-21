@@ -1,15 +1,19 @@
 package org.firstinspires.ftc.teamcode.subsystems;
-
+//TODO: add max width to Pipeline
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.*;
+
+import android.util.Log;
 
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
+import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -27,10 +31,6 @@ import java.util.function.Consumer;
 
 import lombok.var;
 
-/*
-    TODO:
-        - add sorting by yoshi
- */
 public class Vision extends SubsystemBase {
     private final double METERS_TO_INCHES = 39.37;
     private static final int GPP_TAG_ID = 21;
@@ -51,7 +51,6 @@ public class Vision extends SubsystemBase {
     private final int pipeline;
 
     private final int COLOR_OFFSET = 15;
-
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
         this.poseTracker = poseTracker;
         this.pipeline = pipelineIndex;
@@ -181,6 +180,7 @@ public class Vision extends SubsystemBase {
         return new ArtifactList().fetch();
     }
 
+    @SuppressWarnings("unused")
     public class ArtifactList {
         private final List<Artifact> artifacts;
 
@@ -196,17 +196,15 @@ public class Vision extends SubsystemBase {
          * Always call this first before chaining any sort/filter/terminal methods.
          */
         private ArtifactList fetch() {
-            if (llResult == null || !llResult.isValid()) return this;
+            if (llResult == null ) return null;
 
             double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
-
-            for (int i = 1; i <= count; i++) {
-                double packedCords = output[i];
-                var unpacked = Artifact.unpack(packedCords);
-                Pose artifactPose = getAbsolutePosition(unpacked);
-                int color = (int) output[i + COLOR_OFFSET];
-                artifacts.add(new Artifact(artifactPose, color));
+            for (int i = 0; i <= count; i += 2) {
+                double tx = output[1 + i];
+                double ty = output[2 + i];
+                Pose absPose = getAbsolutePosition(tx, ty);
+                artifacts.add(new Artifact(absPose, ArtifactColor.UNKNOWN, tx, ty));
             }
 
             return this;
@@ -226,7 +224,7 @@ public class Vision extends SubsystemBase {
             return this;
         }
 
-        /** Sorts by color ordinal ascending (PURPLE → GREEN → UNKNOWN). */
+        /** Sorts by color ordinal ascending (PURPLE → GREEN → MIXED → UNKNOWN). */
         public ArtifactList sortByColor() {
             artifacts.sort(Comparator.comparingInt(a -> a.getArtifactColor().ordinal()));
             return this;
@@ -273,20 +271,26 @@ public class Vision extends SubsystemBase {
         }
 
         private Pose getRelativePose(double distance, double tx) {
-            double theta = Math.toRadians(tx);
+            double theta = Math.toRadians(-tx);
+            /*
             double deltaX = (distance + X_OFFSET_INCHES) * Math.cos(theta);
             double deltaY = (distance + Y_OFFSET_INCHES) * Math.sin(theta);
-            return new Pose(deltaX, deltaY);
+
+             */
+
+            double deltaX = (distance * Math.cos(theta)) + X_OFFSET_INCHES;
+            double deltaY = (distance * Math.sin(theta)) + Y_OFFSET_INCHES;
+            return new Pose(deltaX, deltaY, 0);
         }
 
         private Pose getAbsolutePosition(Pose relativePose) {
             double theta = poseTracker.getPose().getHeading();
             double x = relativePose.getX() * Math.cos(theta) - relativePose.getY() * Math.sin(theta);
-            double y = relativePose.getX() * Math.sin(theta) - relativePose.getY() * Math.cos(theta);
-
+            double y = relativePose.getX() * Math.sin(theta) + relativePose.getY() * Math.cos(theta);
             return new Pose(
                     poseTracker.getPose().getX() + x,
-                    poseTracker.getPose().getY() + y);
+                    poseTracker.getPose().getY() + y,
+                    0);
         }
 
         private Pose getAbsolutePosition(double tx, double ty) {

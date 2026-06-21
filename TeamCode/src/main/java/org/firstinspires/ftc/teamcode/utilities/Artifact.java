@@ -13,7 +13,7 @@ import lombok.Getter;
 public class Artifact {
     private final Pose artifactPose;
     private final ArtifactColor artifactColor;
-
+    private Pair<Double, Double> txtyPair;
     public Artifact(double x, double y, ArtifactColor color) {
         artifactPose = new Pose(x, y);
         artifactColor = color;
@@ -24,21 +24,15 @@ public class Artifact {
         artifactColor = parseColor(color);
     }
 
-    public Artifact(Pose pose, int color) {
+    public Artifact(Pose pose, ArtifactColor color, double tx, double ty) {
         artifactPose = pose;
-        artifactColor = parseColor(color);
+        artifactColor = color;
+        txtyPair = new Pair<>(tx, ty);
     }
 
     public Artifact(Pose pose, String color) {
         artifactPose = pose;
         artifactColor = parseColor(color);
-    }
-
-    public Artifact(double packed, int color) {
-        artifactColor = parseColor(color);
-        Pair<Double, Double> unpacked = unpack(packed);
-
-        artifactPose = new Pose(unpacked.getFirst(), unpacked.getSecond());
     }
 
     public static ArtifactColor parseColor(String color) {
@@ -48,6 +42,8 @@ public class Artifact {
                 return ArtifactColor.GREEN;
             case "purple":
                 return ArtifactColor.PURPLE;
+            case "mixed":
+                return ArtifactColor.MIXED;
             default:
                 return ArtifactColor.UNKNOWN;
         }
@@ -59,14 +55,16 @@ public class Artifact {
                 return ArtifactColor.PURPLE;
             case 2:
                 return ArtifactColor.GREEN;
+            case 3:
+                return ArtifactColor.MIXED;
             default:
                 return ArtifactColor.UNKNOWN;
         }
     }
 
     public static Pair<Double, Double> unpack(double packed) {
-        double tx     = (int)(packed / 1000.0);
-        double ty     = packed - tx * 1000.0;
+        double tx = packed / 1000.0;
+        double ty = packed % 100;
         return new Pair<>(tx, ty);
     }
 
@@ -77,4 +75,5 @@ public class Artifact {
                 "pos: [%f, %f] color: %s",
                 artifactPose.getX(), artifactPose.getY(), artifactColor.name());
     }
+
 }
