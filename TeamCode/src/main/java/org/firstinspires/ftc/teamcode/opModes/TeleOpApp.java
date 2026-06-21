@@ -363,7 +363,7 @@ public class TeleOpApp extends ComplexOpMode {
 
             Pose pose = new Pose(sizeVarianceX, sizeVarianceY, sizeVarianceAngle);
 
-            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera(), pose);
+            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
         }
 
     }
