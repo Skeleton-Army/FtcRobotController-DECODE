@@ -2,18 +2,14 @@ package org.firstinspires.ftc.teamcode.subsystems;
 //TODO: add max width to Pipeline
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.*;
 
-import android.util.Log;
-
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
-import com.pedropathing.paths.PathChain;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -260,8 +256,8 @@ public class Vision extends SubsystemBase {
             return new ArrayList<>(artifacts);
         }
 
-        public int size()      { return artifacts.size(); }
-        public boolean isEmpty() { return artifacts.isEmpty(); }
+        public int count()      { return artifacts.size(); }
+        public boolean isArtifactDetected() { return artifacts.isEmpty(); }
 
         // ─── Geometry helpers ────────────────────────────────────────────────────
 
