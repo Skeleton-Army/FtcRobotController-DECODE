@@ -155,7 +155,8 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(transfer.kick());
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .whileHeld(
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_UP))
+                .whileActiveContinuous(
                         new InstantCommand(() -> {
                             if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() + 0.01);
                             else shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.05);
@@ -163,7 +164,8 @@ public class TeleOpApp extends ComplexOpMode {
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .whileHeld(
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_DOWN))
+                .whileActiveContinuous(
                         new InstantCommand(() -> {
                             if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() - 0.01);
                             else shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.05);
@@ -171,7 +173,8 @@ public class TeleOpApp extends ComplexOpMode {
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
-                .whileHeld(
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_LEFT))
+                .whileActiveContinuous(
                         new InstantCommand(() -> {
                             if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) + 0.2);
                             else shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.01);
@@ -179,7 +182,8 @@ public class TeleOpApp extends ComplexOpMode {
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
-                .whileHeld(
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT))
+                .whileActiveContinuous(
                         new InstantCommand(() -> {
                             if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) - 0.2);
                             else shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.01);
