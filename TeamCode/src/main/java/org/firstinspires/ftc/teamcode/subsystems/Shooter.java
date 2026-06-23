@@ -113,6 +113,9 @@ public class Shooter extends SubsystemBase {
     private final double VELOCITY_FILTER_ALPHA = 0.7; // Adjust (0.1 = heavy filter, 0.9 = light)
     private boolean isBraking = false;
 
+    private double lastWrappedTarget = 0;
+    private boolean hasWrappedTarget = false;
+
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
@@ -121,10 +124,14 @@ public class Shooter extends SubsystemBase {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
 
-        flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
+        flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME,
+                FLYWHEEL_MOTOR.getCPR() * FLYWHEEL_GEAR_RATIO,
+                FLYWHEEL_MOTOR.getRPM() / FLYWHEEL_GEAR_RATIO);
         flywheel1.setInverted(FLYWHEEL1_INVERTED);
 
-        flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
+        flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME,
+                FLYWHEEL_MOTOR.getCPR() * FLYWHEEL_GEAR_RATIO,
+                FLYWHEEL_MOTOR.getRPM() / FLYWHEEL_GEAR_RATIO);
         flywheel2.setInverted(FLYWHEEL2_INVERTED);
 
         flywheel = new ModifiedMotorGroup(flywheel1, flywheel2);
@@ -340,7 +347,7 @@ public class Shooter extends SubsystemBase {
         double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
         double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
 
-        // PID calculates based on filtered/compensated velocity
+        // PID and FF now output volts directly
         double pid = flywheelPID.calculate(processVariable, speed);
 
         // Feedforward calculates based on TARGET (speed), not measurement
@@ -350,11 +357,10 @@ public class Shooter extends SubsystemBase {
 
         lastSpeedFlywheel = speed;
 
-        double velocityCmd = pid + ff;
-        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+        double desiredVoltage = pid + ff;
+        desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
-        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
-        flywheel.set(finalPower, voltage);
+        flywheel.set(desiredVoltage / voltage);
     }
 
     private void updateTurretPIDTwoSides() {
@@ -411,7 +417,7 @@ public class Shooter extends SubsystemBase {
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {
-        if ((disabled || emergencyStop) && !horizontalManualMode) {
+        if ((disabled || emergencyStop || filteredRPM < 200) && !horizontalManualMode) {
             turret.set(0);
             return;
         }
@@ -454,15 +460,15 @@ public class Shooter extends SubsystemBase {
         double ks_ccw = ks[1];
         double staticComp = 0;
 
-        if (Math.abs(totalRequest) > 0.05) {
-            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
+        if (Math.abs(totalRequest) > TURRET_MIN_VOLTAGE) {
+            staticComp = (totalRequest > 0) ? TURRET_KS : -TURRET_KS;
         }
 
-        // --- 5. Voltage Scaling & Output ---
-        double voltageScale = 12.0 / voltage;
-        double finalOutput = (totalRequest + staticComp) * voltageScale;
+        // PID and FF now output volts directly
+        double desiredVoltage = totalRequest + staticComp;
+        desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
-        turret.set(finalOutput);
+        turret.set(desiredVoltage / voltage);
     }
 
     /**
@@ -733,7 +739,13 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
-        wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
+        double lastCmd = hasWrappedTarget ? lastWrappedTarget : turret.getDistance();
+
+        wrapped = IShooterCalculator.wrapToTarget(lastCmd, targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP, lastCmd);
+
+        lastWrappedTarget = wrapped;
+        hasWrappedTarget = true;
+
         turretPID.setSetPoint(wrapped);
         turret.setTargetDistance(wrapped);
     }

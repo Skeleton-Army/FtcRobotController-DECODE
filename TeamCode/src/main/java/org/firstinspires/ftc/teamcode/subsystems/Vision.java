@@ -47,6 +47,7 @@ public class Vision extends SubsystemBase {
     private final int pipeline;
 
     private final int COLOR_OFFSET = 15;
+
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
         this.poseTracker = poseTracker;
         this.pipeline = pipelineIndex;
@@ -54,6 +55,7 @@ public class Vision extends SubsystemBase {
         limelight = hardwareMap.get(Limelight3A.class, LIMELIGHT_NAME);
         limelight.pipelineSwitch(this.pipeline);
         limelight.start();
+        llResult = null;
 
         relocalizeTimer.start();
     }
@@ -63,7 +65,7 @@ public class Vision extends SubsystemBase {
         llResult = limelight.getLatestResult();
         double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
         limelight.updateRobotOrientation(orientationDeg);
-
+        llResult = limelight.getLatestResult();
         // Check if it's the first run OR if the timer is done
         if (relocalizeTimer.isDone() || firstRelocalization) {
             boolean success = relocalize();

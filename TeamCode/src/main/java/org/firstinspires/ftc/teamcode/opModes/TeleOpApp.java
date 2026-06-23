@@ -81,6 +81,9 @@ public class TeleOpApp extends ComplexOpMode {
     private double lastLoopTime = 0;
     private int loopCount = 0;
 
+    private double totalTraveledX = 0;
+    private double totalTraveledY = 0;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -136,61 +139,44 @@ public class TeleOpApp extends ComplexOpMode {
                     }
                 }));
 
-        // Long press: fire immediately when entering zone
-        new Trigger(() -> gamepadEx1.isDown(GamepadKeys.Button.CROSS) && isInsideLaunchZonePredictive() && shooter.getCurrentCommand() == null)
-                .whenActive(new ScheduleCommand(new ShootCommand(shooter, intake, transfer, drive)));
+        // Fire immediately when entering zone
+        if (Settings.get("auto_fire", true)) {
+            new Trigger(() -> isInsideLaunchZonePredictive()
+                    && shooter.getCanShoot()
+                    && shooter.getCurrentCommand() == null)
+                    .whenActive(new ShootCommand(shooter, intake, transfer, drive));
+        }
+
+        // Kick automatically when exiting the launch zone
+        new Trigger(this::isInsideLaunchZonePredictive)
+                .whenInactive(transfer.kick());
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
                 .whenPressed(transfer.kick());
 
-        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.RIGHT_TRIGGER) > 0.1)
-                .and(new Trigger(this::isShootingAllowed))
-                .whileActiveContinuous(new ShootCommand(shooter, intake, transfer, drive));
-
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .whileHeld(
-                        new InstantCommand(() -> {
-                            if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() + 0.01);
-                            else shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.05);
-                        })
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_UP))
+                .whileActiveContinuous(
+                        new InstantCommand(() -> shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.05))
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .whileHeld(
-                        new InstantCommand(() -> {
-                            if (shooter.getVerticalManualMode()) shooter.setHoodPosition(shooter.getRawHoodPosition() - 0.01);
-                            else shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.05);
-                        })
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_DOWN))
+                .whileActiveContinuous(
+                        new InstantCommand(() -> shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.05))
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
-                .whileHeld(
-                        new InstantCommand(() -> {
-                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) + 0.2);
-                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.01);
-                        })
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_LEFT))
+                .whileActiveContinuous(
+                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.005))
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
-                .whileHeld(
-                        new InstantCommand(() -> {
-                            if (shooter.getHorizontalManualMode()) shooter.setHorizontalAngle(shooter.getTurretAngle(AngleUnit.RADIANS) - 0.2);
-                            else shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.01);
-                        })
+                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT))
+                .whileActiveContinuous(
+                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.005))
                 );
-
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.SHARE)
-                .toggleWhenPressed(
-                    new InstantCommand(() -> {
-                        shooter.setHorizontalManualMode(true);
-                        shooter.setVerticalManualMode(true);
-                    }),
-                    new InstantCommand(() -> {
-                        shooter.setHorizontalManualMode(false);
-                        shooter.setVerticalManualMode(false);
-                    }
-                )
-        );
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
                 .toggleWhenActive(
@@ -258,6 +244,14 @@ public class TeleOpApp extends ComplexOpMode {
         lastLoopTime = currentTime;
         loopCount++;
 
+        if (loopCount > 1) {
+            double deltaX = Math.abs(follower.poseTracker.getRawPose().getX() - follower.poseTracker.getPreviousPose().getX());
+            double deltaY = Math.abs(follower.poseTracker.getRawPose().getY() - follower.poseTracker.getPreviousPose().getY());
+
+            if (deltaX > 0.05) totalTraveledX += deltaX;
+            if (deltaY > 0.05) totalTraveledY += deltaY;
+        }
+
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
 
@@ -314,6 +308,10 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
         telemetry.addData("Drift total", driftX + driftY);
+
+        telemetry.addData("Total Traveled X", totalTraveledX);
+        telemetry.addData("Total Traveled Y", totalTraveledY);
+        telemetry.addData("Total Traveled XY", totalTraveledX + totalTraveledY);
 
         telemetry.addData("Pedro Robot x", follower.getPose().getX());
         telemetry.addData("Pedro Robot y", follower.getPose().getY());

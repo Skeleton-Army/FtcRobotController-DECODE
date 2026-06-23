@@ -64,7 +64,7 @@ dependencies {
     implementation "org.solverslib:core:0.3.3"
     implementation "org.solverslib:pedroPathing:0.3.3"
 
-    implementation "com.skeletonarmyftc.marrow:core:1.1.0"
+    implementation "com.skeletonarmyftc.marrow:core:1.1.2"
     implementation 'com.pedropathing:ftc:2.1.2'
     implementation 'com.pedropathing:telemetry:1.0.0'
     implementation 'com.bylazar:fullpanels:1.0.12'
@@ -82,4 +82,20 @@ dependencies {
 
     compileOnly "org.projectlombok:lombok:1.18.46"
     annotationProcessor 'org.projectlombok:lombok:1.18.46'
+}
+
+tasks.register('adbDisconnect', Exec) {
+    group = 'verification'
+    description = 'Disconnects all active wireless ADB connections'
+
+    def adbExe = android.getAdbExecutable().absolutePath;
+    commandLine adbExe, 'disconnect'
+
+    ignoreExitValue = true
+}
+
+afterEvaluate {
+    tasks.named('deploySloth').configure {
+        finalizedBy('adbDisconnect')
+    }
 }

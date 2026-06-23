@@ -9,17 +9,18 @@ public class ShooterConfig {
     public static String FLYWHEEL1_NAME = "flywheel1";
     public static String FLYWHEEL2_NAME = "flywheel2";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
-    public static boolean FLYWHEEL1_INVERTED = true;
-    public static boolean FLYWHEEL2_INVERTED = false;
+    public static boolean FLYWHEEL1_INVERTED = false;
+    public static boolean FLYWHEEL2_INVERTED = true;
+    public static double FLYWHEEL_GEAR_RATIO = 52.0 / 51.0; // Motor teeth / Flywheel teeth
     public static int RPM_REACHED_THRESHOLD = 200;
-    public static double FLYWHEEL_KP = 10;
-    public static double FLYWHEEL_KP_DOWN = 10;
+    public static double FLYWHEEL_KP = 0.02;
+    public static double FLYWHEEL_KP_DOWN = 0.05;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
-    public static double FLYWHEEL_KS = 260;
-    public static double FLYWHEEL_KA = 2;
-    public static double FLYWHEEL_KA_DOWN = 2;
-    public static double FLYWHEEL_KV = 1.25;
+    public static double FLYWHEEL_KS = 1;
+    public static double FLYWHEEL_KA = 0.008;
+    public static double FLYWHEEL_KA_DOWN = 0.008;
+    public static double FLYWHEEL_KV = 0.0047;
     public static double BRAKE_ENTRY_THRESHOLD = -100; // Error must be THIS negative to start braking
     public static double BRAKE_EXIT_THRESHOLD = -50;   // Error must get back up to THIS to stop braking
     public static double FLYWHEEL_DELAY_SEC = 0.02; // ~2 control loops @ 20ms
@@ -37,13 +38,15 @@ public class ShooterConfig {
     public static double TURRET_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_DELAY = 0.02;
-    public static double TURRET_KP = 0.7;
+    public static double TURRET_MIN_VOLTAGE = 0.4;
+    public static double TURRET_KP = 5;
     public static double TURRET_KI = 0;
-    public static double TURRET_KD = 0.04;
-    public static double TURRET_KS_CW_0    = 0.04;  public static double TURRET_KS_CCW_0    = 0.04;  // 0–1000 RPM
-    public static double TURRET_KS_CW_1000 = 0.04;  public static double TURRET_KS_CCW_1000 = 0.04;  // 1000–2000 RPM
-    public static double TURRET_KS_CW_2000 = 0.0405;  public static double TURRET_KS_CCW_2000 = 0.0455;  // 2000–3000 RPM
-    public static double TURRET_KS_CW_3000 = 0.047;  public static double TURRET_KS_CCW_3000 = 0.044;  // 3000–4000 RPM
+    public static double TURRET_KD = 0.1;
+    public static double TURRET_KS = 1;
+    public static double TURRET_KS_CW_0    = 0;  public static double TURRET_KS_CCW_0    = 0;  // 0–1000 RPM
+    public static double TURRET_KS_CW_1000 = 0;  public static double TURRET_KS_CCW_1000 = 0;  // 1000–2000 RPM
+    public static double TURRET_KS_CW_2000 = 0;  public static double TURRET_KS_CCW_2000 = 0;  // 2000–3000 RPM
+    public static double TURRET_KS_CW_3000 = 0;  public static double TURRET_KS_CCW_3000 = 0;  // 3000–4000 RPM
 
 
     // clockwise PID - Turret
@@ -55,8 +58,8 @@ public class ShooterConfig {
     public static double TURRET_KP_CCW = 0.7;
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
-    public static double TURRET_KV = 0.14;
-    public static double TURRET_KA = 0.01;
+    public static double TURRET_KV = 1.8;
+    public static double TURRET_KA = 0;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
     public static double GEAR_RATIO = (double) 286 / 20;
@@ -75,9 +78,11 @@ public class ShooterConfig {
     public static String HOOD_NAME = "hood";
     public static boolean HOOD_INVERTED = false;
     public static double HOOD_POSSIBLE_MIN = 0;
-    public static double HOOD_POSSIBLE_MAX = 0.96;
-    public static double HOOD_MIN = Math.toRadians(33.44);
+    public static double HOOD_POSSIBLE_MAX = 1;
+    public static double HOOD_MIN = Math.toRadians(31.17);
     public static double HOOD_MAX = Math.toRadians(64);
+    public static double HOOD_USABLE_MIN = Math.toRadians(35.6);
+    public static double HOOD_USABLE_MAX = Math.toRadians(64);
 
     public static double STALL_TIMEOUT = 1;
     public static double CURRENT_THRESHOLD = 8;
