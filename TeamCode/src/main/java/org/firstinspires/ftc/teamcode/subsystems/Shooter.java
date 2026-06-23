@@ -84,8 +84,8 @@ public class Shooter extends SubsystemBase {
     private boolean emergencyStop = false;
     private boolean updateHood = true;
     private boolean updateFlywheel = true;
-    public boolean disabled = false;
-    public boolean turretDisabled = false;
+    public boolean disabled = true;
+    public boolean turretDisabled = true;
 
     public Pose currentPose;
 

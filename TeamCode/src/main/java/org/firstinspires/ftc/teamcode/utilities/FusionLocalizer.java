@@ -5,9 +5,11 @@ import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Vector;
 
-import org.firstinspires.ftc.teamcode.pedroPathing.math.Matrix;
+//import org.firstinspires.ftc.teamcode.pedroPathing.math.Matrix;
 
+import com.pedropathing.math.Matrix;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 
 public class FusionLocalizer implements Localizer {
@@ -115,9 +117,6 @@ public class FusionLocalizer implements Localizer {
      * @param measurementVariance the variance for this specific measurement (x, y, heading), or null to use the default
      */
     public void addMeasurement(Pose measuredPose, long timestamp, Pose measurementVariance) {
-        Matrix measurementR = measurementVariance == null
-                ? R
-                : Matrix.diag(measurementVariance.getX(), measurementVariance.getY(), measurementVariance.getHeading());
         // Reject if timestamp is outside our poseHistory time window
         if (poseHistory.isEmpty() || timestamp < poseHistory.firstKey() || timestamp > poseHistory.lastKey())
             return;
@@ -126,36 +125,36 @@ public class FusionLocalizer implements Localizer {
         if (pastPose == null)
             pastPose = getPose();
 
-        // Measurement residual y = z - x
+        // Check which measurements are actually valid
         boolean measX = !Double.isNaN(measuredPose.getX());
         boolean measY = !Double.isNaN(measuredPose.getY());
         boolean measH = !Double.isNaN(measuredPose.getHeading());
 
+        // If absolutely nothing is measured, skip the update entirely
+        if (!measX && !measY && !measH) return;
+
+        // 1. Build R dynamically. If a state isn't measured, assign a huge variance (1e12)
+        double varX = measX ? (measurementVariance != null ? measurementVariance.getX() : R.get(0, 0)) : 1e12;
+        double varY = measY ? (measurementVariance != null ? measurementVariance.getY() : R.get(1, 1)) : 1e12;
+        double varH = measH ? (measurementVariance != null ? measurementVariance.getHeading() : R.get(2, 2)) : 1e12;
+
+        Matrix measurementR = Matrix.diag(varX, varY, varH);
+
+        // 2. Compute Measurement residual y = z - x
         Matrix y = new Matrix(new double[][]{
                 {measX ? measuredPose.getX() - pastPose.getX() : 0},
                 {measY ? measuredPose.getY() - pastPose.getY() : 0},
                 {measH ? MathFunctions.normalizeAngleSigned(measuredPose.getHeading() - pastPose.getHeading()) : 0}
         });
 
-        // Measurement mask M
-        Matrix M = Matrix.diag(
-                measX ? 1 : 0,
-                measY ? 1 : 0,
-                measH ? 1 : 0
-        );
-
         // Covariance at measurement time
-        Matrix Pm = covarianceHistory.floorEntry(timestamp).getValue();
+        Matrix Pm = Objects.requireNonNull(covarianceHistory.floorEntry(timestamp)).getValue();
 
-        // Innovation covariance S = P + R
+        // Innovation covariance S = P + R (Now guaranteed to be invertible!)
         Matrix S = Pm.plus(measurementR);
 
-        // Apply gain K = P * (P + R)^(-1)
-        Matrix K = Pm.multiply(S.inverse());
-
-        // Apply mask
-        K = M.multiply(K);
-        y = M.multiply(y);
+        // Compute Kalman gain K = P * S^-1
+        Matrix K = Pm.multiply(Matrix.inverse3x3(S));
 
         // State update
         Matrix Ky = K.multiply(y);
@@ -166,7 +165,7 @@ public class FusionLocalizer implements Localizer {
         );
         poseHistory.put(timestamp, updatedPast);
 
-        // Joseph-form covariance update
+        // Joseph-form covariance update (Safe and numerically stable)
         Matrix I = Matrix.identity(3);
         Matrix IK = I.minus(K);
         Matrix updatedCovariance =

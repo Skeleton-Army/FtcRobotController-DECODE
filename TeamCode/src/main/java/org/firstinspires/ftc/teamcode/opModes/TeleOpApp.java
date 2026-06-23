@@ -7,6 +7,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.LLResult;
@@ -27,11 +28,13 @@ import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.KalmanConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
@@ -312,13 +315,16 @@ public class TeleOpApp extends ComplexOpMode {
     // the calculated stdevs
 
     public void kalmanDebug(){
-        telemetry.addData("apriltag pose x", aprilTagPipeline.getPose().getX());
-        telemetry.addData("apriltag pose y", aprilTagPipeline.getPose().getY());
-        telemetry.addData("apriltag pose heading", aprilTagPipeline.getPose().getHeading());
 
-        telemetry.addData("pinpoint pose x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getX());
-        telemetry.addData("pinpoint pose y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getY());
-        telemetry.addData("pinpoint pose heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose().getHeading());
+        Pose2D  apriltagPose2D = PoseConverter.poseToPose2D(aprilTagPipeline.getPose(), FTCCoordinates.INSTANCE);
+        telemetry.addData("apriltag pose x", -apriltagPose2D.getX(DistanceUnit.INCH));
+        telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
+        telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
+
+        Pose2D pinpoint2D = PoseConverter.poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).GetDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
+        telemetry.addData("pinpoint pose x", -pinpoint2D.getX(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose y", -pinpoint2D.getY(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose heading", pinpoint2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
         telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(0, 0));
         telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getP().get(1, 1));
@@ -361,9 +367,11 @@ public class TeleOpApp extends ComplexOpMode {
 //            double sizeVarianceY = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffY;
 //            double sizeVarianceAngle = aprilTagPipeline.getTagSizeArea() * KalmanConfig.apriltagTagSizeCoeffAngle;
 
-            Pose pose = new Pose(sizeVarianceX, sizeVarianceY, sizeVarianceAngle);
+            Pose covariancePose = new Pose(sizeVarianceX, sizeVarianceY, sizeVarianceAngle);
 
-            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
+            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera(), KalmanConfig.measurementVariance);
+            //((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)10, KalmanConfig.measurementVariance);
+            //((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera(), covariancePose);
         }
 
     }
