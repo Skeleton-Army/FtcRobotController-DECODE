@@ -51,7 +51,7 @@ public class FusionLocalizer implements Localizer {
     private Matrix P;
     private long lastUpdateTime = -1;
 
-    private boolean ignoreCameraHeading = false;
+    private boolean ignoreCameraHeading = true;
 
     private final NavigableMap<Long, KalmanState> history = new TreeMap<>();
 
@@ -125,7 +125,6 @@ public class FusionLocalizer implements Localizer {
         Pose rawPose = deadReckoning.getPose();
         currentRelativeTransform = compose(invert(currentRawPose), rawPose);
 
-        // Optimization: Pass the exact relative transform directly for EKF covariance updates
         P = updateCovariance(P, currentPosition, currentRelativeTransform);
         currentPosition = compose(currentPosition, currentRelativeTransform);
         currentRawPose = rawPose.copy();
@@ -145,9 +144,6 @@ public class FusionLocalizer implements Localizer {
         }
     }
 
-    /**
-     * Propagates the covariance matrix forward using exact local displacements.
-     */
     private Matrix updateCovariance(Matrix P, Pose pose, Pose localDelta) {
         double distX = localDelta.getX();
         double distY = localDelta.getY();
@@ -157,7 +153,6 @@ public class FusionLocalizer implements Localizer {
         double sinH = Math.sin(heading);
         double cosH = Math.cos(heading);
 
-        // State Transition Jacobian (F) maps uncertainty cross-coupling perfectly
         double f02 = -distX * sinH - distY * cosH;
         double f12 =  distX * cosH - distY * sinH;
 
@@ -167,7 +162,6 @@ public class FusionLocalizer implements Localizer {
                 {0.0, 0.0, 1.0}
         });
 
-        // Scale process noise based on absolute distance traveled
         Matrix bodyQ = Matrix.diag(
                 Math.abs(distX) * Q.get(0, 0),
                 Math.abs(distY) * Q.get(1, 1),
@@ -177,7 +171,6 @@ public class FusionLocalizer implements Localizer {
         Matrix rotation = Matrix.createRotation(heading);
         Matrix worldQ = rotation.multiply(bodyQ).multiply(rotation.transposed());
 
-        // EKF Formula: P = F * P * F^T + Q
         Matrix FPFt = F.multiply(P).multiply(F.transposed());
         Matrix result = FPFt.plus(worldQ);
 
@@ -289,11 +282,12 @@ public class FusionLocalizer implements Localizer {
             upperState.relativeTransform = scaleTransform(upperState.relativeTransform, 1.0 - ratio);
         }
 
-        history.put(timestamp, new KalmanState(updatedPast, interpolated.twist,
-                interpolated.relativeTransform, updatedCovariance));
+        // --- BUG FIX: Explicitly copy state values when writing back to history buffer ---
+        history.put(timestamp, new KalmanState(updatedPast.copy(), interpolated.twist.copy(),
+                interpolated.relativeTransform.copy(), updatedCovariance.copy()));
 
-        Pose prevPose = updatedPast;
-        Matrix prevCov = updatedCovariance;
+        Pose prevPose = updatedPast.copy();
+        Matrix prevCov = updatedCovariance.copy();
 
         for (NavigableMap.Entry<Long, KalmanState> entry : history.tailMap(timestamp, false).entrySet()) {
             KalmanState st = entry.getValue();
@@ -301,15 +295,16 @@ public class FusionLocalizer implements Localizer {
             Pose nextPose = compose(prevPose, st.relativeTransform);
             Matrix nextCov = updateCovariance(prevCov, prevPose, st.relativeTransform);
 
-            st.pose = nextPose;
-            st.covariance = nextCov;
+            // --- BUG FIX: Use deep copies to secure the nodes against reference leakage ---
+            st.pose = nextPose.copy();
+            st.covariance = nextCov.copy();
 
-            prevPose = nextPose;
-            prevCov = nextCov;
+            prevPose = nextPose.copy();
+            prevCov = nextCov.copy();
         }
 
-        currentPosition = prevPose;
-        P = prevCov;
+        currentPosition = prevPose.copy();
+        P = prevCov.copy();
         trimHistory(System.nanoTime());
         lastMeasurementAccepted = true;
         return true;
