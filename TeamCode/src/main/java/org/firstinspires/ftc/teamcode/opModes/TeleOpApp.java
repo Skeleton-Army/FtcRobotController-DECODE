@@ -146,7 +146,10 @@ public class TeleOpApp extends ComplexOpMode {
         if (Settings.get("auto_fire", true)) {
             new Trigger(() -> isInsideLaunchZone
                     && shooter.getCanShoot()
-                    && shooter.getCurrentCommand() == null)
+                    && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
+                    && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
+                    && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
+            )
                     .whenActive(
                             new SequentialCommandGroup(
                                     new WaitCommand(200), // Give a bit of time for flywheel to get above the minimum RPM
