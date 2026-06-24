@@ -272,7 +272,7 @@ public class TeleOpApp extends ComplexOpMode {
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
-        shooter.setUpdateFlywheel(distanceFromLaunchZone() < 20);
+        shooter.setUpdateFlywheel(distanceFromLaunchZone() < 40);
 
         // Immediately cancel drive command if joysticks are moved
         boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
