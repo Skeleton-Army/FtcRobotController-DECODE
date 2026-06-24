@@ -52,6 +52,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
+import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
@@ -579,7 +580,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Settings.set("alliance", alliance);
 
-        follower = Constants.createFollower(hardwareMap);
+        follower = FollowerManager.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
@@ -706,11 +707,6 @@ public class AutonomousApp extends ComplexOpMode {
     @Override
     public void initialize_loop() {
         prompter.run();
-    }
-
-    @Override
-    public void end() {
-        Settings.set("pose", follower.getPose(), false);
     }
 
     private Pose getRelative(Pose originalPose) {

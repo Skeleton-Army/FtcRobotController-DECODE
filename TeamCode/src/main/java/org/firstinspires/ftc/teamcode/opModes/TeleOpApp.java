@@ -41,6 +41,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
+import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -98,13 +99,11 @@ public class TeleOpApp extends ComplexOpMode {
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
 
-        follower = Constants.createFollower(hardwareMap);
+        follower = FollowerManager.createFollower(hardwareMap);
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
         Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
-        follower.setPose(Settings.get("pose", startPose));
-
         if (debugMode) follower.setPose(startPose);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -373,11 +372,6 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
             Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
         }
-    }
-
-    @Override
-    public void end() {
-        Settings.set("pose", follower.getPose(), false);
     }
 
     private boolean isShootingAllowed() {
