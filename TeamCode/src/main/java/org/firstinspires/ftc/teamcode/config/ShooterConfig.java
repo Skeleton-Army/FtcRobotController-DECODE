@@ -39,10 +39,10 @@ public class ShooterConfig {
     public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_DELAY = 0.02;
     public static double TURRET_MIN_VOLTAGE = 0.4;
-    public static double TURRET_KP = 5;
-    public static double TURRET_KI = 0;
-    public static double TURRET_KD = 0.1;
-    public static double TURRET_KS = 1;
+    public static double TURRET_KP = 10;
+    public static double TURRET_KI = 1;
+    public static double TURRET_KD = 0.7;
+    public static double TURRET_KS = 0.5;
     public static double TURRET_KS_CW_0    = 0;  public static double TURRET_KS_CCW_0    = 0;  // 0–1000 RPM
     public static double TURRET_KS_CW_1000 = 0;  public static double TURRET_KS_CCW_1000 = 0;  // 1000–2000 RPM
     public static double TURRET_KS_CW_2000 = 0;  public static double TURRET_KS_CCW_2000 = 0;  // 2000–3000 RPM
@@ -58,7 +58,7 @@ public class ShooterConfig {
     public static double TURRET_KP_CCW = 0.7;
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
-    public static double TURRET_KV = 1.8;
+    public static double TURRET_KV = 3;
     public static double TURRET_KA = 0;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
@@ -71,7 +71,7 @@ public class ShooterConfig {
     public static double DIST_FAR = 160; // Inches
     public static double WINDOW_CLOSE = Math.toRadians(6.0); // Max error allowed when close
     public static double WINDOW_FAR = Math.toRadians(1.0); // Max error allowed when far
-    public static double TURRET_VELOCITY_WINDOW = Math.toRadians(40); // Max velocity error threshold
+    public static double TURRET_VELOCITY_WINDOW = Math.toRadians(1000); // Max velocity error threshold
     public static double VELOCITY_WINDOW_GAIN = Math.toRadians(0.05); // Window growth per inch/sec of speed
     public static double MAX_WINDOW_SIZE = Math.toRadians(6.0); // Absolute limit for the window
 
