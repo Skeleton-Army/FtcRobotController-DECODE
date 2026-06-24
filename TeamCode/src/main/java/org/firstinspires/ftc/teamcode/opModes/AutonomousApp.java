@@ -37,6 +37,7 @@ import com.skeletonarmy.marrow.zones.PolygonZone;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.commands.GoToArtifactCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
@@ -587,7 +588,7 @@ public class AutonomousApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
-        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.OBELISK_PIPELINE);
+        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.DETECTION_PIPELINE);
 
         setupPaths();
 
@@ -806,13 +807,10 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command farCycle() {
-        PathChain path = pickupOrder.contains(2) ? getFarCyclePath() : farPaths[0];
-
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
                 new InstantCommand(intake::collect),
-                new FollowPathCommand(follower, path)
-                        .withTimeout(2500)
+                new GoToArtifactCommand(follower, vision, alliance)
                         .interruptOn(artifactDetected()),
                 returnAndScore(1, false)
         );
