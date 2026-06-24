@@ -344,9 +344,9 @@ public class TeleOpApp extends ComplexOpMode {
             telemetry.addData("Innovation y", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getInnovationCovariance().get(1, 1));
             telemetry.addData("Innovation heading", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getInnovationCovariance().get(2, 2));
 
-            telemetry.addData("cov x", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(0, 0));
-            telemetry.addData("cov y", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(1, 1));
-            telemetry.addData("cov heading", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(2, 2));
+//            telemetry.addData("cov x", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(0, 0));
+//            telemetry.addData("cov y", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(1, 1));
+//            telemetry.addData("cov heading", ((FusionLocalizer) follower.getPoseTracker().getLocalizer()).getcov().get(2, 2));
         }
 
 
