@@ -247,11 +247,15 @@ public class FusionLocalizer implements Localizer {
             double dt = (t - prevTime) / 1e9;
 
             Pose relativeTransform = (firstHop && didInterpolate) ? remainderTransform : entry.getValue().relativeTransform;
-            firstHop = false;
 
             cov = updateCovariance(cov, prevPose, twist, dt);
             prevPose = compose(prevPose, relativeTransform);
-            history.put(t, new KalmanState(prevPose, twist, entry.getValue().relativeTransform, cov));
+
+            // FIX: Save the used relativeTransform, ensuring upperKey now properly
+            // points back to the newly inserted 'timestamp' node with the remainder transform.
+            history.put(t, new KalmanState(prevPose, twist, relativeTransform, cov));
+
+            firstHop = false;
             prevTime = t;
         }
 
@@ -342,7 +346,8 @@ public class FusionLocalizer implements Localizer {
     // Log map: inverse of expTwist. Recovers the constant body-frame twist
     // that produced a given SE(2) displacement.
     private static Pose logTwist(Pose transform) {
-        double dtheta = transform.getHeading();
+        // FIX: Force heading into [-pi, pi] to prevent massive arc projections
+        double dtheta = MathFunctions.normalizeAngleSigned(transform.getHeading());
         double x = transform.getX();
         double y = transform.getY();
         double eps = 1e-4;
