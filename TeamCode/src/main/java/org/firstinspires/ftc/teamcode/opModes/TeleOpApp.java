@@ -87,6 +87,8 @@ public class TeleOpApp extends ComplexOpMode {
     private double totalTraveledX = 0;
     private double totalTraveledY = 0;
 
+    private boolean isInsideLaunchZone;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -142,7 +144,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         // Fire immediately when entering zone
         if (Settings.get("auto_fire", true)) {
-            new Trigger(() -> isInsideLaunchZonePredictive()
+            new Trigger(() -> isInsideLaunchZone
                     && shooter.getCanShoot()
                     && shooter.getCurrentCommand() == null)
                     .whenActive(
@@ -154,7 +156,7 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         // Kick automatically when exiting the launch zone
-        new Trigger(this::isInsideLaunchZonePredictive)
+        new Trigger(this::isInsideLaunchZone)
                 .whenInactive(transfer.kick());
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
@@ -263,7 +265,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         shooter.setZoneCalculator(getCalculatorZone());
 
-        boolean isInsideLaunchZone = isInsideLaunchZone();
+        isInsideLaunchZone = isInsideLaunchZonePredictive();
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
@@ -375,7 +377,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private boolean isShootingAllowed() {
-        return isInsideLaunchZonePredictive() || isOverrideActive;
+        return isInsideLaunchZone || isOverrideActive;
     }
 
     public boolean isInsideLaunchZone() {
