@@ -13,8 +13,6 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.ScheduleCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -150,12 +148,7 @@ public class TeleOpApp extends ComplexOpMode {
                     && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
                     && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
             )
-                    .whenActive(
-                            new SequentialCommandGroup(
-                                    new WaitCommand(200), // Give a bit of time for flywheel to get above the minimum RPM
-                                    new ShootCommand(shooter, intake, transfer, drive)
-                            )
-                    );
+                    .whenActive(new ShootCommand(shooter, intake, transfer, drive));
         }
 
         // Kick automatically when exiting the launch zone
