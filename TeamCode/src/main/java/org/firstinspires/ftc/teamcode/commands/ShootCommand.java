@@ -77,8 +77,9 @@ public class ShootCommand extends SequentialCommandGroup {
                     drive.setShootingMode(true);
                     transfer.release();
                     intake.setIntakeSpeed(intakeSpeed);
-                    intake.collect();
                 }),
+                new WaitCommand(100), // Wait for stopper to open
+                new InstantCommand(intake::collect),
 
                 new WaitCommand(waitMillis),
 
