@@ -104,6 +104,13 @@ public class TeleOpApp extends ComplexOpMode {
     private double sizeVarianceAngle;
     public static boolean testings = true;
 
+
+    // Variables to keep track of previous state for acceleration calculation
+    private double lastVelocityX = 0;
+    private double lastVelocityY = 0;
+    private long lastTimeNanos = 0;
+
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -298,6 +305,60 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
 
+    /**
+     * Calculates the camera physical latency empirically when the robot is cruising at a constant velocity.
+     * Call this inside your main loop during a straight-line test drive.
+     */
+    public void calculateCameraLatencyEmpirically() {
+        // 1. Extract your two poses exactly as you defined them
+        Pose2D apriltagPose2D = PoseConverter.poseToPose2D(aprilTagPipeline.getPose(), FTCCoordinates.INSTANCE);
+        Pose2D pinpointPose2D = PoseConverter.poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
+
+        // Grab the raw Pinpoint instance to get velocities (Pedro follower localizer interface exposure)
+        // Adjust 'pinpoint' to match how you access your GoBildaPinpointDriver object
+        Pose pinpoint = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getVelocity();
+
+        long currentTimeNanos = System.nanoTime();
+        double velX = pinpoint.getX(); // Assumes your Pinpoint returns inches/sec
+        double velY = pinpoint.getY();
+
+        // 2. Calculate current acceleration to verify speed is truly constant
+        double dtSeconds = (currentTimeNanos - lastTimeNanos) / 1e9;
+        if (dtSeconds <= 0) return; // Prevent division by zero on first loop
+
+        double accelX = (velX - lastVelocityX) / dtSeconds;
+        double accelY = (velY - lastVelocityY) / dtSeconds;
+        double netAccel = Math.hypot(accelX, accelY);
+        double netVelocity = Math.hypot(velX, velY);
+
+        // Update tracking variables for the next loop execution
+        lastVelocityX = velX;
+        lastVelocityY = velY;
+        lastTimeNanos = currentTimeNanos;
+
+        // 3. Tuning Filters: Only calculate when cruising steadily
+        // - Velocity should be high enough to make the lag obvious (e.g., > 15 inches/sec)
+        // - Acceleration must be tiny (e.g., < 3 inches/sec^2) to guarantee constant speed
+        if (netVelocity > 15.0 && netAccel < 3.0 && aprilTagPipeline.getApriltagDetection() != null) {
+
+            // 4. Calculate the spatial distance gap between Pinpoint and AprilTag poses
+            double deltaX = (-pinpointPose2D.getX(DistanceUnit.INCH)) - (-apriltagPose2D.getX(DistanceUnit.INCH));
+            double deltaY = (-pinpointPose2D.getY(DistanceUnit.INCH)) - (-apriltagPose2D.getY(DistanceUnit.INCH));
+            double positionGap = Math.hypot(deltaX, deltaY);
+
+            // 5. Compute the absolute latency time (t = distance / velocity)
+            double calculatedLatencySeconds = positionGap / netVelocity;
+            double calculatedLatencyMillis = calculatedLatencySeconds * 1000.0;
+
+            // Output this directly to your dashboard/driver station
+            telemetry.addData("[TUNER] Status", "CRUISING - Tracking Latency");
+            telemetry.addData("[TUNER] Position Gap (in)", positionGap);
+            telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
+        } else {
+            telemetry.addData("[TUNER] Status", "Filtering out (Accelerating or Stopped)");
+        }
+    }
+
     public Pose getAprilTagPose() {
         LLResult result = limelight.getLatestResult();
         if (result != null && result.isValid()) {
@@ -396,6 +457,8 @@ public class TeleOpApp extends ComplexOpMode {
         double loopTimeMs = (currentTime - lastLoopTime) * 1000.0;
         lastLoopTime = currentTime;
         loopCount++;
+
+        calculateCameraLatencyEmpirically();
 
         updateKFApriltagReading();
 
