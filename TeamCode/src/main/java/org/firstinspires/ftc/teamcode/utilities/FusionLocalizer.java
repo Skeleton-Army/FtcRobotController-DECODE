@@ -3,10 +3,8 @@ package org.firstinspires.ftc.teamcode.utilities;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.Matrix;
 import com.pedropathing.math.Vector;
-import com.skeletonarmy.marrow.OpModeManager;
-
-import org.firstinspires.ftc.teamcode.pedroPathing.math.Matrix;
 
 import java.util.NavigableMap;
 import java.util.TreeMap;
@@ -168,34 +166,27 @@ public class FusionLocalizer implements Localizer {
         if (history.isEmpty() || timestamp < history.firstKey() || timestamp > history.lastKey())
             return;
 
+        /*=========================================*/
+        /* Check interpolate method implementation */
         KalmanState interpolatedData = interpolate(timestamp);
+        /*=========================================*/
+
         if (interpolatedData == null) interpolatedData = getKalmanState();
+        Pose interpPose = interpolatedData.pose;
 
-// Figure out if `timestamp` actually falls strictly between two recorded
-// samples, and if so, precompute the remaining portion of the bracketing
-// transform that the forward-propagation loop will need.
-        Long lowerKey = history.floorKey(timestamp);
-        Long upperKey = history.ceilingKey(timestamp);
-        boolean didInterpolate = lowerKey != null && upperKey != null && !lowerKey.equals(upperKey);
-        Pose remainderTransform = null;
-        if (didInterpolate) {
-            double ratio = (double) (timestamp - lowerKey) / (upperKey - lowerKey);
-            remainderTransform = scaleTransform(history.get(upperKey).relativeTransform, 1 - ratio);
-        }
-
-        Pose pastPose = interpolatedData.pose;
-        if (pastPose == null)
-            pastPose = getPose();
+        if (interpPose == null)
+            interpPose = getPose();
 
         // Measurement residual y = z - x
         boolean measX = !Double.isNaN(measuredPose.getX());
         boolean measY = !Double.isNaN(measuredPose.getY());
         boolean measH = !Double.isNaN(measuredPose.getHeading());
 
+        /* take a look at normalizeAngleSigned to make sure its not stupid */
         Matrix y = new Matrix(new double[][]{
-                {measX ? measuredPose.getX() - pastPose.getX() : 0},
-                {measY ? measuredPose.getY() - pastPose.getY() : 0},
-                {measH ? MathFunctions.normalizeAngleSigned(measuredPose.getHeading() - pastPose.getHeading()) : 0}
+                {measX ? measuredPose.getX() - interpPose.getX() : 0},
+                {measY ? measuredPose.getY() - interpPose.getY() : 0},
+                {measH ? MathFunctions.normalizeAngleSigned(measuredPose.getHeading() - interpPose.getHeading()) : 0}
         });
 
         // Measurement mask M
@@ -222,10 +213,10 @@ public class FusionLocalizer implements Localizer {
 
         // State update
         Matrix Ky = K.multiply(y);
-        Pose updatedPast = new Pose(
-                pastPose.getX() + Ky.get(0, 0),
-                pastPose.getY() + Ky.get(1, 0),
-                MathFunctions.normalizeAngle(pastPose.getHeading() + Ky.get(2, 0))
+        Pose updatedInterp = new Pose(
+                interpPose.getX() + Ky.get(0, 0),
+                interpPose.getY() + Ky.get(1, 0),
+                MathFunctions.normalizeAngle(interpPose.getHeading() + Ky.get(2, 0))
         );
 
         // Joseph-form covariance update
@@ -233,29 +224,41 @@ public class FusionLocalizer implements Localizer {
         Matrix IK = I.minus(K);
         Matrix cov = IK.multiply(Pm).multiply(IK.transposed()).plus(K.multiply(measurementR).multiply(K.transposed()));
         clampCovariance(cov);
-        history.put(timestamp, new KalmanState(updatedPast, interpolatedData.twist, interpolatedData.relativeTransform, cov));
+        history.put(timestamp, new KalmanState(updatedInterp, interpolatedData.twist, interpolatedData.relativeTransform, cov));
+
+        Long ceil = history.ceilingKey(timestamp);
+        KalmanState ceilState = history.get(ceil);
+
+        assert ceilState != null;
+        Pose ceilTwist = ceilState.twist;
+
+        //Update the pose estimate based on dead reckoning pose transformation
+        Pose rawPose = ceilState.pose.getPose();
+        Pose ceilRelativeTransform = compose(invert(interpPose), rawPose);
+        double ceilDt = (ceil - timestamp) / 1e9;
+
+        //Update Kalman states
+        cov = updateCovariance(cov, updatedInterp, ceilTwist, ceilDt);
+        Pose updatedCeil = compose(updatedInterp, ceilRelativeTransform);
+
+        history.put(ceil, new KalmanState(updatedCeil, ceilTwist, ceilRelativeTransform, cov));
+
 
         // Forward propagate pose + covariance
-        long prevTime = timestamp;
-        Pose prevPose = updatedPast;
-        boolean firstHop = true;
+        long prevTime = ceil;
+        Pose prevPose = updatedCeil;
 
-        for (NavigableMap.Entry<Long, KalmanState> entry : history.tailMap(timestamp, false).entrySet()) {
+        for (NavigableMap.Entry<Long, KalmanState> entry : history.tailMap(ceil, false).entrySet()) {
             long t = entry.getKey();
             Pose twist = entry.getValue().twist;
             if (twist == null) twist = getVelocity();
+
             double dt = (t - prevTime) / 1e9;
 
-            Pose relativeTransform = (firstHop && didInterpolate) ? remainderTransform : entry.getValue().relativeTransform;
-
+            Pose relativeTransform = entry.getValue().relativeTransform;
             cov = updateCovariance(cov, prevPose, twist, dt);
             prevPose = compose(prevPose, relativeTransform);
-
-            // FIX: Save the used relativeTransform, ensuring upperKey now properly
-            // points back to the newly inserted 'timestamp' node with the remainder transform.
-            history.put(t, new KalmanState(prevPose, twist, relativeTransform, cov));
-
-            firstHop = false;
+            history.put(t, new KalmanState(prevPose, twist, entry.getValue().relativeTransform, cov));
             prevTime = t;
         }
 
@@ -275,6 +278,7 @@ public class FusionLocalizer implements Localizer {
         Pose[] lowerKalmanState = new Pose[] {lower.pose, lower.twist, lower.relativeTransform};
         Pose[] upperKalmanState = new Pose[] {upper.pose, upper.twist, upper.relativeTransform};
 
+
         double ratio = (double) (timestamp - lowerKey) / (upperKey - lowerKey);
 
         Pose[] interpolData = new Pose[3];
@@ -287,11 +291,15 @@ public class FusionLocalizer implements Localizer {
             double heading = MathFunctions.normalizeAngle(lowerPose.getHeading() + ratio * headingDiff);
             interpolData[i] = new Pose(x, y, heading);
         }
-        // was:
-        // interpolData[2] = interpolateTransform(lowerKalmanState[2], upperKalmanState[2], ratio);
+        //interpolData[2] = interpolateTransform(lowerKalmanState[2], upperKalmanState[2], ratio);
+        Pose rawPose = interpolData[0].getPose();
+        Pose relativeTransform = compose(invert(lowerKalmanState[0].getPose()), rawPose);
+        double dt = (timestamp - lowerKey) / 1e9;
 
-        // now:
-        interpolData[2] = scaleTransform(upper.relativeTransform, ratio);
+        //Update Kalman states
+        Matrix cov = updateCovariance(lowerKalmanState[2], updatedInterp, ceilTwist, dt);
+        Pose updatedCeil = compose(updatedInterp, ceilRelativeTransform);
+
         return new KalmanState(interpolData[0], interpolData[1], interpolData[2], lower.covariance);
     }
 
@@ -318,60 +326,34 @@ public class FusionLocalizer implements Localizer {
     }
 
     public static Pose interpolateTransform(Pose a, Pose b, double ratio) {
+        //Linear interpolation in twist space
         double dx = a.getX() + ratio * (b.getX() - a.getX());
         double dy = a.getY() + ratio * (b.getY() - a.getY());
         double headingDiff = MathFunctions.getSmallestAngleDifference(b.getHeading(), a.getHeading());
         double dtheta = MathFunctions.normalizeAngle(a.getHeading() + ratio * headingDiff);
-        return expTwist(dx, dy, dtheta);
-    }
 
-    // Exponential map: constant body-frame twist (dx, dy, dtheta) -> SE(2) displacement
-    private static Pose expTwist(double dx, double dy, double dtheta) {
+        //Exponential map back to SE(2)
         double eps = 1e-4;
         double x, y;
+
         if (Math.abs(dtheta) < eps) {
+            // Pure translation (small-angle approximation)
             x = dx;
             y = dy;
         } else {
+            //twist integration
             double sinT = Math.sin(dtheta);
             double cosT = Math.cos(dtheta);
             double v = sinT / dtheta;
             double w = (1 - cosT) / dtheta;
+
             x = v * dx - w * dy;
             y = w * dx + v * dy;
         }
+
         return new Pose(x, y, dtheta);
     }
 
-    // Log map: inverse of expTwist. Recovers the constant body-frame twist
-    // that produced a given SE(2) displacement.
-    private static Pose logTwist(Pose transform) {
-        // FIX: Force heading into [-pi, pi] to prevent massive arc projections
-        double dtheta = MathFunctions.normalizeAngleSigned(transform.getHeading());
-        double x = transform.getX();
-        double y = transform.getY();
-        double eps = 1e-4;
-        double dx, dy;
-        if (Math.abs(dtheta) < eps) {
-            dx = x;
-            dy = y;
-        } else {
-            double v = Math.sin(dtheta) / dtheta;
-            double w = (1 - Math.cos(dtheta)) / dtheta;
-            double denom = v * v + w * w;
-            dx = (v * x + w * y) / denom;
-            dy = (-w * x + v * y) / denom;
-        }
-        return new Pose(dx, dy, dtheta);
-    }
-
-    // Splits a transform into the fraction `scale` of its constant-twist motion.
-    // scaleTransform(T, r) followed by scaleTransform(T, 1-r), composed in order,
-    // reconstructs T exactly (for a constant body-frame twist).
-    private static Pose scaleTransform(Pose transform, double scale) {
-        Pose twist = logTwist(transform);
-        return expTwist(twist.getX() * scale, twist.getY() * scale, twist.getHeading() * scale);
-    }
     private void clampCovariance(Matrix P) {
         for (int i = 0; i < 3; i++) {
             double v = P.get(i, i);
@@ -445,11 +427,11 @@ public class FusionLocalizer implements Localizer {
         return Double.isNaN(currentPosition.getX()) || Double.isNaN(currentPosition.getY()) || Double.isNaN(currentPosition.getHeading());
     }
 
-    public Matrix getCovariance() {
-        return P;
-    }
-
     public Localizer getDeadReckoning() {
         return deadReckoning;
+    }
+
+    public Matrix getCovariance() {
+        return P;
     }
 }

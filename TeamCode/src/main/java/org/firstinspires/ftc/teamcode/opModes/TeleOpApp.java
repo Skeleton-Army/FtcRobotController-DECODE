@@ -393,9 +393,9 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("pinpoint pose y", -pinpointPos2D.getY(DistanceUnit.INCH));
         telemetry.addData("pinpoint pose heading", pinpointPos2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
-        telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
-        telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
-        telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
+        //telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
+        //telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
+        //telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
 
         telemetry.addData("[TUNER] Position Gap (in)", positionGap);
         telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
@@ -428,7 +428,7 @@ public class TeleOpApp extends ComplexOpMode {
 //    }
 
     public void updateKFApriltagReading() {
-        if (aprilTagPipeline.getApriltagDetection() != null) {
+        if (aprilTagPipeline.getApriltagDetection() != null && KalmanConfig.enableMeasurements) {
             // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
             long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
 
