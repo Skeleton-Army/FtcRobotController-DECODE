@@ -86,6 +86,7 @@ public class TeleOpApp extends ComplexOpMode {
     private double totalTraveledY = 0;
 
     private boolean isInsideLaunchZone;
+    private boolean autoFireEnabled = true;
 
     @Override
     public void initialize() {
@@ -120,6 +121,8 @@ public class TeleOpApp extends ComplexOpMode {
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
+        autoFireEnabled = Settings.get("auto_fire", true);
+
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
 
@@ -141,22 +144,27 @@ public class TeleOpApp extends ComplexOpMode {
                 }));
 
         // Fire immediately when entering zone
-        if (Settings.get("auto_fire", true)) {
-            new Trigger(() -> isInsideLaunchZone
-                    && shooter.getCanShoot()
-                    && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
-                    && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
-                    && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
-            )
-                    .whenActive(new ShootCommand(shooter, intake, transfer, drive));
-        }
+        new Trigger(() -> autoFireEnabled
+                && isInsideLaunchZone
+                && shooter.getCanShoot()
+                && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
+                && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
+                && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
+        )
+                .whenActive(new ShootCommand(shooter, intake, transfer, drive));
 
         // Kick automatically when exiting the launch zone
         new Trigger(this::isInsideLaunchZone)
                 .whenInactive(transfer.kick());
 
+        // Toggle auto-fire on-off
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
-                .whenPressed(transfer.kick());
+                .whenPressed(
+                        new InstantCommand(() -> {
+                            autoFireEnabled = !autoFireEnabled;
+                            gamepad2.rumble(200);
+                        })
+                );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_UP))
