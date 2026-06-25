@@ -35,6 +35,7 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.KalmanConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
@@ -110,6 +111,12 @@ public class TeleOpApp extends ComplexOpMode {
     private double lastVelocityY = 0;
     private long lastTimeNanos = 0;
 
+    private long highSpeedStartNanos = 0;
+    private boolean wasMovingFast = false;
+
+    double calculatedLatencySeconds = 0;
+    double calculatedLatencyMillis = 0;
+    double positionGap = 0;
 
     @Override
     public void initialize() {
@@ -305,57 +312,47 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
 
-    /**
-     * Calculates the camera physical latency empirically when the robot is cruising at a constant velocity.
-     * Call this inside your main loop during a straight-line test drive.
-     */
     public void calculateCameraLatencyEmpirically() {
-        // 1. Extract your two poses exactly as you defined them
         Pose2D apriltagPose2D = PoseConverter.poseToPose2D(aprilTagPipeline.getPose(), FTCCoordinates.INSTANCE);
         Pose2D pinpointPose2D = PoseConverter.poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
 
-        // Grab the raw Pinpoint instance to get velocities (Pedro follower localizer interface exposure)
-        // Adjust 'pinpoint' to match how you access your GoBildaPinpointDriver object
         Pose pinpoint = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getVelocity();
 
-        long currentTimeNanos = System.nanoTime();
-        double velX = pinpoint.getX(); // Assumes your Pinpoint returns inches/sec
+        double velX = pinpoint.getX();
         double velY = pinpoint.getY();
-
-        // 2. Calculate current acceleration to verify speed is truly constant
-        double dtSeconds = (currentTimeNanos - lastTimeNanos) / 1e9;
-        if (dtSeconds <= 0) return; // Prevent division by zero on first loop
-
-        double accelX = (velX - lastVelocityX) / dtSeconds;
-        double accelY = (velY - lastVelocityY) / dtSeconds;
-        double netAccel = Math.hypot(accelX, accelY);
         double netVelocity = Math.hypot(velX, velY);
 
-        // Update tracking variables for the next loop execution
-        lastVelocityX = velX;
-        lastVelocityY = velY;
-        lastTimeNanos = currentTimeNanos;
+        // Filter: Is the robot traveling fast? (e.g., > 18 inches/second)
+        if (netVelocity > 18.0) {
+            if (!wasMovingFast) {
+                // The robot just crossed the speed threshold; start the timer
+                highSpeedStartNanos = System.nanoTime();
+                wasMovingFast = true;
+            }
 
-        // 3. Tuning Filters: Only calculate when cruising steadily
-        // - Velocity should be high enough to make the lag obvious (e.g., > 15 inches/sec)
-        // - Acceleration must be tiny (e.g., < 3 inches/sec^2) to guarantee constant speed
-        if (netVelocity > 15.0 && netAccel < 3.0 && aprilTagPipeline.getApriltagDetection() != null) {
+            // Calculate how long we have maintained this high speed
+            double timeSpentFastSeconds = (System.nanoTime() - highSpeedStartNanos) / 1e9;
 
-            // 4. Calculate the spatial distance gap between Pinpoint and AprilTag poses
-            double deltaX = (-pinpointPose2D.getX(DistanceUnit.INCH)) - (-apriltagPose2D.getX(DistanceUnit.INCH));
-            double deltaY = (-pinpointPose2D.getY(DistanceUnit.INCH)) - (-apriltagPose2D.getY(DistanceUnit.INCH));
-            double positionGap = Math.hypot(deltaX, deltaY);
+            // ONLY log data after maintaining high speed for 0.4 seconds (ensures kickoff is finished)
+            if (timeSpentFastSeconds > 0.4 && aprilTagPipeline.getApriltagDetection() != null) {
 
-            // 5. Compute the absolute latency time (t = distance / velocity)
-            double calculatedLatencySeconds = positionGap / netVelocity;
-            double calculatedLatencyMillis = calculatedLatencySeconds * 1000.0;
+                double deltaX = (-pinpointPose2D.getX(DistanceUnit.INCH)) - (-apriltagPose2D.getX(DistanceUnit.INCH));
+                double deltaY = (-pinpointPose2D.getY(DistanceUnit.INCH)) - (-apriltagPose2D.getY(DistanceUnit.INCH));
+                positionGap = Math.hypot(deltaX, deltaY);
 
-            // Output this directly to your dashboard/driver station
-            telemetry.addData("[TUNER] Status", "CRUISING - Tracking Latency");
-            telemetry.addData("[TUNER] Position Gap (in)", positionGap);
-            telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
+                calculatedLatencySeconds = positionGap / netVelocity;
+                calculatedLatencyMillis = calculatedLatencySeconds * 1000.0;
+
+                telemetry.addData("[TUNER] Status", "STEADY CRUISE - Calculating");
+                telemetry.addData("[TUNER] Position Gap (in)", positionGap);
+                telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
+            } else {
+                telemetry.addData("[TUNER] Status", "Waiting for speed to stabilize...");
+            }
         } else {
-            telemetry.addData("[TUNER] Status", "Filtering out (Accelerating or Stopped)");
+            // Robot slowed down or stopped; reset the window
+            wasMovingFast = false;
+            telemetry.addData("[TUNER] Status", "Too Slow / Stopped");
         }
     }
 
@@ -391,10 +388,17 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
         telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
+        Pose2D pinpointPos2D = poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
+        telemetry.addData("pinpoint pose x", -pinpointPos2D.getX(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose y", -pinpointPos2D.getY(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose heading", pinpointPos2D.getHeading(AngleUnit.RADIANS) - Math.PI);
+
         telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
         telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
         telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
 
+        telemetry.addData("[TUNER] Position Gap (in)", positionGap);
+        telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
 
         telemetry.addData("stdev x", sizeVarianceX);
         telemetry.addData("stdev y", sizeVarianceX);
@@ -415,12 +419,33 @@ public class TeleOpApp extends ComplexOpMode {
 
 
     // updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
+//    public void updateKFApriltagReading() {
+//        if (aprilTagPipeline.getApriltagDetection() != null) {
+//            long time = System.nanoTime();
+//            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
+//        }
+//
+//    }
+
     public void updateKFApriltagReading() {
         if (aprilTagPipeline.getApriltagDetection() != null) {
-            long time = System.nanoTime();
-            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
-        }
+            // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
+            long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
 
+            // 2. Convert the double ms constants from KalmanConfig into nanoseconds
+            long cameraLatencyNanos = (long) (KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS * 1e6);
+            long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
+
+            // 3. Calculate the relative offset package
+            long relativeLatencyOffset = cameraLatencyNanos - pinpointLatencyNanos;
+
+            // 4. Align the frame time to the correct moment on the Pinpoint timeline
+            long correctedTimestamp = rawFrameTime - relativeLatencyOffset;
+
+            // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
+            ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
+                    .addMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
+        }
     }
 
     public long getResultTimestamp() {
@@ -439,7 +464,7 @@ public class TeleOpApp extends ComplexOpMode {
         lastLoopTime = currentTime;
         loopCount++;
 
-        calculateCameraLatencyEmpirically();
+        //calculateCameraLatencyEmpirically();
 
         updateKFApriltagReading();
 
