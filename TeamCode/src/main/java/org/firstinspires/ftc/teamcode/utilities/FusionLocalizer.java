@@ -448,4 +448,8 @@ public class FusionLocalizer implements Localizer {
     public Matrix getCovariance() {
         return P;
     }
+
+    public Localizer getDeadReckoning() {
+        return deadReckoning;
+    }
 }
