@@ -162,7 +162,7 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(
                         new InstantCommand(() -> {
                             autoFireEnabled = !autoFireEnabled;
-                            gamepad2.rumble(200);
+                            gamepad1.rumble(200);
                         })
                 );
 
