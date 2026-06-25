@@ -53,6 +53,9 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     private Mat matrix = new Mat(3, 3, CvType.CV_64F);
     private Mat roiMatrix = new Mat(3, 3, CvType.CV_64F);
 
+    // --- High-Precision Timing Anchor ---
+    private volatile long latestCaptureTimeNanos = 0;
+
     // --- Permanent Static Crop ---
     private final double BOTTOM_CROP_PERCENT = 0.20; // Cuts off the bottom 20% of the image entirely
 
@@ -77,6 +80,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     private double tagSizeX = 0;
     private double tagSizeY = 0;
     private double tagSizeArea = 0;
+
     public AprilTagPipeline()
     {
         this.processor = new AprilTagProcessor.Builder()
@@ -121,6 +125,9 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     @Override
     public Mat processFrame(Mat input, long captureTimeNanos)
     {
+        // Capture the exact hardware timestamp from the camera thread instantly
+        this.latestCaptureTimeNanos = captureTimeNanos;
+
         // 1. Instantly compute the maximum safe height boundary allowed by our static bottom crop
         int maxAllowedHeight = (int) (input.height() * (1.0 - BOTTOM_CROP_PERCENT));
 
@@ -186,8 +193,6 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         return fullBlackCanvas;
     }
 
-
-
     private void updateRoi(int maxAllowedHeight) {
         List<AprilTagDetection> detections = processor.getDetections();
 
@@ -240,10 +245,6 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         this.useDynamicRoi = useDynamicRoi;
     }
 
-
-
-
-
     @Override
     public void onDrawFrame(Canvas canvas, int onscreenWidth, int onscreenHeight, float scaleBmpPxToCanvasPx, float scaleCanvasDensity, Object userContext)
     {
@@ -256,6 +257,14 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
             float bottom = (roiRect.y + roiRect.height) * scaleBmpPxToCanvasPx;
             canvas.drawRect(left, top, right, bottom, debugPaint);
         }
+    }
+
+    /**
+     * Gets the high-precision hardware capture timestamp of the frame containing the current detections.
+     * @return System.nanoTime() baseline from the OS kernel driver layer.
+     */
+    public long getLatestTimestamp() {
+        return latestCaptureTimeNanos;
     }
 
     public List<AprilTagDetection> getDetections() {
