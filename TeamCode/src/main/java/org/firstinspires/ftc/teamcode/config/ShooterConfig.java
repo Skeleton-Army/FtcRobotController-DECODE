@@ -66,6 +66,7 @@ public class ShooterConfig {
     public static double TURRET_OFFSET_X = 0; // Positive = Front
     public static double TURRET_OFFSET_Y = 0; // Positive = Left
     public static boolean TURRET_WRAP = true;
+    public static double TURRET_WRAP_JUMP_THRESHOLD = Math.toRadians(90);
 
     public static double DIST_CLOSE = 30; // Inches
     public static double DIST_FAR = 160; // Inches

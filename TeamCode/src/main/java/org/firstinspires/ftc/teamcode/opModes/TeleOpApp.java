@@ -235,6 +235,10 @@ public class TeleOpApp extends ComplexOpMode {
         new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
                 .whenActive(new InstantCommand(() -> gamepad1.rumble(300)));
 
+        // Cancel shooting when turret wraps around
+        new Trigger(shooter::getJustWrapped)
+                .whenActive(new InstantCommand(() -> CommandScheduler.getInstance().cancel(shooter.getCurrentCommand())));
+
         intake.setDefaultCommand(new RunCommand(intake::stop, intake));
         drive.setDefaultCommand(
                 new RunCommand(

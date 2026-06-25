@@ -115,6 +115,7 @@ public class Shooter extends SubsystemBase {
 
     private double lastWrappedTarget = 0;
     private boolean hasWrappedTarget = false;
+    public boolean justWrapped = false;
 
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
@@ -743,6 +744,9 @@ public class Shooter extends SubsystemBase {
 
         wrapped = IShooterCalculator.wrapToTarget(lastCmd, targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP, lastCmd);
 
+        // A real wrap shows up as a big discontinuous jump in the commanded setpoint
+        justWrapped = hasWrappedTarget && Math.abs(wrapped - lastWrappedTarget) > TURRET_WRAP_JUMP_THRESHOLD;
+
         lastWrappedTarget = wrapped;
         hasWrappedTarget = true;
 
@@ -761,6 +765,10 @@ public class Shooter extends SubsystemBase {
     public void updateVoltage(double voltage) {
         this.voltage = voltage;
         voltageExternallySupplied = true;
+    }
+
+    public boolean getJustWrapped() {
+        return justWrapped;
     }
 
     public void disable() {
