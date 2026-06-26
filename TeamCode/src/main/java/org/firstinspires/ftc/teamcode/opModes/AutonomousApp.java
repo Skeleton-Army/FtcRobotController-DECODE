@@ -164,23 +164,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
-    public PathChain backFromGateCollection() {
-        return follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower.getPose(),
-                                getRelative(new Pose(46.462, 64.985)),
-                                nearDriveBack
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        follower.getHeading(),
-                        getRelative(Math.toRadians(180))
-                )
-                .build();
-    }
-
     public PathChain goSort() {
         return follower
                 .pathBuilder()
