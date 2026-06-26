@@ -6,6 +6,7 @@ import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.Y_OFFSET;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.FuturePose;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.paths.PathChain;
@@ -143,6 +144,33 @@ public class Drive extends SubsystemBase {
                 },
                 Collections.singletonList(this)
         );
+    }
+
+    public Command LoadingZoneCycle() {
+        if (tabletopMode) return new InstantCommand();
+
+
+        Pose loadingZoneEnd = new Pose(24,18, Math.toRadians(160)); // pose for intaking at the opposing loading zone, the end of the path
+        if (follower.getPose().getX() < 72)
+            loadingZoneEnd.mirror();
+
+        return new DeferredCommand(
+                () -> {
+                    PathChain path = follower
+                            .pathBuilder()
+                            .addPath(new BezierLine(follower.getPose(), loadingZoneEnd))
+                            .build();
+
+
+                    return new SequentialCommandGroup(
+                            new FollowPathCommand(follower, path),
+                            new WaitCommand(1000),
+                            new InstantCommand(() -> follower.startTeleopDrive(USE_BRAKE_MODE))
+                    );
+
+                },
+                Collections.singletonList(this)
+                );
     }
 
     public void teleOpDrive(Gamepad gamepad) {
