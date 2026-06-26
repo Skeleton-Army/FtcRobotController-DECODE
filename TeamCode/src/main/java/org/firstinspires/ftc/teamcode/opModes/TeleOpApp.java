@@ -316,6 +316,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("!Reached angle", shooter.reachedAngle());
         telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
         telemetry.addData("!Can shoot", shooter.getCanShoot());
+        telemetry.addData("!Is currently shooting", shooter.getCurrentCommand() != null);
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
 
@@ -372,6 +373,7 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Reached Angle", shooter.reachedAngle());
             Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
             Logger.recordOutput("Can Shoot", shooter.getCanShoot());
+            Logger.recordOutput("Is Currently Shooting", shooter.getCurrentCommand() != null);
             Logger.recordOutput("Distance From Pose", goalDistance);
             Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
             Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
