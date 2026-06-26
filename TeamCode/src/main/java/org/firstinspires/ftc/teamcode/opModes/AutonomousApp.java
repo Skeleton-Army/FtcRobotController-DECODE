@@ -93,6 +93,8 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain nearSpike4Open;
     private PathChain driveToGate;
     private PathChain obeliskInitialScorePath;
+    private PathChain farDriveBackA;
+    private PathChain farCyclePath;
 
     private Alliance alliance;
     private boolean endGate;
@@ -110,32 +112,6 @@ public class AutonomousApp extends ComplexOpMode {
 
     private boolean isSorting = false;
     private ArtifactPattern detectedPattern = ArtifactPattern.PPG; // fallback default
-
-    public PathChain farDriveBack() {
-        return follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower.getPose(),
-                                farDriveBack
-                        )
-                )
-                .setHeadingInterpolation(
-                        HeadingInterpolator.piecewise(
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0,
-                                        0.8,
-                                        HeadingInterpolator.tangent.reverse()
-                                ),
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0.8,
-                                        1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
-                                )
-                        )
-                )
-                .build();
-    }
 
     public PathChain nearDriveBack() {
         return follower
@@ -251,32 +227,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
-    public PathChain getFarCyclePath() {
-        return follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower.getPose(),
-                                getRelative(new Pose(48, 9)),
-                                getRelative(new Pose(12, 8))
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .addPath(
-                        new BezierLine(
-                                getRelative(new Pose(12, 8)),
-                                getRelative(new Pose(11, 35))
-                        )
-                )
-                .setTranslationalConstraint(5)
-                .setTValueConstraint(0.7)
-                .setTangentHeadingInterpolation()
-                .setGlobalDeceleration()
-                .build();
-    }
-
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55.61,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
@@ -296,6 +246,58 @@ public class AutonomousApp extends ComplexOpMode {
         gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
         sortingPose = getRelative(new Pose(30, 113));
 
+        farCyclePath = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower.getPose(),
+                                new Pose(48, 9),
+                                new Pose(12, 8)
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        Math.toRadians(180)
+                )
+                .addPath(
+                        new BezierLine(
+                                new Pose(12, 8),
+                                new Pose(11, 35)
+                        )
+                )
+                .setTranslationalConstraint(5)
+                .setTValueConstraint(0.7)
+                .setTangentHeadingInterpolation()
+                .setGlobalDeceleration()
+                .build();
+
+        if (alliance == Alliance.RED) {
+            farCyclePath = farCyclePath.mirror();
+        }
+
+        farDriveBackA = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                farDriveBack
+                        )
+                )
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.8,
+                                        HeadingInterpolator.tangent.reverse()
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.8,
+                                        1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
+                                )
+                        )
+                )
+                .build();
+
         nearPathsReturn[0] = this::nearDriveBack;
         nearPathsReturn[1] = this::nearDriveBack;
         nearPathsReturn[2] = () -> follower
@@ -314,10 +316,10 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
         nearPathsReturn[3] = this::nearDriveBack;
 
-        farPathsReturn[0] = this::farDriveBack;
-        farPathsReturn[1] = this::farDriveBack;
-        farPathsReturn[2] = this::farDriveBack;
-        farPathsReturn[3] = this::farDriveBack;
+        farPathsReturn[0] = () -> farDriveBackA;
+        farPathsReturn[1] = () -> farDriveBackA;
+        farPathsReturn[2] = () -> farDriveBackA;
+        farPathsReturn[3] = () -> farDriveBackA;
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -580,7 +582,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Settings.set("alliance", alliance);
 
-        follower = FollowerManager.createFollower(hardwareMap);
+        follower = Constants.createFollower(hardwareMap);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
@@ -802,7 +804,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command farCycle() {
-        PathChain path = pickupOrder.contains(2) ? getFarCyclePath() : farPaths[0];
+        PathChain path = farCyclePath;
 
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
@@ -924,7 +926,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private PathChain getFinalPath() {
-        return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBackEnd;
+        return (startingPosition == StartingPosition.FAR) ? farDriveBackA : nearDriveBackEnd;
     }
 
     private Command collectSortAndScore(int spike, ArtifactPattern target) {
