@@ -31,8 +31,6 @@ import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
 import com.skeletonarmy.marrow.prompts.ValuePrompt;
 import com.skeletonarmy.marrow.settings.Settings;
-import com.skeletonarmy.marrow.zones.Point;
-import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -43,7 +41,6 @@ import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
-import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
@@ -64,10 +61,6 @@ import java.util.function.Supplier;
 
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
 public class AutonomousApp extends ComplexOpMode {
-    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
-    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
-    private final PolygonZone robotZone = new PolygonZone(17, 17);
-
     private final Prompter prompter = new Prompter(this);
     TimerEx matchTime = new TimerEx(30); // 30 second autonomous
 
@@ -626,16 +619,10 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void run() {
-        follower.update();
-        shooter.setZoneCalculator(getCalculatorZone());
-
-        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
-        robotZone.setRotation(follower.getPose().getHeading());
-
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
-        if (!isSorting) shooter.setUpdateFlywheel(distanceFromLaunchZone() < 20);
+        if (!isSorting) shooter.setUpdateFlywheel(drive.distanceFromLaunchZone() < 40);
 
         telemetry.addData("Robot Pedro X", follower.getPose().getX());
         telemetry.addData("Robot Pedro Y", follower.getPose().getY());
@@ -646,7 +633,7 @@ public class AutonomousApp extends ComplexOpMode {
         telemetry.addData("CanShootRPM", shooter.getCanShootRPMCalc());
         telemetry.addData("reachedAngle", shooter.reachedAngle());
         telemetry.addData("canShoot", shooter.getCanShoot());
-        telemetry.addData("In Zone", isInsideLaunchZone());
+        telemetry.addData("In Zone", drive.isInsideLaunchZonePredictive());
 
         final double inchesToMeters = 39.37;
 
@@ -665,7 +652,7 @@ public class AutonomousApp extends ComplexOpMode {
         Logger.recordOutput("CanShootRPM", shooter.getCanShootRPMCalc());
         Logger.recordOutput("reachedAngle", shooter.reachedAngle());
         Logger.recordOutput("canShoot", shooter.getCanShoot());
-        Logger.recordOutput("In Zone", isInsideLaunchZone());
+        Logger.recordOutput("In Zone", drive.isInsideLaunchZonePredictive());
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
         telemetry.update();
@@ -993,16 +980,6 @@ public class AutonomousApp extends ComplexOpMode {
         });
     }
 
-    public boolean isInsideLaunchZone() {
-        boolean insideClose = robotZone.isInside(closeLaunchZone);
-        boolean insideFar = robotZone.isInside(farLaunchZone);
-        return insideClose || insideFar;
-    }
-
-    public double distanceFromLaunchZone() {
-        return Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
-    }
-
     /**
      * Repeatedly schedules a command as long as there is enough time remaining.
      * @param cycleSupplier A factory that returns a NEW instance of the cycle command.
@@ -1017,9 +994,5 @@ public class AutonomousApp extends ComplexOpMode {
                 new InstantCommand(),
                 () -> matchTime.isMoreThan(threshold)
         );
-    }
-
-    public LaunchZone getCalculatorZone() {
-        return robotZone.distanceTo(closeLaunchZone) < robotZone.distanceTo(farLaunchZone) ? LaunchZone.CLOSE : LaunchZone.FAR;
     }
 }

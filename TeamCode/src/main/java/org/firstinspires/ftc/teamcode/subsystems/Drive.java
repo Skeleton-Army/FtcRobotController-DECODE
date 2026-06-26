@@ -20,12 +20,23 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.settings.Settings;
+import com.skeletonarmy.marrow.zones.Point;
+import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 
 import java.util.Collections;
 
 public class Drive extends SubsystemBase {
+    public static final double ROBOT_WIDTH = 16.53; // Side-to-side
+    public static final double ROBOT_LENGTH = 14.96; // Front-to-back
+
+    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
+    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
+
+    private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
+    private final PolygonZone futureRobotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
+
     private final Follower follower;
     private final Alliance alliance;
     private final boolean isRobotCentric;
@@ -36,6 +47,14 @@ public class Drive extends SubsystemBase {
     private boolean isHoldingPosition = false;
 
     private boolean enabled = true;
+
+    private long lastUpdateFrame = -1;
+    private long lastZoneFrame = -1;
+    private long lastPredictiveFrame = -1;
+    private long lastDistanceFrame = -1;
+    private boolean cachedIsInside;
+    private boolean cachedIsInsidePredictive;
+    private double cachedDistance;
 
     public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
@@ -49,6 +68,11 @@ public class Drive extends SubsystemBase {
     public void periodic() {
         if (!enabled) return;
         follower.update();
+
+        lastUpdateFrame++;
+
+        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
+        robotZone.setRotation(follower.getPose().getHeading());
     }
 
     public Command goToGate() {
@@ -221,6 +245,39 @@ public class Drive extends SubsystemBase {
         }
     }
 
+    public boolean isInsideLaunchZone() {
+        if (shouldUpdateCache(lastZoneFrame)) {
+            cachedIsInside = robotZone.isInside(closeLaunchZone) || robotZone.isInside(farLaunchZone);
+            lastZoneFrame = lastUpdateFrame;
+        }
+        return cachedIsInside;
+    }
+
+    public boolean isInsideLaunchZonePredictive() {
+        if (tabletopMode) return true;
+
+        if (shouldUpdateCache(lastPredictiveFrame)) {
+            final double PREDICTION_TIME = 0.3;
+            double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * PREDICTION_TIME);
+            double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * PREDICTION_TIME);
+
+            futureRobotZone.setPosition(futureX, futureY);
+            futureRobotZone.setRotation(follower.getPose().getHeading());
+
+            cachedIsInsidePredictive = futureRobotZone.isInside(closeLaunchZone) || futureRobotZone.isInside(farLaunchZone);
+            lastPredictiveFrame = lastUpdateFrame;
+        }
+        return cachedIsInsidePredictive;
+    }
+
+    public double distanceFromLaunchZone() {
+        if (shouldUpdateCache(lastDistanceFrame)) {
+            cachedDistance = Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
+            lastDistanceFrame = lastUpdateFrame;
+        }
+        return cachedDistance;
+    }
+
     public void disable() {
         this.enabled = false;
         follower.setTeleOpDrive(0, 0, 0);
@@ -243,6 +300,10 @@ public class Drive extends SubsystemBase {
 
     public void setShootingMode(boolean enabled) {
         shootingMode = enabled;
+    }
+
+    private boolean shouldUpdateCache(long frameToken) {
+        return lastUpdateFrame != frameToken;
     }
 
     /**
