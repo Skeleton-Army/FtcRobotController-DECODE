@@ -77,6 +77,10 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     private double tagSizeX = 0;
     private double tagSizeY = 0;
     private double tagSizeArea = 0;
+
+    // --- High-Precision Timing Anchor ---
+    private volatile long latestCaptureTimeNanos = 0;
+
     public AprilTagPipeline()
     {
         this.processor = new AprilTagProcessor.Builder()
@@ -121,6 +125,9 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     @Override
     public Mat processFrame(Mat input, long captureTimeNanos)
     {
+        // Capture the exact hardware timestamp from the camera thread instantly
+        this.latestCaptureTimeNanos = captureTimeNanos;
+
         // 1. Instantly compute the maximum safe height boundary allowed by our static bottom crop
         int maxAllowedHeight = (int) (input.height() * (1.0 - BOTTOM_CROP_PERCENT));
 
@@ -241,7 +248,13 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
 
-
+    /**
+     * Gets the high-precision hardware capture timestamp of the frame containing the current detections.
+     * @return System.nanoTime() baseline from the OS kernel driver layer.
+     */
+    public long getLatestTimestamp() {
+        return latestCaptureTimeNanos;
+    }
 
 
     @Override
