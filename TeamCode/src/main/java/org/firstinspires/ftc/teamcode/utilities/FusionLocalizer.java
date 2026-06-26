@@ -173,11 +173,11 @@ public class FusionLocalizer implements Localizer {
 
         Matrix FPFt = F.multiply(P).multiply(F.transposed());
 
-        for (int i = 0; i < 3; i++) {
+        /*for (int i = 0; i < 3; i++) {
             if (FPFt.get(i,i) < P.get(i,i)) {
                 FPFt.set(i,i, P.get(i,i));
             }
-        }
+        }*/
 
         Matrix result = FPFt.plus(worldQ);
         forceSymmetric(result);
@@ -231,7 +231,7 @@ public class FusionLocalizer implements Localizer {
 
         boolean measX = !Double.isNaN(measuredPose.getX());
         boolean measY = !Double.isNaN(measuredPose.getY());
-        boolean measH = !Double.isNaN(measuredPose.getHeading());
+        boolean measH = !Double.isNaN(measuredPose.getHeading()) && !ignoreCameraHeading;
 
         int dof = (measX ? 1 : 0) + (measY ? 1 : 0) + (measH ? 1 : 0);
         if (dof == 0) return false;

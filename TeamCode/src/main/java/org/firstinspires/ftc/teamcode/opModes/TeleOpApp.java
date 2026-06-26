@@ -98,7 +98,7 @@ public class TeleOpApp extends ComplexOpMode {
     private long nanoTimeToEpochMillisOffset = 0;
 
     AprilTagPipeline aprilTagPipeline;
-    private EpochTimestampSyncOpMode2.TimestampedPinpoint pinpoint;
+    //private EpochTimestampSyncOpMode2.TimestampedPinpoint pinpoint;
 
     private double sizeVarianceX;
     private double sizeVarianceY;
@@ -135,8 +135,8 @@ public class TeleOpApp extends ComplexOpMode {
 
         // This converts any System.nanoTime() reading directly into an Epoch Millisecond timestamp
         nanoTimeToEpochMillisOffset = epochMillisSample - (nanoTimeSample / 1_000_000);
-        I2cDeviceSynchSimple rawI2cClient = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint").getDeviceClient();
-        pinpoint = new EpochTimestampSyncOpMode2.TimestampedPinpoint(rawI2cClient);
+       // I2cDeviceSynchSimple rawI2cClient = hardwareMap.get(GoBildaPinpointDriver.class, "pinpoint").getDeviceClient();
+        //pinpoint = new EpochTimestampSyncOpMode2.TimestampedPinpoint(rawI2cClient);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
@@ -570,9 +570,9 @@ public class TeleOpApp extends ComplexOpMode {
 //        Logger.recordOutput("Limelight Capture Time (ms UTC)", "" + limelightCaptureEpochMs);
 //        Logger.recordOutput("skew/difference", trueSensorSkewMs);
 
-        Logger.recordOutput("Pinpoint x", pinpoint.getPosition().getX(DistanceUnit.INCH));
-        Logger.recordOutput("Pinpoint y", pinpoint.getPosition().getY(DistanceUnit.INCH));
-        Logger.recordOutput("Pinpoint heading", pinpoint.getPosition().getHeading(AngleUnit.DEGREES));
+//        Logger.recordOutput("Pinpoint x", pinpoint.getPosition().getX(DistanceUnit.INCH));
+//        Logger.recordOutput("Pinpoint y", pinpoint.getPosition().getY(DistanceUnit.INCH));
+//        Logger.recordOutput("Pinpoint heading", pinpoint.getPosition().getHeading(AngleUnit.DEGREES));
 
         Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
         Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
