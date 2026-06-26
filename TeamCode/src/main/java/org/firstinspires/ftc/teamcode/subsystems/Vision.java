@@ -59,11 +59,11 @@ public class Vision extends SubsystemBase {
         llResult = limelight.getLatestResult();
         // Check if it's the first run OR if the timer is done
         if (relocalizeTimer.isDone() || firstRelocalization) {
-            boolean success = relocalize();
-            if (success) {
-                firstRelocalization = false;
-                relocalizeTimer.restart();
-            }
+//            boolean success = relocalize();
+//            if (success) {
+//                firstRelocalization = false;
+//                relocalizeTimer.restart();
+//            }
         }
     }
 
