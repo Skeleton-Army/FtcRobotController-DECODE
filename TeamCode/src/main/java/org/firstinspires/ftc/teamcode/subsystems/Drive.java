@@ -9,6 +9,7 @@ import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.FuturePose;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.seattlesolvers.solverslib.command.Command;
@@ -159,6 +160,7 @@ public class Drive extends SubsystemBase {
                     PathChain path = follower
                             .pathBuilder()
                             .addPath(new BezierLine(follower.getPose(), loadingZoneEnd))
+                            .setHeadingInterpolation(HeadingInterpolator.linear(follower.getHeading(), loadingZoneEnd.getHeading()))
                             .build();
 
 
