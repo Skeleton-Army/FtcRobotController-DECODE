@@ -37,6 +37,7 @@ import com.skeletonarmy.marrow.zones.PolygonZone;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.commands.CloseCycleCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
@@ -159,23 +160,6 @@ public class AutonomousApp extends ComplexOpMode {
                                         HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
                                 )
                         )
-                )
-                .build();
-    }
-
-    public PathChain collectFromGate() {
-        return follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower.getPose(),
-                                getRelative(new Pose(46.462, 64.985)),
-                                gateOpenPose
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        follower.getHeading(),
-                        getRelative(Math.toRadians(154.8622))
                 )
                 .build();
     }
@@ -789,16 +773,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command closeCycle() {
-        return new SequentialCommandGroup(
-                // Open gate, collect, and go back to shoot
-                new InstantCommand(intake::collect),
-                new DeferredCommand(() -> new FollowPathCommand(follower, collectFromGate()), null),
-                new WaitUntilCommand(() -> transfer.isArtifactDetected() && transfer.isArtifactInIntake())
-                        .withTimeout(2000),
-                new DeferredCommand(() -> new FollowPathCommand(follower, backFromGateCollection()), null),
-                new InstantCommand(intake::stop),
-                shoot()
-        );
+        return new CloseCycleCommand(follower, intake, transfer, shooter, drive, alliance);
     }
 
     private Command farCycle() {

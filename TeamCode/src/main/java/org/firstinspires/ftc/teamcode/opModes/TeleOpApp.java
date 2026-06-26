@@ -9,10 +9,14 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.ScheduleCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -22,6 +26,7 @@ import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.commands.CloseCycleCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -208,7 +213,9 @@ public class TeleOpApp extends ComplexOpMode {
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
-                .whenPressed(drive.goToGate());
+                .whenPressed(new RepeatCommand(
+                        new CloseCycleCommand(follower, intake, transfer, shooter, drive, alliance)
+                ));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
@@ -300,7 +307,12 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         if (!isInsideLaunchZone && !isOverrideActive) {
-            CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
+            Command currentShooterCommand = shooter.getCurrentCommand();
+
+            // Cancel shooting ONLY if we are running a standalone ShootCommand, not a complex macro like CloseCycleCommand
+            if (currentShooterCommand instanceof ShootCommand) {
+                CommandScheduler.getInstance().cancel(currentShooterCommand);
+            }
         }
 
         double goalDistance = follower.getPose().distanceFrom(
