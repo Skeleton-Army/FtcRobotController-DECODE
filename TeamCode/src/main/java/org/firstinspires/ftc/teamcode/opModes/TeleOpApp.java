@@ -213,11 +213,11 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
-                .whenPressed(() -> {
-                    boolean success = vision.relocalize();
-                    if (!success) gamepad1.rumble(300);
-                });
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
+//                .whenPressed(() -> {
+//                    boolean success = vision.relocalize();
+//                    if (!success) gamepad1.rumble(300);
+//                });
 
         if (debugMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_STICK_BUTTON)
