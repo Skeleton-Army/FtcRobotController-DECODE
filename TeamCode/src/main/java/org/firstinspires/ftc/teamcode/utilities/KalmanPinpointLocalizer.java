@@ -55,7 +55,7 @@ public class KalmanPinpointLocalizer extends PinpointLocalizer {
      * Constructor
      */
     public KalmanPinpointLocalizer(HardwareMap map, Limelight3A limelight, PinpointConstants constants, Pose setStartPose) {
-        super(map, constants, setStartPose);
+        super(map, constants, setStartPose, true);
         this.limelight = limelight;
 
         // Start Limelight polling

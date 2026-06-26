@@ -100,8 +100,8 @@ public class TeleOpApp extends ComplexOpMode {
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
 
-        follower = FollowerManager.createFollower(hardwareMap);
-        follower.startTeleopDrive(USE_BRAKE_MODE);
+        follower = Constants.createFollower(hardwareMap);
+        follower.startTeleopDrive(USE_BRAKE_MODE, true);
         follower.setMaxPower(1);
 
         Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
