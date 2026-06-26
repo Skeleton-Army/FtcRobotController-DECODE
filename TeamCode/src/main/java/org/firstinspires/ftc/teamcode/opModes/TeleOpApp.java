@@ -402,6 +402,7 @@ public class TeleOpApp extends ComplexOpMode {
             // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
             ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
                     .addMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
+
         }
     }
 

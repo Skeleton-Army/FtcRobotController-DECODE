@@ -172,8 +172,14 @@ public class FusionLocalizer implements Localizer {
         Matrix worldQ = rotation.multiply(bodyQ).multiply(rotation.transposed());
 
         Matrix FPFt = F.multiply(P).multiply(F.transposed());
-        Matrix result = FPFt.plus(worldQ);
 
+        for (int i = 0; i < 3; i++) {
+            if (FPFt.get(i,i) < P.get(i,i)) {
+                FPFt.set(i,i, P.get(i,i));
+            }
+        }
+
+        Matrix result = FPFt.plus(worldQ);
         forceSymmetric(result);
         clampDiagonal(result);
         return result;
@@ -215,13 +221,17 @@ public class FusionLocalizer implements Localizer {
         Long upperKey = history.ceilingKey(timestamp);
         boolean splicingNewNode = lowerKey != null && upperKey != null && !lowerKey.equals(upperKey);
 
+        /*===================================*/
+        /* Check if interpolate method is implemented correctly */
         KalmanState interpolated = interpolate(timestamp, lowerKey, upperKey);
+        /*===================================*/
+
         if (interpolated == null) interpolated = getKalmanState();
         Pose pastPose = interpolated.pose;
 
         boolean measX = !Double.isNaN(measuredPose.getX());
         boolean measY = !Double.isNaN(measuredPose.getY());
-        boolean measH = !Double.isNaN(measuredPose.getHeading()) && !ignoreCameraHeading;
+        boolean measH = !Double.isNaN(measuredPose.getHeading());
 
         int dof = (measX ? 1 : 0) + (measY ? 1 : 0) + (measH ? 1 : 0);
         if (dof == 0) return false;
