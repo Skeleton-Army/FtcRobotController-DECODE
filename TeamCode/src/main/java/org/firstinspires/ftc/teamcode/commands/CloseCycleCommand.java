@@ -9,6 +9,7 @@ import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
@@ -71,20 +72,25 @@ public class CloseCycleCommand extends SequentialCommandGroup {
 
                 new InstantCommand(intake::stop),
 
-                new DeferredCommand(() -> {
-                    PathChain returnPath = follower.pathBuilder()
-                            .addPath(new BezierLine(
-                                    follower.getPose(),
-                                    nearDriveBack
-                            ))
-                            .setTangentHeadingInterpolation()
-                            .setReversed()
-                            .build();
-                    return new FollowPathCommand(follower, returnPath);
-                }, null),
+                // Shoot immediately when entering the launch zone and cancel path when done shooting
+                new ParallelDeadlineGroup(
+                        new SequentialCommandGroup(
+                                new WaitUntilCommand(drive::isInsideLaunchZonePredictive),
+                                new ShootCommand(shooter, intake, transfer, drive)
+                        ),
 
-                new InstantCommand(intake::stop),
-                new ShootCommand(shooter, intake, transfer, drive)
+                        new DeferredCommand(() -> {
+                            PathChain returnPath = follower.pathBuilder()
+                                    .addPath(new BezierLine(
+                                            follower.getPose(),
+                                            nearDriveBack
+                                    ))
+                                    .setTangentHeadingInterpolation()
+                                    .setReversed()
+                                    .build();
+                            return new FollowPathCommand(follower, returnPath);
+                        }, null)
+                )
         );
     }
 
