@@ -575,6 +575,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
                     .showIf("sorted", false)
                     .or("starting_position", StartingPosition.FAR)
+                    .showIf("cycle", false)
+                    .or("starting_position", StartingPosition.FAR)
                 .prompt("open_gate", new BooleanPrompt("OPEN GATE?", false))
                     .showIf("sorted", false)
                     .showIf("cycle", false)
@@ -719,7 +721,10 @@ public class AutonomousApp extends ComplexOpMode {
                 returnAndScore(3, false),
                 closeCycle(),
                 closeCycle(),
-                pickupSequence()
+                closeCycle(),
+                collect(4),
+                returnAndScore(4, false),
+                driveForward()
         );
     }
 
@@ -734,12 +739,16 @@ public class AutonomousApp extends ComplexOpMode {
                         new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
                         repeatIfTime(this::farCycle, 0.0)
                 ),
-                // Move forward at max speed
-                new InstantCommand(() -> {
-                    follower.startTeleOpDrive();
-                    follower.setTeleOpDrive(1, 0, 0, true);
-                })
+                driveForward()
         );
+    }
+
+    private Command driveForward() {
+        // Move forward at max speed
+        return new InstantCommand(() -> {
+            follower.startTeleOpDrive();
+            follower.setTeleOpDrive(1, 0, 0, true);
+        });
     }
 
     private Command closeCycle() {
