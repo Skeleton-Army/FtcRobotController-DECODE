@@ -732,13 +732,13 @@ public class AutonomousApp extends ComplexOpMode {
                 returnAndScore(1, false),
                 new ParallelDeadlineGroup(
                         new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
-                        repeatIfTime(this::farCycle, 4.0)
-                )
+                        repeatIfTime(this::farCycle, 0.0)
+                ),
                 // Move forward at max speed
-//                new InstantCommand(() -> {
-//                    follower.startTeleOpDrive();
-//                    follower.setTeleOpDrive(1, 0, 0, true);
-//                })
+                new InstantCommand(() -> {
+                    follower.startTeleOpDrive();
+                    follower.setTeleOpDrive(1, 0, 0, true);
+                })
         );
     }
 
