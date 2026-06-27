@@ -7,6 +7,7 @@ import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.seattlesolvers.solverslib.command.Command;
@@ -14,9 +15,6 @@ import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
-import com.seattlesolvers.solverslib.command.ScheduleCommand;
-import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.command.UninterruptibleCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -33,7 +31,6 @@ import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
@@ -231,7 +228,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
-                    .whenPressed(this::resetPoseToNearestCorner);
+                    .whenPressed(this::dynamicPoseReset);
         }
 
         new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
@@ -393,15 +390,68 @@ public class TeleOpApp extends ComplexOpMode {
         return drive.isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
-    private void resetPoseToNearestCorner() {
-        Pose newPose;
-        if (alliance == Alliance.RED) {
-            newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
-        } else {
-            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
+    private void dynamicPoseReset() {
+        final double VELOCITY_THRESHOLD = 0.2;
+        if (follower.getVelocity().getMagnitude() > VELOCITY_THRESHOLD) {
+            return;
         }
 
-        follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
+        Pose currentPose = follower.getPose();
+        double currentX = currentPose.getX();
+        double currentY = currentPose.getY();
+        double heading = currentPose.getHeading();
+
+        final double WALL_THRESHOLD = 20.0;
+        final double FIELD_LIMIT = 141.5;
+
+        boolean nearLeft = currentX < WALL_THRESHOLD;
+        boolean nearRight = currentX > (FIELD_LIMIT - WALL_THRESHOLD);
+        boolean nearBottom = currentY < WALL_THRESHOLD;
+        boolean nearTop = currentY > (FIELD_LIMIT - WALL_THRESHOLD);
+
+        if (!nearLeft && !nearRight && !nearBottom && !nearTop) return;
+
+        double targetX = currentX;
+        double targetY = currentY;
+
+        // Direct orientation flags based on 90-degree quadrant centers
+        double normalizedHeading = MathFunctions.normalizeAngle(heading);
+        boolean facingRight = normalizedHeading < Math.toRadians(45) || normalizedHeading >= Math.toRadians(315);
+        boolean facingUp    = normalizedHeading >= Math.toRadians(45) && normalizedHeading < Math.toRadians(135);
+        boolean facingLeft  = normalizedHeading >= Math.toRadians(135) && normalizedHeading < Math.toRadians(225);
+        boolean facingDown  = normalizedHeading >= Math.toRadians(225) && normalizedHeading < Math.toRadians(315);
+
+        boolean frontFacingHorizontal = facingRight || facingLeft;
+        boolean frontFacingVertical   = facingUp || facingDown;
+
+        // --- X Axis Snap Logic ---
+        if (nearLeft) {
+            targetX = getDistanceToCenter(frontFacingHorizontal, facingLeft);
+        } else if (nearRight) {
+            targetX = FIELD_LIMIT - getDistanceToCenter(frontFacingHorizontal, facingRight);
+        }
+
+        // --- Y Axis Snap Logic ---
+        if (nearBottom) {
+            targetY = getDistanceToCenter(frontFacingVertical, facingDown);
+        } else if (nearTop) {
+            targetY = FIELD_LIMIT - getDistanceToCenter(frontFacingVertical, facingUp);
+        }
+
+        follower.setPose(new Pose(targetX, targetY, heading));
         follower.startTeleopDrive(USE_BRAKE_MODE);
+        gamepad1.rumble(150);
+    }
+
+    /**
+     * Calculates the distance from the wall to the tracking center point of the robot.
+     */
+    private double getDistanceToCenter(boolean axisPerpendicularToFront, boolean frontIsFacingWall) {
+        final double INTAKE_EXTENSION = 3.0; // How much the intake extends from the front
+
+        if (axisPerpendicularToFront) {
+            return frontIsFacingWall ? (X_OFFSET + INTAKE_EXTENSION) : X_OFFSET;
+        }
+        return Y_OFFSET;
     }
 }
