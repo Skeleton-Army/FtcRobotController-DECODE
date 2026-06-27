@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.commands;
 
 import com.pedropathing.follower.Follower;
-import com.pedropathing.geometry.BezierCurve;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
@@ -9,11 +8,10 @@ import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
-
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -21,7 +19,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 
 public class CloseCycleCommand extends SequentialCommandGroup {
-    private static final Pose GATE_OPEN_POSE = new Pose(13.5, 58.82221);
+    private static final Pose GATE_OPEN_POSE = new Pose(12, 57.5);
     private static final Pose NEAR_DRIVE_BACK = new Pose(50, 85);
     private static final double COLLECT_HEADING = Math.toRadians(154.8622);
 
@@ -52,11 +50,11 @@ public class CloseCycleCommand extends SequentialCommandGroup {
                                     HeadingInterpolator.piecewise(
                                             new HeadingInterpolator.PiecewiseNode(
                                                     0,
-                                                    0.8,
+                                                    0.5,
                                                     HeadingInterpolator.tangent
                                             ),
                                             new HeadingInterpolator.PiecewiseNode(
-                                                    0.8,
+                                                    0.5,
                                                     1,
                                                     HeadingInterpolator.constant(collectHeading)
                                             )
@@ -72,24 +70,21 @@ public class CloseCycleCommand extends SequentialCommandGroup {
 
                 new InstantCommand(intake::stop),
 
-                // Shoot immediately when entering the launch zone and cancel path when done shooting
-                new ParallelDeadlineGroup(
-                        new SequentialCommandGroup(
-                                new WaitUntilCommand(drive::isInsideLaunchZonePredictive),
-                                new ShootCommand(shooter, intake, transfer, drive)
-                        ),
-
+                new ParallelCommandGroup(
                         new DeferredCommand(() -> {
                             PathChain returnPath = follower.pathBuilder()
-                                    .addPath(new BezierLine(
-                                            follower.getPose(),
-                                            nearDriveBack
-                                    ))
+                                    .addPath(new BezierLine(follower.getPose(), nearDriveBack))
                                     .setTangentHeadingInterpolation()
                                     .setReversed()
                                     .build();
                             return new FollowPathCommand(follower, returnPath);
-                        }, null)
+                        }, null),
+
+                        new SequentialCommandGroup(
+                                new WaitUntilCommand(drive::isInsideLaunchZonePredictive),
+                                new ShootCommand(shooter, intake, transfer, drive),
+                                new InstantCommand(follower::breakFollowing)
+                        )
                 )
         );
     }
