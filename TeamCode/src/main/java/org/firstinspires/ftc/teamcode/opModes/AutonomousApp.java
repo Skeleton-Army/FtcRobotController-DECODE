@@ -118,11 +118,11 @@ public class AutonomousApp extends ComplexOpMode {
                         HeadingInterpolator.piecewise(
                                 new HeadingInterpolator.PiecewiseNode(
                                         0,
-                                        0.8,
+                                        0.7,
                                         HeadingInterpolator.tangent.reverse()
                                 ),
                                 new HeadingInterpolator.PiecewiseNode(
-                                        0.8,
+                                        0.7,
                                         1,
                                         HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
                                 )
