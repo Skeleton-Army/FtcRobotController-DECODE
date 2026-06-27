@@ -723,7 +723,7 @@ public class Shooter extends SubsystemBase {
      */
     public void setVerticalAngle(double angleRad) {
         // 1. Clamp the input to ensure it stays within physical hardware limits
-        double clampedAngle = MathUtils.clamp(angleRad, HOOD_MIN, HOOD_MAX);
+        double clampedAngle = MathUtils.clamp(angleRad, HOOD_USABLE_MIN, HOOD_USABLE_MAX);
 
         // 2. Calculate the interpolation factor (t) from 0.0 to 1.0
         double t = (clampedAngle - HOOD_MIN) / (HOOD_MAX - HOOD_MIN);
