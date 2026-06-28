@@ -224,9 +224,10 @@ public class FusionLocalizer implements Localizer {
         Matrix IK = I.minus(K);
         Matrix cov = IK.multiply(Pm).multiply(IK.transposed()).plus(K.multiply(measurementR).multiply(K.transposed()));
         clampCovariance(cov);
-        history.put(timestamp, new KalmanState(updatedInterp, interpolatedData.twist, interpolatedData.relativeTransform, cov));
 
         Long ceil = history.ceilingKey(timestamp);
+        history.put(timestamp, new KalmanState(updatedInterp, interpolatedData.twist, interpolatedData.relativeTransform, cov));
+
         KalmanState ceilState = history.get(ceil);
 
         assert ceilState != null;
