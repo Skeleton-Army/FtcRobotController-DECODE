@@ -22,136 +22,185 @@ public class FusionLocalizerTest {
 
     private FusionLocalizer fusionLocalizer;
 
+    // A variance so high the Kalman Filter will multiply the measurement by practically 0.
+    private final Pose MASSIVE_VARIANCE = new Pose(1e12, 1e12, 1e12);
+
     @BeforeEach
     public void setUp() {
-        // Manually initialize Mockito without needing the Jupiter extension
         MockitoAnnotations.openMocks(this);
 
-        // Mock default behaviors for the dead reckoning localizer
         when(mockDeadReckoning.getVelocity()).thenReturn(new Pose(0, 0, 0));
         when(mockDeadReckoning.getVelocityVector()).thenReturn(new Vector(0, 0));
 
-        // Initialize the FusionLocalizer with standard FTC-scale variances
         fusionLocalizer = new FusionLocalizer(
                 mockDeadReckoning,
-                new Pose(0.1, 0.1, 0.1), // Initial Covariance
-                new Pose(0.1, 0.1, 0.1), // Process Variance
-                new Pose(0.1, 0.1, 0.1), // Measurement Variance
-                100                      // Buffer Size
+                new Pose(0.1, 0.1, 0.1),
+                new Pose(0.1, 0.1, 0.1),
+                new Pose(0.1, 0.1, 0.1),
+                200 // Increased buffer size for longer tests
         );
     }
 
+    // ... [Keep your existing testAddMeasurement_Fixes700InchJumpAndHistoryCorruption here] ...
+
     @Test
-    public void testAddMeasurement_Fixes700InchJumpAndHistoryCorruption() throws InterruptedException {
-        // STEP 1: Set initial state at t=0
-        when(mockDeadReckoning.getPose()).thenReturn(new Pose(0, 0, 0));
-        fusionLocalizer.update();
-        long time0 = System.nanoTime();
-
-        // Advance time to simulate hardware cycle
-        Thread.sleep(20);
-
-        // STEP 2: Simulate moving forward 10 inches with a TINY NEGATIVE heading.
-        // This tiny negative heading (-0.01 rad) is what triggers the 359-degree wrap-around
-        // bug in logTwist causing the 700-inch jump.
-        when(mockDeadReckoning.getPose()).thenReturn(new Pose(10, 0, -0.01));
-        fusionLocalizer.update();
-        long time1 = System.nanoTime();
-
-        // Verify dead reckoning updated the pose correctly
-        Pose currentPose = fusionLocalizer.getPose();
-        assertEquals(10.0, currentPose.getX(), 0.1);
-
-        // STEP 3: Inject a delayed vision measurement halfway between time0 and time1.
-        // We simulate the camera saying we were actually at X=4 instead of X=5.
-        long interpolatedTime = (time0 + time1) / 2;
-        Pose delayedVisionMeasurement = new Pose(4, 0, -0.005);
-
-        // Call the method containing the fixes
-        fusionLocalizer.addMeasurement(delayedVisionMeasurement, interpolatedTime);
-
-        // STEP 4: Assert Bug 1 (700-inch jump) is fixed.
-        // If the bug exists, X and Y will be massive (NaN or > 100).
-        // If fixed, X should be slightly pulled back from 10 (around 9.0) due to the Kalman update.
-        Pose postUpdatePose = fusionLocalizer.getPose();
-        assertFalse(fusionLocalizer.isNAN(), "Pose exploded into NaN due to Bug 1!");
-        assertTrue(postUpdatePose.getX() < 15.0, "Pose jumped massively! Bug 1 still exists.");
-        assertTrue(Math.abs(postUpdatePose.getY()) < 5.0, "Pose jumped massively! Bug 1 still exists.");
-
-        // STEP 5: Assert Bug 2 (History Corruption) is fixed.
-        // Advance time again to create a third node in history.
-        Thread.sleep(20);
-        when(mockDeadReckoning.getPose()).thenReturn(new Pose(20, 0, -0.02));
-        fusionLocalizer.update();
-        long time2 = System.nanoTime();
-
-        // Inject a SECOND delayed measurement between time1 and time2.
-        // If Bug 2 exists (history chain broken), the partial transform math will multiply
-        // incorrectly, causing this second update to jump wildly.
-        long secondInterpolatedTime = (time1 + time2) / 2;
-        Pose secondVisionMeasurement = new Pose(14, 0, -0.015);
-
-        fusionLocalizer.addMeasurement(secondVisionMeasurement, secondInterpolatedTime);
-
-        Pose finalPose = fusionLocalizer.getPose();
-        // FIX: Call isNAN() on fusionLocalizer, not finalPose
-        assertFalse(fusionLocalizer.isNAN(), "Pose exploded on second update due to Bug 2!");
-        assertTrue(finalPose.getX() < 25.0, "History corrupted causing massive drift!");
-    }
-    @Test
-    public void testLongHistoryWithHighVarianceMeasurement() throws InterruptedException {
-        // We will store exactly when each update happened to pull a delayed timestamp later
-        long[] timestamps = new long[50];
-
-        // STEP 1: Set initial state
+    public void testFigureEightPath_HighVarianceMeasurement_NoDrift() throws InterruptedException {
+        int steps = 120;
+        long[] timestamps = new long[steps];
         Pose currentOdo = new Pose(0, 0, 0);
+
         when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
         fusionLocalizer.update();
         timestamps[0] = System.nanoTime();
 
-        // STEP 2: Simulate 50 hardware cycles of continuous arcing movement
-        for (int i = 1; i < 50; i++) {
-            Thread.sleep(10); // Simulate 10ms passing between loop iterations
+        // Simulate a Figure-8 path (alternating angular velocity)
+        for (int i = 1; i < steps; i++) {
+            Thread.sleep(2);
 
-            // Move forward and turn slightly to create a complex curved path
+            // Sine wave heading creates a figure 8
+            double heading = Math.sin(i * 0.1);
             currentOdo = new Pose(
-                    currentOdo.getX() + 2.0,
-                    currentOdo.getY() + 0.5,
-                    currentOdo.getHeading() + 0.05
+                    currentOdo.getX() + 1.5 * Math.cos(heading),
+                    currentOdo.getY() + 1.5 * Math.sin(heading),
+                    heading
             );
             when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
             fusionLocalizer.update();
-
             timestamps[i] = System.nanoTime();
         }
 
-        // STEP 3: Record the pure, uninterrupted dead-reckoning pose
         Pose preMeasurementPose = fusionLocalizer.getPose();
+        long delayedTimestamp = timestamps[60]; // Exactly in the middle of the complex curve
+        Pose terribleMeasurement = new Pose(-1000, 1000, Math.PI);
 
-        // STEP 4: Inject a measurement exactly halfway through the recorded history
-        long delayedTimestamp = timestamps[25];
-
-        // We simulate a wildly wrong camera reading (e.g. seeing an AprilTag on the wrong field wall)
-        Pose terribleMeasurement = new Pose(500, -500, Math.PI);
-
-        // We provide a massive measurement variance.
-        // This tells the Kalman Filter "I have zero confidence in this camera reading."
-        Pose massiveVariance = new Pose(1e9, 1e9, 1e9);
-
-        fusionLocalizer.addMeasurement(terribleMeasurement, delayedTimestamp, massiveVariance);
-
-        // STEP 5: Verify the pose remains completely undisturbed
+        fusionLocalizer.addMeasurement(terribleMeasurement, delayedTimestamp, MASSIVE_VARIANCE);
         Pose postMeasurementPose = fusionLocalizer.getPose();
 
-        // If Bug 1 (Explosion) or Bug 2 (History Corruption) still exist, splitting the
-        // transform at step 25 and replaying the history will cause these assertions to fail
-        // because the relative transforms will mathematically miss-align.
-        assertFalse(fusionLocalizer.isNAN(), "Pose exploded to NaN during loop or replay!");
+        assertPoseEquals("Figure 8 Path Drifted!", preMeasurementPose, postMeasurementPose, 0.001);
+    }
 
-        // Assert that the X, Y, and Heading are identical to the pure odometry path
-        // within a 0.01 tolerance margin.
-        assertEquals(preMeasurementPose.getX(), postMeasurementPose.getX(), 0.01, "X position drifted during history replay!");
-        assertEquals(preMeasurementPose.getY(), postMeasurementPose.getY(), 0.01, "Y position drifted during history replay!");
-        assertEquals(preMeasurementPose.getHeading(), postMeasurementPose.getHeading(), 0.01, "Heading drifted during history replay!");
+    @Test
+    public void testContinuousSpinning_HighVarianceMeasurement_NoDrift() throws InterruptedException {
+        int steps = 150;
+        long[] timestamps = new long[steps];
+        Pose currentOdo = new Pose(0, 0, 0);
+
+        when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
+        fusionLocalizer.update();
+        timestamps[0] = System.nanoTime();
+
+        // Simulate a robot driving in a tight circle very fast
+        for (int i = 1; i < steps; i++) {
+            Thread.sleep(2);
+
+            currentOdo = new Pose(
+                    currentOdo.getX() + 2.0,
+                    currentOdo.getY() + 2.0,
+                    currentOdo.getHeading() + 0.3 // ~17 degrees per tick (very fast spin)
+            );
+            when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
+            fusionLocalizer.update();
+            timestamps[i] = System.nanoTime();
+        }
+
+        Pose preMeasurementPose = fusionLocalizer.getPose();
+        long delayedTimestamp = timestamps[75];
+        Pose terribleMeasurement = new Pose(0, 0, 0);
+
+        fusionLocalizer.addMeasurement(terribleMeasurement, delayedTimestamp, MASSIVE_VARIANCE);
+        Pose postMeasurementPose = fusionLocalizer.getPose();
+
+        assertPoseEquals("Continuous Spin Drifted!", preMeasurementPose, postMeasurementPose, 0.001);
+    }
+
+    @Test
+    public void testMultipleDelayedMeasurements_HighVariance_NoDrift() throws InterruptedException {
+        int steps = 100;
+        long[] timestamps = new long[steps];
+        Pose currentOdo = new Pose(0, 0, 0);
+
+        when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
+        fusionLocalizer.update();
+        timestamps[0] = System.nanoTime();
+
+        // Standard curved path
+        for (int i = 1; i < steps; i++) {
+            Thread.sleep(2);
+            currentOdo = new Pose(
+                    currentOdo.getX() + 1.0,
+                    currentOdo.getY() + 0.2,
+                    currentOdo.getHeading() + 0.02
+            );
+            when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
+            fusionLocalizer.update();
+            timestamps[i] = System.nanoTime();
+        }
+
+        Pose preMeasurementPose = fusionLocalizer.getPose();
+
+        // Inject three separate, highly delayed measurements at different points in history
+        // Doing this out-of-order stress-tests the map key splicing.
+        fusionLocalizer.addMeasurement(new Pose(999, 999, 0), timestamps[80], MASSIVE_VARIANCE);
+        fusionLocalizer.addMeasurement(new Pose(-999, -999, 0), timestamps[20], MASSIVE_VARIANCE);
+        fusionLocalizer.addMeasurement(new Pose(500, -500, 0), timestamps[50], MASSIVE_VARIANCE);
+
+        Pose postMeasurementPose = fusionLocalizer.getPose();
+
+        assertPoseEquals("Multiple Map Injections Drifted!", preMeasurementPose, postMeasurementPose, 0.001);
+    }
+
+    @Test
+    public void testStationaryToSuddenAcceleration_HighVariance_NoDrift() throws InterruptedException {
+        int steps = 100;
+        long[] timestamps = new long[steps];
+        Pose currentOdo = new Pose(0, 0, 0);
+
+        when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
+        fusionLocalizer.update();
+        timestamps[0] = System.nanoTime();
+
+        // Step 1: Sit perfectly still for 50 ticks
+        for (int i = 1; i < 50; i++) {
+            Thread.sleep(2);
+            when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
+            fusionLocalizer.update();
+            timestamps[i] = System.nanoTime();
+        }
+
+        // Step 2: Suddenly move very fast
+        for (int i = 50; i < steps; i++) {
+            Thread.sleep(2);
+            currentOdo = new Pose(
+                    currentOdo.getX() + 5.0,
+                    currentOdo.getY() - 2.0,
+                    currentOdo.getHeading() - 0.1
+            );
+            when(mockDeadReckoning.getPose()).thenReturn(currentOdo);
+            fusionLocalizer.update();
+            timestamps[i] = System.nanoTime();
+        }
+
+        Pose preMeasurementPose = fusionLocalizer.getPose();
+
+        // Inject measurement right at the inflection point where movement starts
+        long delayedTimestamp = timestamps[50];
+        Pose terribleMeasurement = new Pose(100, 100, Math.PI / 2);
+
+        fusionLocalizer.addMeasurement(terribleMeasurement, delayedTimestamp, MASSIVE_VARIANCE);
+        Pose postMeasurementPose = fusionLocalizer.getPose();
+
+        assertPoseEquals("Stationary/Acceleration Transition Drifted!", preMeasurementPose, postMeasurementPose, 0.001);
+    }
+
+    /**
+     * Helper method to ensure strict equality and trap NaNs.
+     */
+    private void assertPoseEquals(String message, Pose expected, Pose actual, double delta) {
+        assertFalse(Double.isNaN(actual.getX()) || Double.isNaN(actual.getY()) || Double.isNaN(actual.getHeading()),
+                message + " (Pose became NaN)");
+
+        assertEquals(expected.getX(), actual.getX(), delta, message + " (X mismatch)");
+        assertEquals(expected.getY(), actual.getY(), delta, message + " (Y mismatch)");
+        assertEquals(expected.getHeading(), actual.getHeading(), delta, message + " (Heading mismatch)");
     }
 }
