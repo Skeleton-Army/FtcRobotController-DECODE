@@ -730,7 +730,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command farCycleRoutine() {
         return new SequentialCommandGroup(
-                shoot(), // Score first 3 artifacts
+                initialScore(), // Score first 3 artifacts
                 pickupSequence(),
                 collect(1)
                         .withTimeout(3000),
