@@ -115,20 +115,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 farDriveBack
                         )
                 )
-                .setHeadingInterpolation(
-                        HeadingInterpolator.piecewise(
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0,
-                                        0.7,
-                                        HeadingInterpolator.tangent.reverse()
-                                ),
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0.7,
-                                        1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
-                                )
-                        )
-                )
+                .setTangentHeadingInterpolation()
                 .setGlobalDeceleration()
                 .build();
     }
@@ -142,20 +129,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 nearDriveBack
                         )
                 )
-                .setHeadingInterpolation(
-                        HeadingInterpolator.piecewise(
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0,
-                                        0.8,
-                                        HeadingInterpolator.tangent.reverse()
-                                ),
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0.8,
-                                        1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
-                                )
-                        )
-                )
+                .setTangentHeadingInterpolation()
                 .setGlobalDeceleration()
                 .build();
     }
@@ -254,7 +228,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike3GateEnd = getRelative(new Pose(21, 66));
         Pose spike4GateEnd = getRelative(new Pose(21, 83.663));
 
-        farDriveBack = getRelative(new Pose(52, 17.9901));
+        farDriveBack = getRelative(new Pose(48, 17.9901));
         nearDriveBack = getRelative(new Pose(50, 90));
         gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
         sortingPose = getRelative(new Pose(30, 113));
