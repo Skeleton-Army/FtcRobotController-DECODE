@@ -118,6 +118,7 @@ public class TeleOpApp extends ComplexOpMode {
     double calculatedLatencyMillis = 0;
     double positionGap = 0;
 
+    Pose pinpointPose;
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -388,7 +389,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
         telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
-        Pose2D pinpointPos2D = poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
+        pinpointPose = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
+        Pose2D pinpointPos2D = poseToPose2D(pinpointPose, FTCCoordinates.INSTANCE);
         telemetry.addData("pinpoint pose x", -pinpointPos2D.getX(DistanceUnit.INCH));
         telemetry.addData("pinpoint pose y", -pinpointPos2D.getY(DistanceUnit.INCH));
         telemetry.addData("pinpoint pose heading", pinpointPos2D.getHeading(AngleUnit.RADIANS) - Math.PI);
@@ -396,6 +398,10 @@ public class TeleOpApp extends ComplexOpMode {
         //telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
         //telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
         //telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
+
+        telemetry.addData("vision K x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getVisionK()[0]);
+        telemetry.addData("vision K y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getVisionK()[1]);
+        telemetry.addData("vision K heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getVisionK()[2]);
 
         telemetry.addData("[TUNER] Position Gap (in)", positionGap);
         telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
@@ -408,9 +414,9 @@ public class TeleOpApp extends ComplexOpMode {
         Logger.recordOutput("apriltag pose y", aprilTagPipeline.getPose().getY());
         Logger.recordOutput("apriltag pose heading", aprilTagPipeline.getPose().getHeading());
 
-        Logger.recordOutput("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
-        Logger.recordOutput("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
-        Logger.recordOutput("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
+        //Logger.recordOutput("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
+        //Logger.recordOutput("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
+        //Logger.recordOutput("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
 
         Logger.recordOutput("stdev x", sizeVarianceX);
         Logger.recordOutput("stdev y", sizeVarianceY);
@@ -419,34 +425,36 @@ public class TeleOpApp extends ComplexOpMode {
 
 
     // updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
-    public void updateKFApriltagReading() {
-        if (aprilTagPipeline.getApriltagDetection() != null) {
-            long time = System.nanoTime();
-            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
-        }
-
-    }
-
 //    public void updateKFApriltagReading() {
-//        if (aprilTagPipeline.getApriltagDetection() != null && KalmanConfig.enableMeasurements) {
-//            // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
-//            long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
-//
-//            // 2. Convert the double ms constants from KalmanConfig into nanoseconds
-//            long cameraLatencyNanos = (long) (KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS * 1e6);
-//            long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
-//
-//            // 3. Calculate the relative offset package
-//            long relativeLatencyOffset = cameraLatencyNanos - pinpointLatencyNanos;
-//
-//            // 4. Align the frame time to the correct moment on the Pinpoint timeline
-//            long correctedTimestamp = rawFrameTime - relativeLatencyOffset;
-//
-//            // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
-//            ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
-//                    .addMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
+//        if (aprilTagPipeline.getApriltagDetection() != null) {
+//            long time = System.nanoTime();
+//            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addVisionMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
 //        }
+//
 //    }
+
+    public void updateKFApriltagReading() {
+        if (aprilTagPipeline.getApriltagDetection() != null && KalmanConfig.enableMeasurements) {
+            // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
+            long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
+
+            // 2. Convert the double ms constants from KalmanConfig into nanoseconds
+            long cameraLatencyNanos = (long) (KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS * 1e6);
+            long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
+
+            // 3. Calculate the relative offset package
+            long relativeLatencyOffset = cameraLatencyNanos - pinpointLatencyNanos;
+
+            // 4. Align the frame time to the correct moment on the Pinpoint timeline
+//            long correctedTimestamp = rawFrameTime - relativeLatencyOffset;
+            long correctedTimestamp = rawFrameTime - (long)(1_000_000.0 * 30);
+
+
+            // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
+            ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
+                    .addVisionMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
+        }
+    }
 
     public long getResultTimestamp() {
         LLResult llResult = limelight.getLatestResult();
@@ -563,9 +571,27 @@ public class TeleOpApp extends ComplexOpMode {
 
         double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
         double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        double totalDrift = driftX + driftY;
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
-        telemetry.addData("Drift total", driftX + driftY);
+        telemetry.addData("Drift total", totalDrift);
+
+        //Pose pinpoint = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
+        double driftXPinpoint = Math.abs(X_OFFSET - pinpointPose.getX());
+        double driftYPinpoint = Math.abs(Y_OFFSET - pinpointPose.getY());
+        double totalDriftPinpoint = driftXPinpoint + driftYPinpoint;
+
+        telemetry.addData("Drift pinpoint x", driftXPinpoint);
+        telemetry.addData("Drift pinpoint y", driftYPinpoint);
+        telemetry.addData("Drift total", totalDriftPinpoint);
+
+
+        if (totalDriftPinpoint > totalDrift)
+            telemetry.addData("Kalman is more accurate by ", totalDriftPinpoint - totalDrift);
+
+        else if (totalDriftPinpoint <= totalDrift) {
+            telemetry.addData("pinpoint is more accurate by", totalDrift - totalDriftPinpoint);
+        }
 //        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
 //        telemetry.addData("Distance from GOAL", goalDistance);
 //        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));

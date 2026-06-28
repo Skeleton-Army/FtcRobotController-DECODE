@@ -34,10 +34,8 @@ public class FusionLocalizerTest {
         // Initialize the FusionLocalizer with standard FTC-scale variances
         fusionLocalizer = new FusionLocalizer(
                 mockDeadReckoning,
-                new Pose(0.1, 0.1, 0.1), // Initial Covariance
                 new Pose(0.1, 0.1, 0.1), // Process Variance
-                new Pose(0.1, 0.1, 0.1), // Measurement Variance
-                100                      // Buffer Size
+                new Pose(0.1, 0.1, 0.1)// Measurement Variance
         );
     }
 
@@ -68,7 +66,7 @@ public class FusionLocalizerTest {
         Pose delayedVisionMeasurement = new Pose(4, 0, -0.005);
 
         // Call the method containing the fixes
-        fusionLocalizer.addMeasurement(delayedVisionMeasurement, interpolatedTime);
+        fusionLocalizer.addVisionMeasurement(delayedVisionMeasurement, interpolatedTime);
 
         // STEP 4: Assert Bug 1 (700-inch jump) is fixed.
         // If the bug exists, X and Y will be massive (NaN or > 100).
@@ -91,7 +89,7 @@ public class FusionLocalizerTest {
         long secondInterpolatedTime = (time1 + time2) / 2;
         Pose secondVisionMeasurement = new Pose(14, 0, -0.015);
 
-        fusionLocalizer.addMeasurement(secondVisionMeasurement, secondInterpolatedTime);
+        fusionLocalizer.addVisionMeasurement(secondVisionMeasurement, secondInterpolatedTime);
 
         Pose finalPose = fusionLocalizer.getPose();
         // FIX: Call isNAN() on fusionLocalizer, not finalPose
@@ -138,7 +136,8 @@ public class FusionLocalizerTest {
         // This tells the Kalman Filter "I have zero confidence in this camera reading."
         Pose massiveVariance = new Pose(1e9, 1e9, 1e9);
 
-        fusionLocalizer.addMeasurement(terribleMeasurement, delayedTimestamp, massiveVariance);
+        fusionLocalizer.setVisionMeasurementStdDevs(massiveVariance);
+        fusionLocalizer.addVisionMeasurement(terribleMeasurement, delayedTimestamp);
 
         // STEP 5: Verify the pose remains completely undisturbed
         Pose postMeasurementPose = fusionLocalizer.getPose();
