@@ -297,10 +297,10 @@ public class FusionLocalizer implements Localizer {
         double dt = (timestamp - lowerKey) / 1e9;
 
         //Update Kalman states
-        Matrix cov = updateCovariance(lowerKalmanState[2], updatedInterp, ceilTwist, dt);
-        Pose updatedCeil = compose(updatedInterp, ceilRelativeTransform);
+        Matrix cov = updateCovariance(lower.covariance, lowerKalmanState[0], interpolData[1], dt);
+//        Pose updatedCeil = compose(lowerKalmanState[0], interpolData[2]);
 
-        return new KalmanState(interpolData[0], interpolData[1], interpolData[2], lower.covariance);
+        return new KalmanState(interpolData[0], interpolData[1], interpolData[2], cov);
     }
 
     public static Pose invert(Pose pose) {

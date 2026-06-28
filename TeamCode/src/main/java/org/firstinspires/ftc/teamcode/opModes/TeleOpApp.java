@@ -419,34 +419,34 @@ public class TeleOpApp extends ComplexOpMode {
 
 
     // updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
-//    public void updateKFApriltagReading() {
-//        if (aprilTagPipeline.getApriltagDetection() != null) {
-//            long time = System.nanoTime();
-//            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
-//        }
-//
-//    }
-
     public void updateKFApriltagReading() {
-        if (aprilTagPipeline.getApriltagDetection() != null && KalmanConfig.enableMeasurements) {
-            // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
-            long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
-
-            // 2. Convert the double ms constants from KalmanConfig into nanoseconds
-            long cameraLatencyNanos = (long) (KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS * 1e6);
-            long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
-
-            // 3. Calculate the relative offset package
-            long relativeLatencyOffset = cameraLatencyNanos - pinpointLatencyNanos;
-
-            // 4. Align the frame time to the correct moment on the Pinpoint timeline
-            long correctedTimestamp = rawFrameTime - relativeLatencyOffset;
-
-            // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
-            ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
-                    .addMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
+        if (aprilTagPipeline.getApriltagDetection() != null) {
+            long time = System.nanoTime();
+            ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
         }
+
     }
+
+//    public void updateKFApriltagReading() {
+//        if (aprilTagPipeline.getApriltagDetection() != null && KalmanConfig.enableMeasurements) {
+//            // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
+//            long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
+//
+//            // 2. Convert the double ms constants from KalmanConfig into nanoseconds
+//            long cameraLatencyNanos = (long) (KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS * 1e6);
+//            long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
+//
+//            // 3. Calculate the relative offset package
+//            long relativeLatencyOffset = cameraLatencyNanos - pinpointLatencyNanos;
+//
+//            // 4. Align the frame time to the correct moment on the Pinpoint timeline
+//            long correctedTimestamp = rawFrameTime - relativeLatencyOffset;
+//
+//            // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
+//            ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
+//                    .addMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
+//        }
+//    }
 
     public long getResultTimestamp() {
         LLResult llResult = limelight.getLatestResult();
