@@ -221,7 +221,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(11.5555, 8));
         Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
-        Pose spike3End = getRelative(new Pose(19, 56));
+        Pose spike3End = getRelative(new Pose(12, 56));
         Pose spike4End = getRelative(new Pose(19, 83.663));
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
