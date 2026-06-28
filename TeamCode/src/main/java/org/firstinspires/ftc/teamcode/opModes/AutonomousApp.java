@@ -87,6 +87,7 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain nearSpike4Open;
     private PathChain driveToGate;
     private PathChain obeliskInitialScorePath;
+    private PathChain initialFarPath;
 
     private Alliance alliance;
     private boolean endGate;
@@ -128,6 +129,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 )
                         )
                 )
+                .setGlobalDeceleration()
                 .build();
     }
 
@@ -154,6 +156,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 )
                         )
                 )
+                .setGlobalDeceleration()
                 .build();
     }
 
@@ -271,6 +274,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
         nearPathsReturn[3] = this::nearDriveBack;
 
@@ -278,6 +282,20 @@ public class AutonomousApp extends ComplexOpMode {
         farPathsReturn[1] = this::farDriveBack;
         farPathsReturn[2] = this::farDriveBack;
         farPathsReturn[3] = this::farDriveBack;
+
+        initialFarPath = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                farDriveBack
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .setGlobalDeceleration()
+                .build();
 
         farPaths[0] = follower
                 .pathBuilder()
@@ -309,6 +327,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         farPaths[2] = follower
@@ -325,6 +344,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         farPaths[3] = follower
@@ -340,6 +360,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         farDriveBackEnd = follower
@@ -353,6 +374,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         nearPaths[0] = follower
@@ -365,6 +387,7 @@ public class AutonomousApp extends ComplexOpMode {
                         )
                 )
                 .setTangentHeadingInterpolation()
+                .setGlobalDeceleration()
                 .build();
 
         nearPaths[1] = follower
@@ -380,6 +403,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         nearPaths[2] = follower
@@ -395,6 +419,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         nearPaths[3] = follower
@@ -409,6 +434,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         nearDriveBackEnd = follower
@@ -421,6 +447,7 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .setTangentHeadingInterpolation()
                 .setReversed()
+                .setGlobalDeceleration()
                 .build();
 
         sortEnd = follower
@@ -433,6 +460,7 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .setTangentHeadingInterpolation()
                 .setReversed()
+                .setGlobalDeceleration()
                 .build();
 
         spike3Open = follower
@@ -447,6 +475,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         spike4Open = follower
@@ -461,6 +490,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         nearSpike3Open = follower
@@ -476,6 +506,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         nearSpike4Open = follower
@@ -491,6 +522,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         driveToGate = follower
@@ -504,6 +536,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
                 .build();
 
         obeliskInitialScorePath = follower
@@ -528,6 +561,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 )
                         )
                 )
+                .setGlobalDeceleration()
                 .build();
     }
 
@@ -687,7 +721,7 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 initialScore(),
                 pickupSequence(),
-                parkRoutine()
+                driveForward()
         );
     }
 
@@ -745,10 +779,14 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command driveForward() {
         // Move forward at max speed
-        return new InstantCommand(() -> {
-            follower.startTeleOpDrive();
-            follower.setTeleOpDrive(1, 0, 0, true);
-        });
+        return new SequentialCommandGroup(
+                new InstantCommand(() -> {
+                    follower.startTeleOpDrive();
+                    follower.setTeleOpDrive(1, 0, 0, true);
+                }),
+                new WaitCommand(200),
+                new InstantCommand(this::requestOpModeStop)
+        );
     }
 
     private Command closeCycle() {
@@ -769,8 +807,10 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command initialScore() {
+        PathChain path = (startingPosition == StartingPosition.FAR) ? initialFarPath : nearPathsReturn[0].get();
+
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, getBackPath(1)),
+                new FollowPathCommand(follower, path),
                 shoot()
         );
     }
@@ -826,18 +866,6 @@ public class AutonomousApp extends ComplexOpMode {
                         shoot()
                 )
         );
-    }
-
-    private Command parkRoutine() {
-        if (endGate) {
-            return new ConditionalCommand(
-                    new FollowPathCommand(follower, driveToGate),
-                    new InstantCommand(),
-                    () -> matchTime.isMoreThan(1)
-            );
-        }
-
-        return new FollowPathCommand(follower, farDriveBackEnd);
     }
 
     private Command shoot() {
