@@ -413,8 +413,9 @@ public class TeleOpApp extends ComplexOpMode {
 
         double targetX = currentX;
         double targetY = currentY;
+        double targetHeading = heading;
 
-        // Direct orientation flags based on 90-degree quadrant centers
+        // Normalize heading to [0, 2PI)
         double normalizedHeading = MathFunctions.normalizeAngle(heading);
         boolean facingRight = normalizedHeading < Math.toRadians(45) || normalizedHeading >= Math.toRadians(315);
         boolean facingUp    = normalizedHeading >= Math.toRadians(45) && normalizedHeading < Math.toRadians(135);
@@ -438,7 +439,22 @@ public class TeleOpApp extends ComplexOpMode {
             targetY = FIELD_LIMIT - getDistanceToCenter(frontFacingVertical, facingUp);
         }
 
-        follower.setPose(new Pose(targetX, targetY, heading));
+        // --- Corner Heading Reset Logic ---
+        // Reset heading if the robot is in a corner
+        boolean inCorner = (nearLeft || nearRight) && (nearBottom || nearTop);
+        if (inCorner) {
+            if (facingRight) {
+                targetHeading = Math.toRadians(0);
+            } else if (facingUp) {
+                targetHeading = Math.toRadians(90);
+            } else if (facingLeft) {
+                targetHeading = Math.toRadians(180);
+            } else if (facingDown) {
+                targetHeading = Math.toRadians(270);
+            }
+        }
+
+        follower.setPose(new Pose(targetX, targetY, targetHeading));
         follower.startTeleopDrive(USE_BRAKE_MODE);
         gamepad1.rumble(150);
     }
