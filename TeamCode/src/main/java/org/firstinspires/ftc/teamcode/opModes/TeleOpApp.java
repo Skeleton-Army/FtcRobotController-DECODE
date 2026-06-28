@@ -174,13 +174,13 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_LEFT))
                 .whileActiveContinuous(
-                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.001))
+                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.003))
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT))
                 .whileActiveContinuous(
-                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.001))
+                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.003))
                 );
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
