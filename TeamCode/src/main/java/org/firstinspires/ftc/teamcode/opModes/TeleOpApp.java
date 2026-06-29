@@ -391,7 +391,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private void dynamicPoseReset() {
-        final double VELOCITY_THRESHOLD = 0.2;
+        final double VELOCITY_THRESHOLD = 1.0;
         if (follower.getVelocity().getMagnitude() > VELOCITY_THRESHOLD) {
             return;
         }
