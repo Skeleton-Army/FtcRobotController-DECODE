@@ -78,14 +78,10 @@ public class AutonomousApp extends ComplexOpMode {
     private final PathChain[] nearPaths = new PathChain[4];
     private final Supplier<PathChain>[] nearPathsReturn = new Supplier[4];
     private final Supplier<PathChain>[] farPathsReturn = new Supplier[4];
-    private PathChain farDriveBackEnd;
     private PathChain nearDriveBackEnd;
     private PathChain sortEnd;
     private PathChain spike3Open;
     private PathChain spike4Open;
-    private PathChain nearSpike3Open;
-    private PathChain nearSpike4Open;
-    private PathChain driveToGate;
     private PathChain obeliskInitialScorePath;
     private PathChain initialFarPath;
 
@@ -99,8 +95,6 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Pose farDriveBack;
     private Pose nearDriveBack;
-
-    private Pose gateOpenPose;
     private Pose sortingPose;
 
     private boolean isSorting = false;
@@ -225,12 +219,9 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike4End = getRelative(new Pose(19, 83.663));
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
-        Pose spike3GateEnd = getRelative(new Pose(21, 66));
-        Pose spike4GateEnd = getRelative(new Pose(21, 83.663));
 
         farDriveBack = getRelative(new Pose(48, 17.9901));
         nearDriveBack = getRelative(new Pose(50, 90));
-        gateOpenPose = getRelative(new Pose(14.5721, 58.82221));
         sortingPose = getRelative(new Pose(30, 113));
 
         nearPathsReturn[0] = this::nearDriveBack;
@@ -329,20 +320,6 @@ public class AutonomousApp extends ComplexOpMode {
                                 getRelative(new Pose(55.843, 93.284)),
                                 getRelative(new Pose(51.780, 83.231)),
                                 spike4End
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .setGlobalDeceleration()
-                .build();
-
-        farDriveBackEnd = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(40, 15.862))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -459,52 +436,6 @@ public class AutonomousApp extends ComplexOpMode {
                                 follower::getPose,
                                 getRelative(new Pose(33.594, 76.111)),
                                 openGateEnd
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .setGlobalDeceleration()
-                .build();
-
-        nearSpike3Open = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower::getPose,
-                                getRelative(new Pose(50.536, 55)),
-                                getRelative(new Pose(42.630, 55)),
-                                spike3GateEnd
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .setGlobalDeceleration()
-                .build();
-
-        nearSpike4Open = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower::getPose,
-                                getRelative(new Pose(13, 86.5)),
-                                getRelative(new Pose(22, 79)),
-                                spike4GateEnd
-                        )
-                )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(180))
-                )
-                .setGlobalDeceleration()
-                .build();
-
-        driveToGate = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower.getPose(),
-                                getRelative(new Pose(23.65442764578834, 68.34557235421167))
                         )
                 )
                 .setConstantHeadingInterpolation(
