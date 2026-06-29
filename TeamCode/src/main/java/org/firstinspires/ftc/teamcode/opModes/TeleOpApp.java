@@ -456,7 +456,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         follower.setPose(new Pose(targetX, targetY, targetHeading));
         follower.startTeleopDrive(USE_BRAKE_MODE);
-        gamepad1.rumble(150);
+        gamepad1.rumble(300);
     }
 
     /**
