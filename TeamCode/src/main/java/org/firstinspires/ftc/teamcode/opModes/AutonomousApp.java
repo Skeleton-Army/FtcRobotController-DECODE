@@ -714,7 +714,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Command initialScore() {
         PathChain path = (startingPosition == StartingPosition.FAR) ? initialFarPath : nearPathsReturn[0].get();
 
-        return new SequentialCommandGroup(
+        return new ParallelCommandGroup(
                 new FollowPathCommand(follower, path),
                 shoot()
         );
@@ -766,9 +766,7 @@ public class AutonomousApp extends ComplexOpMode {
         return new ParallelCommandGroup(
                 new SequentialCommandGroup(
                         new InstantCommand(intake::collect),
-                        new DeferredCommand(() -> new FollowPathCommand(follower, path.get()), null),
-                        new InstantCommand(intake::stop),
-                        shoot()
+                        followAndShoot(path)
                 )
         );
     }
@@ -778,6 +776,22 @@ public class AutonomousApp extends ComplexOpMode {
         return new ShootCommand(
                 shooter, intake, transfer, drive
         ).asProxy();
+    }
+
+    private Command followAndShoot(Supplier<PathChain> pathSupplier) {
+        return followAndShoot(pathSupplier, shoot());
+    }
+
+    private Command followAndShoot(Supplier<PathChain> pathSupplier, Command shootCommand) {
+        return new ParallelCommandGroup(
+                new DeferredCommand(() -> new FollowPathCommand(follower, pathSupplier.get()), null),
+                new SequentialCommandGroup(
+                        new WaitUntilCommand(drive::isInsideLaunchZonePredictive),
+                        new InstantCommand(intake::stop),
+                        shootCommand,
+                        new InstantCommand(follower::breakFollowing)
+                )
+        );
     }
 
     private Command shootWithKicker() {
@@ -832,15 +846,13 @@ public class AutonomousApp extends ComplexOpMode {
                     shootCommand.asProxy()
                 );
 
-        Command driveThenShoot =
-                new SequentialCommandGroup(
-                    new InstantCommand(intake::collect),
-                    new DeferredCommand(() -> new FollowPathCommand(follower,
-                            isLast ? getFinalPath() : getBackPath(spike)
-                    ), null),
-                    new InstantCommand(intake::stop),
-                    shootCommand.asProxy()
-                );
+        Command driveThenShoot = new SequentialCommandGroup(
+                new InstantCommand(intake::collect),
+                followAndShoot(
+                        isLast ? this::getFinalPath : () -> getBackPath(spike),
+                        shootCommand.asProxy()
+                )
+        );
 
         return new SequentialCommandGroup(
                 collect(spike),
