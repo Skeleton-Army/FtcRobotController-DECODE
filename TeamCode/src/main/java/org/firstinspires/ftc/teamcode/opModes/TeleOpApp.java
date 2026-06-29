@@ -118,6 +118,7 @@ public class TeleOpApp extends ComplexOpMode {
     double calculatedLatencyMillis = 0;
     double positionGap = 0;
 
+    Pose pinpointPose;
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -388,7 +389,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
         telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
-        Pose2D pinpointPos2D = poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
+        pinpointPose = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
+        Pose2D pinpointPos2D = poseToPose2D(pinpointPose, FTCCoordinates.INSTANCE);
         telemetry.addData("pinpoint pose x", -pinpointPos2D.getX(DistanceUnit.INCH));
         telemetry.addData("pinpoint pose y", -pinpointPos2D.getY(DistanceUnit.INCH));
         telemetry.addData("pinpoint pose heading", pinpointPos2D.getHeading(AngleUnit.RADIANS) - Math.PI);
@@ -563,9 +565,24 @@ public class TeleOpApp extends ComplexOpMode {
 
         double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
         double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        double driftTotal = driftX + driftY;
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
-        telemetry.addData("Drift total", driftX + driftY);
+        telemetry.addData("Drift total", driftTotal);
+
+        double driftXPinpoint = Math.abs(X_OFFSET - pinpointPose.getPose().getX());
+        double driftYPinpoint = Math.abs(Y_OFFSET - pinpointPose.getPose().getY());
+        double driftTotalPinpoint = driftXPinpoint + driftYPinpoint;
+        telemetry.addData("Drift x", driftXPinpoint);
+        telemetry.addData("Drift y", driftYPinpoint);
+        telemetry.addData("Drift total pinpoint", driftTotalPinpoint);
+
+        if (driftTotalPinpoint > driftTotal)
+            telemetry.addData("Kalman more accurate by", driftTotalPinpoint - driftTotal);
+
+        else if (driftTotalPinpoint <= driftTotal)
+            telemetry.addData("pinpoint is more accurate by", driftTotal- driftTotalPinpoint);
+
 //        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
 //        telemetry.addData("Distance from GOAL", goalDistance);
 //        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
