@@ -695,7 +695,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command closeCycle() {
-        return new CloseCycleCommand(follower, intake, transfer, shooter, drive, alliance);
+        return new CloseCycleCommand(follower, intake, transfer, shooter, drive, alliance).asProxy();
     }
 
     private Command farCycle() {
