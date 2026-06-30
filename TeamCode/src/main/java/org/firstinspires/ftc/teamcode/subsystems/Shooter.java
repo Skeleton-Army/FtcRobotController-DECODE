@@ -350,11 +350,16 @@ public class Shooter extends SubsystemBase {
      */
     public double[] getNetTargetKinematics() {
         long currentTime = System.nanoTime();
-        double currentTargetAngle = turretPID.getSetPoint();
+
+        if (solution == null) {
+            return new double[] {0, 0};
+        }
+
+        double currentTargetVel = solution.getAngularVelocity();
 
         if (lastTargetUpdateTime == 0) {
             lastTargetUpdateTime = currentTime;
-            lastTargetAngle = currentTargetAngle;
+            targetVel = currentTargetVel;
             return new double[] {0, 0};
         }
 
@@ -362,33 +367,21 @@ public class Shooter extends SubsystemBase {
 
         // This removes the jitter and jumps at the start of the OpMode
         if (dt <= 0.005 || startupTimer.getElapsed() < 0.5) {
-            lastTargetAngle = currentTargetAngle;
             lastTargetUpdateTime = currentTime;
-            targetVel = 0;
+            targetVel = currentTargetVel;
             return new double[] {0, 0};
         }
 
-        // 1. Calculate Raw Derivatives
-        double deltaAngle = MathFunctions.normalizeAngleSigned(currentTargetAngle - lastTargetAngle);
-        double rawTargetVel = deltaAngle / dt;
-        rawTargetVel = MathUtils.clamp(rawTargetVel, -4, 4);
+        filteredTargetVel = Kinematics.lowPassFilter(currentTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
 
-        double rawTargetAccel = (rawTargetVel - targetVel) / dt;
+        double rawTargetAccel = (currentTargetVel - targetVel) / dt;
         rawTargetAccel = MathUtils.clamp(rawTargetAccel, -4, 4);
-
-        // 2. Apply Low Pass Filter using your Kinematics utility
-        filteredTargetVel = Kinematics.lowPassFilter(rawTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
         filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_SECOND_DERIVATIVE_GAIN);
 
-        targetVel = rawTargetVel;
-        lastTargetAngle = currentTargetAngle;
+        targetVel = currentTargetVel;
         lastTargetUpdateTime = currentTime;
 
-        // 3. Compute Net Motion (Filtered Target - Filtered/Measured Robot)
-        double netVel = filteredTargetVel;
-        double netAccel = filteredTargetAccel;
-
-        return new double[] {netVel, netAccel};
+        return new double[] {filteredTargetVel, filteredTargetAccel};
     }
 
     private double[] getBandedTurretKS() {

@@ -95,6 +95,7 @@ public class ShooterCalculator implements IShooterCalculator {
 
         double distance = goalPoseMeters.distanceFrom(predictedPose);
         double horizontalAngleToGoal = calculateTurretAngle(goalPoseMeters, predictedPose);
+        double losAngularVelocity = calculateLOSAngularVelocity(goalPoseMeters, predictedPose, robotVelMeters, angularVel);
 
         Vector3D vRobot = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
 
@@ -135,7 +136,28 @@ public class ShooterCalculator implements IShooterCalculator {
                 aimVerticalAngle,
                 finalTargetRPM,
                 isSolutionPossible,
-                vRequired.getNorm()
+                vRequired.getNorm(),
+                losAngularVelocity
         );
+    }
+
+    private double calculateLOSAngularVelocity(Pose goalPose, Pose turretPose, Vector robotVel, double angularVel) {
+        double heading = turretPose.getHeading();
+        double offsetRotX = TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
+        double offsetRotY = TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
+
+        double turretVelX = robotVel.getXComponent() - angularVel * offsetRotY;
+        double turretVelY = robotVel.getYComponent() + angularVel * offsetRotX;
+
+        double turretX = turretPose.getX() + offsetRotX;
+        double turretY = turretPose.getY() + offsetRotY;
+        double rx = goalPose.getX() - turretX;
+        double ry = goalPose.getY() - turretY;
+        double rSq = rx * rx + ry * ry;
+
+        if (rSq < 1e-6) return 0;
+
+        double fieldLOSRate = (ry * turretVelX - rx * turretVelY) / rSq;
+        return fieldLOSRate - angularVel; // convert field-frame rate to robot/turret-relative rate
     }
 }

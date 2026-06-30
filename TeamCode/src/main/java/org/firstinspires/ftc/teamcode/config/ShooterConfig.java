@@ -36,7 +36,7 @@ public class ShooterConfig {
     public static double TURRET_IZONE = Math.toRadians(30);
     public static double ACCELERATION_SMOOTHING_GAIN = 0.7;
     public static double TURRET_DERIVATIVE_GAIN = 0.8;
-    public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.8;
+    public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.3;
     public static double TURRET_DELAY = 0.02;
     public static double TURRET_MIN_VOLTAGE = 0.4;
     public static double TURRET_KP = 10;
