@@ -66,7 +66,7 @@ public class CloseCycleCommand extends SequentialCommandGroup {
 
                 new WaitUntilCommand(
                         () -> transfer.isArtifactDetected() && transfer.isArtifactInIntake()
-                ).withTimeout(3000),
+                ).withTimeout(2000),
 
                 new InstantCommand(intake::stop),
 
