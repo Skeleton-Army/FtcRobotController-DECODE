@@ -84,6 +84,7 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain spike4Open;
     private PathChain obeliskInitialScorePath;
     private PathChain initialFarPath;
+    private PathChain initialNearPath;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
@@ -123,6 +124,7 @@ public class AutonomousApp extends ComplexOpMode {
                         )
                 )
                 .setTangentHeadingInterpolation()
+                .setReversed()
                 .setGlobalDeceleration()
                 .build();
     }
@@ -258,6 +260,21 @@ public class AutonomousApp extends ComplexOpMode {
                 .setConstantHeadingInterpolation(
                         getRelative(Math.toRadians(180))
                 )
+                .setGlobalDeceleration()
+                .build();
+
+        initialNearPath = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                nearDriveBack
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(0))
+                )
+                .setReversed()
                 .setGlobalDeceleration()
                 .build();
 
@@ -707,7 +724,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command initialScore() {
-        PathChain path = (startingPosition == StartingPosition.FAR) ? initialFarPath : nearPathsReturn[0].get();
+        PathChain path = (startingPosition == StartingPosition.FAR) ? initialFarPath : initialNearPath;
 
         return new ParallelCommandGroup(
                 new FollowPathCommand(follower, path),
