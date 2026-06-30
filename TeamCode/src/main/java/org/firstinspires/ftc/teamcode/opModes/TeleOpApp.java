@@ -22,7 +22,6 @@ import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
-import org.firstinspires.ftc.teamcode.commands.CloseCycleCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
@@ -199,11 +198,6 @@ public class TeleOpApp extends ComplexOpMode {
                             drive.enable();
                         })
                 );
-
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
-                .whenPressed(new RepeatCommand(
-                        new CloseCycleCommand(follower, intake, transfer, shooter, drive, alliance)
-                ));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());

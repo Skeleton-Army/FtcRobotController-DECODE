@@ -37,7 +37,6 @@ import com.skeletonarmy.marrow.settings.Settings;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
-import org.firstinspires.ftc.teamcode.commands.CloseCycleCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
@@ -210,6 +209,31 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
+    public PathChain getNearCyclePath() {
+        return follower
+                .pathBuilder()
+                .addPath(new BezierLine(
+                        follower.getPose(),
+                        getRelative(new Pose(12, 57.5))
+                ))
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.5,
+                                        HeadingInterpolator.tangent
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.5,
+                                        1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(154.8622)))
+                                )
+                        )
+                )
+                .setGlobalDeceleration()
+                .build();
+    }
+
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(15.26, 111.5, Math.toRadians(270)));
@@ -223,7 +247,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
         farDriveBack = getRelative(new Pose(48, 17.9901));
-        nearDriveBack = getRelative(new Pose(50, 90));
+        nearDriveBack = getRelative(new Pose(50, 85));
         sortingPose = getRelative(new Pose(30, 113));
 
         nearPathsReturn[0] = this::nearDriveBack;
@@ -712,7 +736,13 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command closeCycle() {
-        return new CloseCycleCommand(follower, intake, transfer, shooter, drive, alliance).asProxy();
+        return new SequentialCommandGroup(
+                new InstantCommand(intake::collect),
+                new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()), null),
+                new WaitUntilCommand(artifactDetected())
+                        .withTimeout(2000),
+                followAndShoot(this::nearDriveBack)
+        );
     }
 
     private Command farCycle() {
