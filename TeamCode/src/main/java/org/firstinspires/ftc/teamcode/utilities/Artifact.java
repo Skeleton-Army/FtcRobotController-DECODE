@@ -1,4 +1,5 @@
 package org.firstinspires.ftc.teamcode.utilities;
+
 import androidx.annotation.NonNull;
 
 import com.pedropathing.geometry.Pose;
@@ -13,7 +14,7 @@ import lombok.Getter;
 public class Artifact {
     private final Pose artifactPose;
     private final ArtifactColor artifactColor;
-    private Pair<Double, Double> txtyPair;
+
     public Artifact(double x, double y, ArtifactColor color) {
         artifactPose = new Pose(x, y);
         artifactColor = color;
@@ -24,15 +25,14 @@ public class Artifact {
         artifactColor = parseColor(color);
     }
 
-    public Artifact(Pose pose, ArtifactColor color, double tx, double ty) {
-        artifactPose = pose;
-        artifactColor = color;
-        txtyPair = new Pair<>(tx, ty);
-    }
-
     public Artifact(Pose pose, String color) {
         artifactPose = pose;
         artifactColor = parseColor(color);
+    }
+
+    public Artifact(Pose pose) {
+        artifactPose = pose;
+        artifactColor = ArtifactColor.UNKNOWN;
     }
 
     public static ArtifactColor parseColor(String color) {

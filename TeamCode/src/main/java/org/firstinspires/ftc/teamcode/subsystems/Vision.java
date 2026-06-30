@@ -1,8 +1,7 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 //TODO: add max width to Pipeline
+import static org.firstinspires.ftc.robotcore.internal.system.Assert.assertTrue;
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.*;
-
-import android.util.Log;
 
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
@@ -13,6 +12,7 @@ import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -24,7 +24,6 @@ import org.firstinspires.ftc.teamcode.utilities.Artifact;
 import org.firstinspires.ftc.teamcode.utilities.Pair;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -67,7 +66,6 @@ public class Vision extends SubsystemBase {
         llResult = limelight.getLatestResult();
         double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
         limelight.updateRobotOrientation(orientationDeg);
-        llResult = limelight.getLatestResult();
         // Check if it's the first run OR if the timer is done
         if (relocalizeTimer.isDone() || firstRelocalization) {
             boolean success = relocalize();
@@ -198,18 +196,15 @@ public class Vision extends SubsystemBase {
          * Always call this first before chaining any sort/filter/terminal methods.
          */
         public ArtifactList fetch() {
-            llResult = limelight.getLatestResult();
-            if (llResult == null ) return null;
-
+            if (llResult == null) return this;
             double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
-            for (int i = 0; i <= count; i += 2) {
+            for (int i = 0; i < count * 2; i += 2) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
                 Pose absPose = getAbsolutePosition(tx, ty);
-                artifacts.add(new Artifact(absPose, ArtifactColor.UNKNOWN, tx, ty));
+                artifacts.add(new Artifact(absPose));
             }
-
             return this;
         }
 
@@ -276,21 +271,27 @@ public class Vision extends SubsystemBase {
         private Pose getRelativePose(double distance, double tx) {
             double theta = Math.toRadians(tx);
 
-            double deltaX = (distance + X_OFFSET_INCHES) * Math.cos(theta);
-            double deltaY = (distance + Y_OFFSET_INCHES) * Math.sin(theta);
+            //double deltaX = (distance + X_OFFSET_INCHES) * Math.cos(theta);
+            double deltaX = distance * Math.cos(theta) + X_OFFSET_INCHES;
+            //double deltaY = (distance + Y_OFFSET_INCHES) * Math.sin(theta);
+            double deltaY = -distance * Math.sin(theta) + Y_OFFSET_INCHES;
 
-            return new Pose(deltaX, deltaY, 0);
+            Pose pose  = new Pose(deltaX, deltaY, 0);
+            //OpModeManager.getActiveOpMode().telemetry.addData("Relative", pose.toString());
+
+            return pose;
         }
 
         private Pose getAbsolutePosition(Pose relativePose) {
             double theta = poseTracker.getPose().getHeading();
             double x = relativePose.getX() * Math.cos(theta) - relativePose.getY() * Math.sin(theta);
-            double y = relativePose.getX() * Math.sin(theta) - relativePose.getY() * Math.cos(theta);
-            Pose result = new Pose(poseTracker.getPose().getX() +x,
+            double y = relativePose.getX() * Math.sin(theta) + relativePose.getY() * Math.cos(theta);
+
+
+            return new Pose(
+                    poseTracker.getPose().getX() + x,
                     poseTracker.getPose().getY() + y,
                     0);
-
-            return result;
         }
 
         private Pose getAbsolutePosition(double tx, double ty) {
@@ -298,9 +299,6 @@ public class Vision extends SubsystemBase {
             return getAbsolutePosition(getRelativePose(distance, tx));
         }
 
-        private Pose getAbsolutePosition(Pair<Double, Double> pair) {
-            return getAbsolutePosition(pair.getFirst(), pair.getSecond());
-        }
 
         // ─── Deprecated ──────────────────────────────────────────────────────────
 
