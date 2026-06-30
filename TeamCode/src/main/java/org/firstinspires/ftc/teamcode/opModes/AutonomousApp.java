@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
+import static org.firstinspires.ftc.teamcode.consts.GoalPositions.CLOSE_AUTO_BLUE_GOAL;
+import static org.firstinspires.ftc.teamcode.consts.GoalPositions.CLOSE_AUTO_RED_GOAL;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -43,7 +45,6 @@ import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
@@ -500,6 +501,8 @@ public class AutonomousApp extends ComplexOpMode {
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
         shooter.setSOTMEnabled(false);
+        if (startingPosition == StartingPosition.CLOSE) shooter.setGoalPose(CLOSE_AUTO_BLUE_GOAL, CLOSE_AUTO_RED_GOAL);
+
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
