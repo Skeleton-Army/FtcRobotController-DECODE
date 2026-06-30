@@ -673,6 +673,14 @@ public class Shooter extends SubsystemBase {
         return sotmEnabled;
     }
 
+    public void setGoalPose(Pose bluePose, Pose redPose) {
+        this.goalPose = alliance == Alliance.BLUE ? bluePose : redPose;
+    }
+
+    public void setGoalPoseFar(Pose bluePose, Pose redPose) {
+        this.goalPoseFar = alliance == Alliance.BLUE ? bluePose : redPose;
+    }
+
     public boolean justShot() {
         if ((Math.abs(getTargetRPM() - getRPM()) > RPM_REACHED_THRESHOLD) && (Math.abs(lastShotRPM - getRPM()) > RPM_REACHED_THRESHOLD)) {
             return true;
