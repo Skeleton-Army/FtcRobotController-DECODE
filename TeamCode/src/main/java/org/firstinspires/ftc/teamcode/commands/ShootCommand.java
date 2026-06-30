@@ -58,7 +58,7 @@ public class ShootCommand extends SequentialCommandGroup {
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, boolean waitUntilReady) {
-        this(shooter, intake, transfer, drive, intakeSpeed, 1200, waitUntilReady);
+        this(shooter, intake, transfer, drive, intakeSpeed, 600, waitUntilReady);
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, int waitMillis, boolean waitUntilReady) {
