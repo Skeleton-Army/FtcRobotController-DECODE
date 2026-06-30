@@ -41,7 +41,7 @@ public class Shooter extends SubsystemBase {
 
     private final ModifiedMotorEx flywheel1;
     private final ModifiedMotorEx flywheel2;
-    public final ModifiedMotorGroup flywheel;
+    private final ModifiedMotorGroup flywheel;
     private final ModifiedMotorEx turret;
     private final ServoEx hood;
 
@@ -52,10 +52,10 @@ public class Shooter extends SubsystemBase {
     private final IShooterCalculator shooterCalculatorClose;
     private final IShooterCalculator shooterCalculatorFar;
     private final Alliance alliance;
-    public Pose goalPose;
-    public Pose goalPoseFar;
+    private Pose goalPose;
+    private Pose goalPoseFar;
 
-    public boolean isConfiguredCW = true;
+    private boolean isConfiguredCW = true;
     private double targetTPS;
 
     private final TimerEx recoveryTimer;
@@ -64,14 +64,11 @@ public class Shooter extends SubsystemBase {
     private final TimerEx startupTimer;
     private final Kinematics kinematics;
 
-    public boolean calculatedRecovery = false;
-    private double recoveryTime; // in seconds
     public double wrapped;
     public double shotHoodAngle; // in degrees
     public double shotTurretAngle; // in degrees
     public double shotFlywheelRPM;
     public double shotGoalDistance; // in meters
-    final double inchesToMeters = 39.37;
 
     private boolean horizontalManualMode;
     private boolean verticalManualMode;
@@ -94,13 +91,10 @@ public class Shooter extends SubsystemBase {
     private int bufferIndex = 0;
     private double runningRpmSum = 0;
     public double filteredRPM;
-    public double filteredRPMPredicted;
 
     private final PIDController flywheelPID;
     private double lastSpeedFlywheel = 0;
-    private double lastSpeedFlywheelFiltered = 0;
 
-    // Add this as a class variable
     private long lastLoopTime = 0;
 
     private double lastTargetAngle = 0;
@@ -108,15 +102,15 @@ public class Shooter extends SubsystemBase {
     private double targetVel = 0;
     private double targetAccel = 0;
     private double filteredTargetVel = 0;
-    public double filteredTargetAccel = 0;
-    public double filteredTargetAccelFlywheel = 0;
+    private double filteredTargetAccel = 0;
+    private double filteredTargetAccelFlywheel = 0;
     private double filteredVelocity = 0; // flywheel velocity
     private final double VELOCITY_FILTER_ALPHA = 0.7; // Adjust (0.1 = heavy filter, 0.9 = light)
     private boolean isBraking = false;
 
     private double lastWrappedTarget = 0;
     private boolean hasWrappedTarget = false;
-    public boolean justWrapped = false;
+    private boolean justWrapped = false;
 
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
@@ -223,78 +217,6 @@ public class Shooter extends SubsystemBase {
         voltageExternallySupplied = false;
     }
 
-    private void updateFlywheelPID(boolean useDelayCompensation) {
-        if (disabled || emergencyStop) {
-            flywheel.set(0);
-            rampTimer.restart();
-            rampTimer.pause();
-            lastSpeedFlywheel = 0;
-            lastLoopTime = System.nanoTime();
-            return;
-        }
-
-        // 1. Calculate real Delta Time (dt)
-        long currentTime = System.nanoTime();
-        if (lastLoopTime == 0) lastLoopTime = currentTime;
-        double dt = (currentTime - lastLoopTime) / 1.0e9;
-        lastLoopTime = currentTime;
-        if (dt < 0.001) dt = 0.001;
-
-        if (!rampTimer.isOn()) rampTimer.resume();
-        double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
-
-        double speed = (0.9 * targetTPS) * rampMultiplier;
-        double velocity = flywheel1.getCorrectedVelocity();
-
-        if (useDelayCompensation) {
-            double accel = flywheel1.getAcceleration();
-            velocity += accel * FLYWHEEL_DELAY_SEC;
-            //speed += accel * FLYWHEEL_DELAY_SEC;
-        }
-
-        // --- ASYMMETRIC P-GAIN LOGIC ---
-        double error = speed - velocity;
-
-        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
-            // We are overshooting by a lot: Trigger the Brakes
-            isBraking = true;
-        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
-            // We have slowed down enough: Return to normal control
-            isBraking = false;
-        }
-
-        // Apply the Kp based on the state
-        if (isBraking) {
-            flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
-        } else {
-            flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        }
-        // -------------------------------
-
-        // 2. Calculate Acceleration
-        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
-        double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
-
-        // Calculate PID with the newly set coefficients
-        double pid = flywheelPID.calculate(velocity, speed);
-
-        // Feedforward
-        double ff = (FLYWHEEL_KS * Math.signum(speed)) +
-                (FLYWHEEL_KV * speed) +
-                (currentKA * targetAcceleration);
-
-        lastSpeedFlywheel = speed;
-        lastSpeedFlywheelFiltered = filteredRPM;
-
-        double velocityCmd = pid + ff;
-        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
-
-        // Safety: Clamp power between -1.0 and 1.0 before setting
-        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
-
-        flywheel.set(finalPower, voltage);
-    }
-
     private void updateFlywheelPIDFiltered(boolean useDelayCompensation) {
         if (disabled || emergencyStop) {
             flywheel.set(0);
@@ -365,59 +287,6 @@ public class Shooter extends SubsystemBase {
         desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
         flywheel.set(desiredVoltage / voltage);
-    }
-
-    private void updateTurretPIDTwoSides() {
-        if (disabled || emergencyStop) {
-            turret.set(0);
-            return;
-        }
-
-        double currentPos = turret.getDistance();
-        double setpoint = turretPID.getSetPoint();
-        double error = setpoint - currentPos;
-
-        // 1. Gain Scheduling with Hysteresis
-        // We only swap gains if the error is larger than a small threshold (e.g., 0.5 degrees)
-        // This creates a "dead zone" where it stops rapidly switching if it's just hovering near 0
-        if (error > 0.5 && !isConfiguredCW) {
-            turretPID.setPID(TURRET_KP_CW, TURRET_KI_CW, TURRET_KD_CW);
-            isConfiguredCW = true;
-        } else if (error < -0.5 && isConfiguredCW) {
-            turretPID.setPID(TURRET_KP_CCW, TURRET_KI_CCW, TURRET_KD_CCW);
-            isConfiguredCW = false;
-        }
-
-        // Now calculate using the single, continuous PID object
-        double pidOutput = turretPID.calculate(currentPos);
-
-        // I-Zone Logic
-        if (Math.abs(error) > TURRET_IZONE) {
-            turretPID.clearTotalError(); // Clears integral if too far away
-        }
-
-        // 2. Robot Motion Compensation (Feedforward)
-        double[] netKinematics = getNetTargetKinematics();
-        double netVel = netKinematics[0];
-        double netAccel = netKinematics[1];
-
-        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
-        double totalRequest = pidOutput + ffBase;
-
-        // 3. Static Friction (kS)
-        double[] ks = getBandedTurretKS();
-        double ks_cw  = ks[0];
-        double ks_ccw = ks[1];
-        double staticComp = 0;
-
-        if (Math.abs(totalRequest) > 0.05) {
-            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
-        }
-
-        double voltageScale = 12.0 / voltage;
-        double finalOutput = (pidOutput + ffBase + staticComp) * voltageScale;
-
-        turret.set(finalOutput);
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {
@@ -695,10 +564,6 @@ public class Shooter extends SubsystemBase {
 
     public boolean getVerticalManualMode() {
         return verticalManualMode;
-    }
-
-    public double getRecoveryTime() {
-        return recoveryTime;
     }
 
     public void setHorizontalOffset(double offset) {
