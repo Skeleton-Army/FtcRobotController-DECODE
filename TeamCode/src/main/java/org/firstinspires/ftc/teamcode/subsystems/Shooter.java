@@ -7,6 +7,7 @@ import androidx.core.math.MathUtils;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -120,6 +121,7 @@ public class Shooter extends SubsystemBase {
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
+    private boolean sotmEnabled = true;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculatorClose,IShooterCalculator shooterCalculatorFar, Alliance alliance) {
         this.poseTracker = poseTracker;
@@ -196,12 +198,13 @@ public class Shooter extends SubsystemBase {
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
+        Vector shotVelocity = sotmEnabled ? poseTracker.getVelocity() : new Vector();
+
         filteredRPM = getFilteredRPM(getRPM());
-        //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
         if (zoneCalculator == LaunchZone.CLOSE)
-            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, shotVelocity, poseTracker.getAngularVelocity(), (int)filteredRPM);
         else if (zoneCalculator == LaunchZone.FAR) {
-            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, shotVelocity, poseTracker.getAngularVelocity(), (int)filteredRPM);
         }
 
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
@@ -795,6 +798,14 @@ public class Shooter extends SubsystemBase {
     public void setRPM(double rpm) {
         rpm = MathUtils.clamp(rpm, 0, flywheel.getMaxRPM());
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
+    }
+
+    public void setSOTMEnabled(boolean enabled) {
+        sotmEnabled = enabled;
+    }
+
+    public boolean getSOTMEnabled() {
+        return sotmEnabled;
     }
 
     public boolean justShot() {

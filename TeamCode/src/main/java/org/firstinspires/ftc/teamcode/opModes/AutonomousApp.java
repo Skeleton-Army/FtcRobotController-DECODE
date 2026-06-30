@@ -499,6 +499,7 @@ public class AutonomousApp extends ComplexOpMode {
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
+        shooter.setSOTMEnabled(false);
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
