@@ -86,7 +86,6 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain initialFarPath;
 
     private Alliance alliance;
-    private boolean endGate;
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
     private int gateSpike;
@@ -475,7 +474,6 @@ public class AutonomousApp extends ComplexOpMode {
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.getOrDefault("pickup_order", List.of());
         gateSpike = prompter.getOrDefault("gate_spike", -1);
-        endGate = prompter.getOrDefault("end_near_gate", true);
 
         Settings.set("alliance", alliance);
 
@@ -523,9 +521,6 @@ public class AutonomousApp extends ComplexOpMode {
                     .showIf("sorted", false)
                     .showIf("cycle", false)
                     .showIf("open_gate", true)
-                .prompt("end_near_gate", new BooleanPrompt("END NEAR GATE?", true))
-                    .showIf("sorted", false)
-                    .showIf("starting_position", StartingPosition.CLOSE)
                 .showSummary()
                 .onComplete(this::afterPrompts);
 
@@ -761,7 +756,7 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command returnAndScore(int spike, boolean isLast) {
-        Supplier<PathChain> path = (isLast && !endGate) ? this::getFinalPath : () -> getBackPath(spike);
+        Supplier<PathChain> path = isLast ? this::getFinalPath : () -> getBackPath(spike);
 
         return new ParallelCommandGroup(
                 new SequentialCommandGroup(
