@@ -674,6 +674,7 @@ public class AutonomousApp extends ComplexOpMode {
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
+                closeCycle(),
                 collect(4),
                 returnAndScore(4, false),
                 driveForward()
