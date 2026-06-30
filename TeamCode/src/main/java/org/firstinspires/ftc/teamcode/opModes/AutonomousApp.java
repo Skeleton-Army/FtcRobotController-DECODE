@@ -211,13 +211,13 @@ public class AutonomousApp extends ComplexOpMode {
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(15, 112, Math.toRadians(270)));
+        nearStartingPose = getRelative(new Pose(15.26, 111.5, Math.toRadians(270)));
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(11.5555, 8));
         Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
-        Pose spike3End = getRelative(new Pose(12, 56));
-        Pose spike4End = getRelative(new Pose(19, 83.663));
+        Pose spike3End = getRelative(new Pose(9, 56));
+        Pose spike4End = getRelative(new Pose(15, 83.663));
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
@@ -669,14 +669,14 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
+                collect(4),
+                returnAndScore(4, false),
                 collect(3), // Collect spike 3 and shoot
                 returnAndScore(3, false),
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
-                collect(4),
-                returnAndScore(4, false),
                 driveForward()
         );
     }
