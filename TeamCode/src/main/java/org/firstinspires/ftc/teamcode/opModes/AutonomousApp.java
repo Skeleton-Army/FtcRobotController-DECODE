@@ -209,8 +209,8 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     public void setupPaths() {
-        farStartingPose = getRelative(new Pose(55.61,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(22.56, 119.140000000000000000, Math.toRadians(141.5)));
+        farStartingPose = getRelative(new Pose(55,7.48, Math.toRadians(90)));
+        nearStartingPose = getRelative(new Pose(15, 112, Math.toRadians(270)));
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(11.5555, 8));
