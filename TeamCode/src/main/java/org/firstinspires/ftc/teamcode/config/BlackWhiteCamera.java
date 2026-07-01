@@ -15,19 +15,12 @@ public class BlackWhiteCamera {
     public static int HEIGHT = 720;
 
     public static final double[] cameraMatrix = {
-            707.6005, 0, 608.312,  // fx, 0, cx
-            0, 702.7248, 381.992,  // 0, fy, cy
-            0, 0, 1                         // 0, 0, 1
+            705.3303, -0.5292, 601.1362, // fx, skew, cx
+            0, 700.8256, 380.9664,       // 0, fy, cy
+            0, 0, 1                      // 0, 0, 1
     };
 
     public static final double[] distCoeffs = {
-            -0.3414, 0.1324, 0.0, 0.0, 0.0};
-
-    /*public static final double[] cameraMatrix = {
-            496.040455195, 0, 322.226720938, 0, 496.912794034, 179.36243685, 0, 0, 1                      // 0, 0, 1
+            -0.3492, 0.1757, -0.0005, 0.0010, -0.0552 // k1, k2, p1, p2, k3
     };
-
-    // Distortion coefficients (k1, k2, p1, p2, k3)
-    public static final double[] distCoeffs = {
-            0.0145220035986483, -0.0121145654176830, 0.0, 0.0, 0.0};*/
 }
