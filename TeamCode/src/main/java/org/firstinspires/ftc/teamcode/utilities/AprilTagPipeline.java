@@ -194,7 +194,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
     private void updateRoi(int maxAllowedHeight) {
-        List<AprilTagDetection> detections = processor.getDetections();
+        List<AprilTagDetection> detections = getFilteredDetections();
 
         if (detections != null && !detections.isEmpty()) {
             AprilTagDetection tag = detections.get(0);
@@ -271,8 +271,21 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         return processor.getDetections();
     }
 
-    public Pose getRobotPose(double turretAngle) {
+    private List<AprilTagDetection> getFilteredDetections() {
         List<AprilTagDetection> detections = processor.getDetections();
+        if (detections == null) return null;
+
+        List<AprilTagDetection> filtered = new java.util.ArrayList<>();
+        for (AprilTagDetection d : detections) {
+            if (d.id == 20 || d.id == 24) {
+                filtered.add(d);
+            }
+        }
+        return filtered;
+    }
+
+    public Pose getRobotPose(double turretAngle) {
+        List<AprilTagDetection> detections = getFilteredDetections();
         if (detections != null && !detections.isEmpty()) {
             AprilTagDetection detection = detections.get(0);
             double relX = detection.ftcPose.x;
@@ -291,7 +304,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
     public Pose getPedroPose(double robotHeading, double turretHeading) {
-        List<AprilTagDetection> detections = processor.getDetections();
+        List<AprilTagDetection> detections = getFilteredDetections();
         if (detections == null || detections.isEmpty()) return new Pose(0, 0, 0);
 
         AprilTagDetection detection = detections.get(0);
@@ -316,7 +329,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
     public AprilTagDetection getApriltagDetection() {
-        List<AprilTagDetection> detections = processor.getDetections();
+        List<AprilTagDetection> detections = getFilteredDetections();
         return (detections != null && !detections.isEmpty()) ? detections.get(0) : null;
     }
 
@@ -325,7 +338,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
     public Pose getPose() {
-        List<AprilTagDetection> detections = processor.getDetections();
+        List<AprilTagDetection> detections = getFilteredDetections();
         if (detections == null || detections.isEmpty()) return new Pose(0, 0, 0);
 
         AprilTagDetection detection = detections.get(0);
