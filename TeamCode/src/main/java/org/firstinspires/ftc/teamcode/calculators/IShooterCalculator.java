@@ -6,7 +6,7 @@ import com.pedropathing.math.Vector;
 import com.seattlesolvers.solverslib.util.MathUtils;
 
 public interface IShooterCalculator {
-    ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelRPM);
+    ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, Vector robotAccel, double angularVel, double angularAccel, int flywheelVel);
 
     /**
      * Compute the equivalent of {@code target} (mod 2π) that is nearest to {@code current},

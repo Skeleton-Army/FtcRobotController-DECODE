@@ -83,9 +83,10 @@ public class ShooterCalculator implements IShooterCalculator {
         return Math.atan2(targetPose.getY() - turretY, targetPose.getX() - turretX);
     }
 
-    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, double angularVel, int flywheelVel) {
+    public ShootingSolution getShootingSolution(Pose robotPose, Pose goalPose, Vector robotVel, Vector robotAccel, double angularVel, double angularAccel, int flywheelVel) {
         Pose robotPoseMeters = robotPose.scale(INCH_TO_METERS);
         Vector robotVelMeters = robotVel.times(INCH_TO_METERS);
+        Vector robotAccelMeters = robotAccel.times(INCH_TO_METERS);
         Pose goalPoseMeters = goalPose.scale(INCH_TO_METERS);
 
         double predX = robotPoseMeters.getX() + robotVelMeters.getXComponent() * SHOT_LATENCY;
@@ -95,7 +96,9 @@ public class ShooterCalculator implements IShooterCalculator {
 
         double distance = goalPoseMeters.distanceFrom(predictedPose);
         double horizontalAngleToGoal = calculateTurretAngle(goalPoseMeters, predictedPose);
+
         double losAngularVelocity = calculateLOSAngularVelocity(goalPoseMeters, predictedPose, robotVelMeters, angularVel);
+        double losAngularAcceleration = calculateLOSAngularAcceleration(goalPoseMeters, predictedPose, robotVelMeters, robotAccelMeters, angularVel, angularAccel);
 
         Vector3D vRobot = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
 
@@ -137,7 +140,8 @@ public class ShooterCalculator implements IShooterCalculator {
                 finalTargetRPM,
                 isSolutionPossible,
                 vRequired.getNorm(),
-                losAngularVelocity
+                losAngularVelocity,
+                losAngularAcceleration
         );
     }
 
@@ -159,5 +163,34 @@ public class ShooterCalculator implements IShooterCalculator {
 
         double fieldLOSRate = (ry * turretVelX - rx * turretVelY) / rSq;
         return fieldLOSRate - angularVel; // convert field-frame rate to robot/turret-relative rate
+    }
+
+    private double calculateLOSAngularAcceleration(Pose goalPose, Pose turretPose, Vector robotVel, Vector robotAccel, double angularVel, double angularAccel) {
+        double heading = turretPose.getHeading();
+        double offsetRotX = TURRET_OFFSET_X * Math.cos(heading) - TURRET_OFFSET_Y * Math.sin(heading);
+        double offsetRotY = TURRET_OFFSET_X * Math.sin(heading) + TURRET_OFFSET_Y * Math.cos(heading);
+
+        double turretVelX = robotVel.getXComponent() - angularVel * offsetRotY;
+        double turretVelY = robotVel.getYComponent() + angularVel * offsetRotX;
+
+        // a_turret = linear + tangential + centripetal
+        double turretAccX = robotAccel.getXComponent() - angularAccel * offsetRotY - angularVel * angularVel * offsetRotX;
+        double turretAccY = robotAccel.getYComponent() + angularAccel * offsetRotX - angularVel * angularVel * offsetRotY;
+
+        double turretX = turretPose.getX() + offsetRotX;
+        double turretY = turretPose.getY() + offsetRotY;
+        double rx = goalPose.getX() - turretX;
+        double ry = goalPose.getY() - turretY;
+        double rSq = rx * rx + ry * ry;
+
+        if (rSq < 1e-6) return 0;
+
+        double N = ry * turretVelX - rx * turretVelY;
+        double D = rSq;
+        double Nprime = ry * turretAccX - rx * turretAccY;
+        double Dprime = -2 * (rx * turretVelX + ry * turretVelY);
+
+        double fieldLOSAccel = (Nprime * D - N * Dprime) / (D * D);
+        return fieldLOSAccel - angularAccel; // convert to turret-relative
     }
 }

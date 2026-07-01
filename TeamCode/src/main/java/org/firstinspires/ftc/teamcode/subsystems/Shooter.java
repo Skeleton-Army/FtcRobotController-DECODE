@@ -117,6 +117,10 @@ public class Shooter extends SubsystemBase {
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
     private boolean sotmEnabled = true;
 
+    private double lastAngularVel = 0;
+    private long lastAngularVelTime = 0;
+    private double filteredAngularAccel = 0;
+
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculatorClose,IShooterCalculator shooterCalculatorFar, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
@@ -193,12 +197,19 @@ public class Shooter extends SubsystemBase {
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
         Vector shotVelocity = sotmEnabled ? poseTracker.getVelocity() : new Vector();
+        Vector shotAcceleration = sotmEnabled ? poseTracker.getAcceleration() : new Vector();
+        double angularVelNow = poseTracker.getAngularVelocity();
+        double angularAccelNow = getAngularAcceleration(angularVelNow);
 
         filteredRPM = getFilteredRPM(getRPM());
         if (zoneCalculator == LaunchZone.CLOSE)
-            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, shotVelocity, poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorClose.getShootingSolution(
+                    currentPose == null ? poseTracker.getPose() : currentPose, goalPose,
+                    shotVelocity, shotAcceleration, angularVelNow, angularAccelNow, (int) filteredRPM);
         else if (zoneCalculator == LaunchZone.FAR) {
-            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, shotVelocity, poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorFar.getShootingSolution(
+                    currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar,
+                    shotVelocity, shotAcceleration, angularVelNow, angularAccelNow, (int) filteredRPM);
         }
 
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
@@ -356,6 +367,7 @@ public class Shooter extends SubsystemBase {
         }
 
         double currentTargetVel = solution.getAngularVelocity();
+        double currentTargetAccel = solution.getAngularAcceleration();
 
         if (lastTargetUpdateTime == 0) {
             lastTargetUpdateTime = currentTime;
@@ -374,14 +386,28 @@ public class Shooter extends SubsystemBase {
 
         filteredTargetVel = Kinematics.lowPassFilter(currentTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
 
-        double rawTargetAccel = (currentTargetVel - targetVel) / dt;
-        rawTargetAccel = MathUtils.clamp(rawTargetAccel, -4, 4);
-        filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_SECOND_DERIVATIVE_GAIN);
-
         targetVel = currentTargetVel;
         lastTargetUpdateTime = currentTime;
 
         return new double[] {filteredTargetVel, filteredTargetAccel};
+    }
+
+    private double getAngularAcceleration(double currentAngularVel) {
+        long now = System.nanoTime();
+        if (lastAngularVelTime == 0) {
+            lastAngularVelTime = now;
+            lastAngularVel = currentAngularVel;
+            return 0;
+        }
+        double dt = (now - lastAngularVelTime) / 1e9;
+        lastAngularVelTime = now;
+        if (dt < 0.005) return filteredAngularAccel;
+
+        double raw = (currentAngularVel - lastAngularVel) / dt;
+        raw = MathUtils.clamp(raw, -20, 20);
+        lastAngularVel = currentAngularVel;
+        filteredAngularAccel = Kinematics.lowPassFilter(raw, filteredAngularAccel, TURRET_SECOND_DERIVATIVE_GAIN);
+        return filteredAngularAccel;
     }
 
     private double[] getBandedTurretKS() {
