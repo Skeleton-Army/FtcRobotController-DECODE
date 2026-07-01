@@ -80,6 +80,17 @@ public class TeleOpApp extends ComplexOpMode {
 
     private boolean autoFireEnabled = true;
 
+    // --- AprilTag FOV tracking ---
+    private static final double CAMERA_FOV_DEG = 70.0;
+    private static final double CAMERA_OFFSET = X_OFFSET; // camera sits at the front of the robot
+
+    private static final Pose APRILTAG_1_POSE = new Pose(15, 130);
+    private static final Pose APRILTAG_2_POSE = new Pose(130, 130);
+
+    private double tag1ViewTimeSec = 0;
+    private double tag2ViewTimeSec = 0;
+    private double anyTagViewTimeSec = 0;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -295,11 +306,30 @@ public class TeleOpApp extends ComplexOpMode {
             }
         }
 
+        Pose currentPose = follower.getPose();
+
+        boolean seesTag1 = isTagInView(currentPose, APRILTAG_1_POSE);
+        boolean seesTag2 = isTagInView(currentPose, APRILTAG_2_POSE);
+
+        if (loopCount > 1) { // skip the first loop's inflated dt
+            double loopTimeSec = loopTimeMs / 1000.0;
+            if (seesTag1) tag1ViewTimeSec += loopTimeSec;
+            if (seesTag2) tag2ViewTimeSec += loopTimeSec;
+            if (seesTag1 || seesTag2) anyTagViewTimeSec += loopTimeSec;
+        }
+
         double goalDistance = follower.getPose().distanceFrom(
                 alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
         ) / INCHES_TO_METERS;
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+
+
+        telemetry.addData("Tag1 In View", seesTag1);
+        telemetry.addData("Tag2 In View", seesTag2);
+        telemetry.addData("Tag1 View Time (s)", "%.2f", tag1ViewTimeSec);
+        telemetry.addData("Tag2 View Time (s)", "%.2f", tag2ViewTimeSec);
+        telemetry.addData("Total Tag View Time (s)", "%.2f", anyTagViewTimeSec);
 
         telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
         telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
@@ -463,5 +493,23 @@ public class TeleOpApp extends ComplexOpMode {
             return frontIsFacingWall ? (X_OFFSET + INTAKE_EXTENSION) : X_OFFSET;
         }
         return Y_OFFSET;
+    }
+
+    private boolean isTagInView(Pose robotPose, Pose tagPose) {
+        double heading = robotPose.getHeading();
+
+        // Camera position = robot center pushed forward along heading
+        double camX = robotPose.getX() + CAMERA_OFFSET * Math.cos(heading);
+        double camY = robotPose.getY() + CAMERA_OFFSET * Math.sin(heading);
+
+        double dx = tagPose.getX() - camX;
+        double dy = tagPose.getY() - camY;
+        double bearingToTag = Math.atan2(dy, dx);
+
+        double angleDiff = bearingToTag - heading;
+        // normalize to [-pi, pi]
+        angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
+
+        return Math.abs(Math.toDegrees(angleDiff)) <= (CAMERA_FOV_DEG / 2.0);
     }
 }
