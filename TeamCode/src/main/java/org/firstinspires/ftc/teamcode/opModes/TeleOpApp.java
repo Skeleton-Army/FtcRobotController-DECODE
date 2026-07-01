@@ -395,9 +395,9 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("pinpoint pose y", -pinpointPos2D.getY(DistanceUnit.INCH));
         telemetry.addData("pinpoint pose heading", pinpointPos2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
-        //telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
-        //telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
-        //telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
+        telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
+        telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
+        telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
 
         telemetry.addData("[TUNER] Position Gap (in)", positionGap);
         telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
@@ -420,7 +420,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
 
-    // updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
+//     updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
     public void updateKFApriltagReading() {
         if (aprilTagPipeline.getApriltagDetection() != null) {
             long time = System.nanoTime();
@@ -552,6 +552,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Time remaining", matchTime.getRemaining());
 
         kalmanDebug();
+
+        //telemetry.addData(aprilTagPipeline.getProcessor().getDetections().get(0).rawPose);
 
         telemetry.addData("Image size x",aprilTagPipeline.getTagSizeX());
         telemetry.addData("Image size y",aprilTagPipeline.getTagSizeY());

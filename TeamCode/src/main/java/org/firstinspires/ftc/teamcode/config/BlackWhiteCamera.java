@@ -9,19 +9,19 @@ public class BlackWhiteCamera {
     public static double offsetY_turret = 6.87007874 + ShooterConfig.TURRET_OFFSET_X;
     public static double offsetZ = 12.38189; //314.5 mm
     public static double pitchAngle = 20;
-    public static Position relativePos = new Position(DistanceUnit.MM, -50.306, 222.1702, 239.321, 0);
+    public static Position relativePos = new Position(DistanceUnit.MM, -44.294, 222.429, 235.137, 0);
 
     public static int WIDTH = 1280;
     public static int HEIGHT = 720;
 
     public static final double[] cameraMatrix = {
-            688.9972, 0, 613.914,  // fx, 0, cx
-            0, 688.5173, 397.1161,  // 0, fy, cy
+            707.6005, 0, 608.312,  // fx, 0, cx
+            0, 702.7248, 381.992,  // 0, fy, cy
             0, 0, 1                         // 0, 0, 1
     };
 
     public static final double[] distCoeffs = {
-            -0.3295, 0.1029, 0.0, 0.0, 0.0};
+            -0.3414, 0.1324, 0.0, 0.0, 0.0};
 
     /*public static final double[] cameraMatrix = {
             496.040455195, 0, 322.226720938, 0, 496.912794034, 179.36243685, 0, 0, 1                      // 0, 0, 1
