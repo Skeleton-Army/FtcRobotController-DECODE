@@ -92,7 +92,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
                 .setLensIntrinsics(baseFx, baseFy, baseCx, baseCy)
                 .build();
 
-        processor.setDecimation(2);
+        processor.setDecimation(0);
 
         matrix.put(0, 0,
                 cameraMatrix[0], cameraMatrix[1], cameraMatrix[2],
