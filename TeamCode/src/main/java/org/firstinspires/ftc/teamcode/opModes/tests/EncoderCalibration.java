@@ -21,10 +21,14 @@ public class EncoderCalibration extends LinearOpMode {
 
         waitForStart();
 
+        follower.update();
+
         double forwardStart = localizer.getForwardMultiplier();
         double strafeStart  = localizer.getLateralMultiplier();
 
         while (opModeIsActive()) {
+            follower.update();
+
             double fwdTicks    = localizer.getForwardMultiplier() - forwardStart;
             double strafeTicks = localizer.getLateralMultiplier() - strafeStart;
 
