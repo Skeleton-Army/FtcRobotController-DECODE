@@ -422,7 +422,11 @@ public class TeleOpApp extends ComplexOpMode {
 
 //     updates the kalman filter if we got a tag reading, if that's case we calculate the variance based on the the tag's size in the frame
     public void updateKFApriltagReading() {
-        if (aprilTagPipeline.getApriltagDetection() != null && Math.abs(aprilTagPipeline.getPose().getHeading() - ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getHeading()) < 10) {
+        if (aprilTagPipeline.getApriltagDetection() != null
+                && Math.abs(aprilTagPipeline.getPose().getHeading() - ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose().getHeading()) < 10
+//                && follower.getVelocity().getMagnitude() < 0.5
+//                && follower.getAngularVelocity() < 0.5
+        ) {
             long time = System.nanoTime();
             ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).addMeasurement(aprilTagPipeline.getPose(), time - 1_000_000L * (long)CameraUtil.getLatencyCamera());
         }
