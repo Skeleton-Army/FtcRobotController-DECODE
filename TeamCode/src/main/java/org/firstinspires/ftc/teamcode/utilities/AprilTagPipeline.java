@@ -150,7 +150,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
                 Mat rawCrop = input.submat(validBounds);
 
                 roiMatrix.put(0, 0,
-                        baseFx, 0,      baseCx - x,
+                        baseFx, cameraMatrix[1],      baseCx - x,
                         0,      baseFy, baseCy - y,
                         0,      0,      1);
 
