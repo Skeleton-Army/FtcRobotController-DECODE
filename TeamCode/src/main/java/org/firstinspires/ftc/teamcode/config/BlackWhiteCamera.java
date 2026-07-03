@@ -10,6 +10,7 @@ public class BlackWhiteCamera {
     public static double offsetZ = 12.38189; //314.5 mm
     public static double pitchAngle = 20;
     public static Position relativePos = new Position(DistanceUnit.MM, -44.294, 222.429, 235.137, 0);
+    //public static Position relativePos = new Position(DistanceUnit.MM, -44.294 - 25, 222.429 - 50, 235.137, 0);
 
     public static int WIDTH = 1280;
     public static int HEIGHT = 720;
@@ -19,6 +20,11 @@ public class BlackWhiteCamera {
             0, 700.8256, 380.9664,       // 0, fy, cy
             0, 0, 1                      // 0, 0, 1
     };
+//    public static final double[] cameraMatrix = {
+//            705.3303, -0.5292, 660.1362, // fx, skew, cx
+//            0, 700.8256, 400.9664,       // 0, fy, cy
+//            0, 0, 1                      // 0, 0, 1
+//    };
 
     public static final double[] distCoeffs = {
             -0.3492, 0.1757, -0.0005, 0.0010, -0.0552 // k1, k2, p1, p2, k3

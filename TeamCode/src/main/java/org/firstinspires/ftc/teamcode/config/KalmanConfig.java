@@ -16,10 +16,10 @@ public class KalmanConfig {
     public static Pose measurementVariance = new Pose(2, 2, 100); // the apriltag covariance
     public static int bufferSize = 100;
 
-    public static boolean enableMeasurements = false;
+    public static boolean enableMeasurements = true;
 
     // Your empirical measurement: 36ms hardware transit delay
-    public static double CAMERA_PHYSICAL_LATENCY_MS = 10; // tune this
+    public static double CAMERA_PHYSICAL_LATENCY_MS = 20; //TODO: tune this
 
     // Standard FTC I2C bulk read loop overhead: ~3ms delay
     public static double PINPOINT_I2C_LATENCY_MS = 3;
