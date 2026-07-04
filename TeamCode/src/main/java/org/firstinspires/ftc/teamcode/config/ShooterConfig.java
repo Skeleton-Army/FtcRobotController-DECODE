@@ -13,7 +13,7 @@ public class ShooterConfig {
     public static boolean FLYWHEEL2_INVERTED = true;
     public static double FLYWHEEL_GEAR_RATIO = 51.0 / 52.0; // Flywheel teeth / Motor teeth
     public static int RPM_REACHED_THRESHOLD = 200;
-    public static double FLYWHEEL_KP = 0.025;
+    public static double FLYWHEEL_KP = 0.04;
     public static double FLYWHEEL_KP_DOWN = 0.05;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
