@@ -498,15 +498,18 @@ public class TeleOpApp extends ComplexOpMode {
     private boolean isTagInView(Pose robotPose, Pose tagPose) {
         double heading = robotPose.getHeading();
 
-        // Camera position = robot center pushed forward along heading
-        double camX = robotPose.getX() + CAMERA_OFFSET * Math.cos(heading);
-        double camY = robotPose.getY() + CAMERA_OFFSET * Math.sin(heading);
+        // Camera now faces backward, mounted at the back of the robot
+        double cameraHeading = heading + Math.PI;
+
+        // Camera position = robot center pushed backward along heading
+        double camX = robotPose.getX() - CAMERA_OFFSET * Math.cos(heading);
+        double camY = robotPose.getY() - CAMERA_OFFSET * Math.sin(heading);
 
         double dx = tagPose.getX() - camX;
         double dy = tagPose.getY() - camY;
         double bearingToTag = Math.atan2(dy, dx);
 
-        double angleDiff = bearingToTag - heading;
+        double angleDiff = bearingToTag - cameraHeading;
         // normalize to [-pi, pi]
         angleDiff = Math.atan2(Math.sin(angleDiff), Math.cos(angleDiff));
 
