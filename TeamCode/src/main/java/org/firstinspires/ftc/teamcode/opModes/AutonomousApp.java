@@ -236,7 +236,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(15.26, 111.5, Math.toRadians(270)));
+        nearStartingPose = getRelative(new Pose(17, 113, Math.toRadians(270)), 144); // For some reason it needs to be 144" for the pose to be accurate
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(11.5555, 8));
@@ -647,6 +647,14 @@ public class AutonomousApp extends ComplexOpMode {
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.RED) {
             return originalPose.mirror();
+        }
+
+        return originalPose;
+    }
+
+    private Pose getRelative(Pose originalPose, double fieldLength) {
+        if (alliance == Alliance.RED) {
+            return originalPose.mirror(fieldLength);
         }
 
         return originalPose;
