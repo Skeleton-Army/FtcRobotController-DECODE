@@ -200,6 +200,8 @@ public class Shooter extends SubsystemBase {
         Vector shotAcceleration = sotmEnabled ? poseTracker.getAcceleration() : new Vector();
         double angularVelNow = poseTracker.getAngularVelocity();
         double angularAccelNow = getAngularAcceleration(angularVelNow);
+        OpModeManager.getTelemetry().addData("angular vel", angularVelNow);
+        OpModeManager.getTelemetry().addData("angular accel", angularAccelNow);
 
         filteredRPM = getFilteredRPM(getRPM());
         if (zoneCalculator == LaunchZone.CLOSE)
@@ -389,7 +391,7 @@ public class Shooter extends SubsystemBase {
         targetVel = currentTargetVel;
         lastTargetUpdateTime = currentTime;
 
-        return new double[] {filteredTargetVel, filteredTargetAccel};
+        return new double[] {filteredTargetVel, currentTargetAccel};
     }
 
     private double getAngularAcceleration(double currentAngularVel) {
