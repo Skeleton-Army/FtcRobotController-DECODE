@@ -286,50 +286,6 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         return filtered;
     }
 
-    public Pose getRobotPose(double turretAngle) {
-        List<AprilTagDetection> detections = getFilteredDetections();
-        if (detections != null && !detections.isEmpty()) {
-            AprilTagDetection detection = detections.get(0);
-            double relX = detection.ftcPose.x;
-            double relY = detection.ftcPose.y;
-            double relHeading = Math.toRadians(detection.ftcPose.bearing);
-
-            double cosT = Math.cos(turretAngle);
-            double sinT = Math.sin(turretAngle);
-
-            double rotatedX = relX * cosT - relY * sinT;
-            double rotatedY = relX * sinT + relY * cosT;
-
-            return new Pose(rotatedX - offsetX_turret, rotatedY - offsetY_turret, relHeading + turretAngle);
-        }
-        return new Pose(0, 0, 0);
-    }
-
-    public Pose getPedroPose(double robotHeading, double turretHeading) {
-        List<AprilTagDetection> detections = getFilteredDetections();
-        if (detections == null || detections.isEmpty()) return new Pose(0, 0, 0);
-
-        AprilTagDetection detection = detections.get(0);
-        if (detection.metadata == null) return new Pose(0, 0, 0);
-
-        Pose2D tagfieldPos2D = (detection.id == 20)
-                ? new Pose2D(DistanceUnit.METER, -1.482, -1.413, AngleUnit.RADIANS, 0)
-                : new Pose2D(DistanceUnit.METER, -1.482, 1.413, AngleUnit.RADIANS, 0);
-
-        Pose tagfieldPose = PoseConverter.pose2DToPose(tagfieldPos2D, InvertedFTCCoordinates.INSTANCE).getAsCoordinateSystem(PedroCoordinates.INSTANCE);
-        double tagFieldX = tagfieldPose.getX();
-        double tagFieldY =  tagfieldPose.getY();
-
-        double thetaCam = robotHeading + turretHeading;
-        double fieldDistX = (detection.ftcPose.y * Math.cos(thetaCam)) - (-detection.ftcPose.x * Math.sin(thetaCam));
-        double fieldDistY = (detection.ftcPose.y * Math.sin(thetaCam)) + (-detection.ftcPose.x * Math.cos(thetaCam));
-
-        double offsetFieldX = (offsetY_turret * Math.cos(robotHeading)) - (offsetX_turret * Math.sin(robotHeading));
-        double offsetFieldY = (offsetY_turret * Math.sin(robotHeading)) + (offsetX_turret * Math.cos(robotHeading));
-
-        return new Pose(tagFieldX - fieldDistX - offsetFieldX, tagFieldY - fieldDistY - offsetFieldY, robotHeading);
-    }
-
     public AprilTagDetection getApriltagDetection() {
         List<AprilTagDetection> detections = getFilteredDetections();
         return (detections != null && !detections.isEmpty()) ? detections.get(0) : null;
