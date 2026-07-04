@@ -1,9 +1,13 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.blueTagBiasX;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.blueTagBiasY;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.cameraMatrix;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.distCoeffs;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetX_turret;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetY_turret;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.redTagBiasX;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.redTagBiasY;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.relativePos;
 
 import android.graphics.Canvas;
@@ -305,12 +309,21 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         // 1. Force the SDK to return position in INCHES to match Pedro Pathing
         Position pose = detection.robotPose.getPosition().toUnit(DistanceUnit.INCH);
         YawPitchRollAngles orientation = detection.robotPose.getOrientation();
+        double heading = orientation.getYaw(AngleUnit.RADIANS);
+
+        // Per-tag bias, defined in robot-relative frame: X = left/right, Y = forward/back
+        double biasX = (detection.id == 20) ? blueTagBiasX : redTagBiasX;
+        double biasY = (detection.id == 20) ? blueTagBiasY : redTagBiasY;
+
+        // Rotate robot-relative bias into field-relative X/Y using current heading
+        double fieldBiasX = (biasY * Math.cos(heading)) - (biasX * Math.sin(heading));
+        double fieldBiasY = (biasY * Math.sin(heading)) + (biasX * Math.cos(heading));
 
         // 2. Construct using FTC coordinates, then let Pedro convert it safely
         return new Pose(
-                pose.y + 72,
-                -pose.x + 72,
-                orientation.getYaw(AngleUnit.RADIANS)
+                pose.y + 72 + fieldBiasX,
+                -pose.x + 72 + fieldBiasY,
+                heading
         );
     }
 

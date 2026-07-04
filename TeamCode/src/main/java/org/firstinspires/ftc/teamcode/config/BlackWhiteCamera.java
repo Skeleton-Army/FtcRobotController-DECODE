@@ -12,6 +12,14 @@ public class BlackWhiteCamera {
     public static Position relativePos = new Position(DistanceUnit.MM, -44.294, 222.429, 235.137, 0);
     //public static Position relativePos = new Position(DistanceUnit.MM, -44.294 - 25, 222.429 - 50, 235.137, 0);
 
+    // --- Per-Tag Localization Bias (robot-relative frame) ---
+    // X: positive = shift correction to the robot's LEFT, negative = RIGHT
+    // Y: positive = shift correction BACKWARD (front of robot), negative = FRONT
+    public static double blueTagBiasX = 1.3; // tag id 20
+    public static double blueTagBiasY = 1;
+    public static double redTagBiasX = -1.3;  // tag id 24
+    public static double redTagBiasY = -0.2;
+
     public static int WIDTH = 1280;
     public static int HEIGHT = 720;
 
