@@ -28,6 +28,10 @@ public class ShooterConfig {
     public static int RPM_WINDOW_SIZE = 5;
     public static double INITIAL_RAMP_DURATION = 0.3;
 
+    public static double TURRET_KGYRO_VEL   = 0.0; // gain for Kgyro * turretVel   * flywheelAccel
+    public static double TURRET_KGYRO_ACCEL = 0.0; // gain for Kgyro * turretAccel * flywheelAccel
+    public static double FLYWHEEL_ACCEL_FILTER_ALPHA = 0.3; // smoothing on d(filteredRPM)/dt
+    public static boolean useGyroCompensatoin = false;
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
     public static boolean TURRET_INVERTED = true;
