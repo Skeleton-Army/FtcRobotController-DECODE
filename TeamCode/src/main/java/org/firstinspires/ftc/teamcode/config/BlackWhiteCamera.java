@@ -8,7 +8,7 @@ public class BlackWhiteCamera {
     public static double offsetX_turret = 0; // 174.5mm
     public static double offsetY_turret = 6.87007874 + ShooterConfig.TURRET_OFFSET_X;
     public static double offsetZ = 12.38189; //314.5 mm
-    public static double pitchAngle = 20;
+    public static double pitchAngle = 15;
     public static Position relativePos = new Position(DistanceUnit.MM, -44.294, 222.429, 235.137, 0);
     //public static Position relativePos = new Position(DistanceUnit.MM, -44.294 - 25, 222.429 - 50, 235.137, 0);
 
