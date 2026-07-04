@@ -1,5 +1,7 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.DECIMATION_FALLBACK;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.DECIMATION_LOCKED;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.blueTagBiasX;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.blueTagBiasY;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.cameraMatrix;
@@ -41,6 +43,8 @@ import org.opencv.core.MatOfDouble;
 import org.opencv.core.Point;
 import org.opencv.core.Rect;
 import org.opencv.core.Scalar;
+import org.opencv.core.Size;
+import org.opencv.imgproc.Imgproc;
 import org.openftc.easyopencv.TimestampedOpenCvPipeline;
 
 import java.util.List;
@@ -55,7 +59,10 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     private Mat undistortedCrop = new Mat();
     private MatOfDouble dist = new MatOfDouble(distCoeffs[0], distCoeffs[1], distCoeffs[2], distCoeffs[3], distCoeffs[4]);
     private Mat matrix = new Mat(3, 3, CvType.CV_64F);
-    private Mat roiMatrix = new Mat(3, 3, CvType.CV_64F);
+
+    // --- Precomputed Undistort Maps ---
+    private Mat mapX_full = new Mat();
+    private Mat mapY_full = new Mat();
 
     // --- High-Precision Timing Anchor ---
     private volatile long latestCaptureTimeNanos = 0;
@@ -72,6 +79,9 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     // --- Hysteresis Logic ---
     private int lostFrameCount = 0;
     private final int MAX_LOST_FRAMES = 6;
+
+    // --- Adaptive Decimation ---
+    private float currentDecimation = -1f; // force-set on first frame
 
     // --- Debugging Paint System ---
     private final Paint debugPaint = new Paint();
@@ -98,7 +108,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
                 .setLensIntrinsics(baseFx, baseFy, baseCx, baseCy)
                 .build();
 
-        processor.setDecimation(0);
+        setDecimation(DECIMATION_LOCKED);
 
         matrix.put(0, 0,
                 cameraMatrix[0], cameraMatrix[1], cameraMatrix[2],
@@ -120,6 +130,10 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     public void init(Mat firstFrame)
     {
         fullBlackCanvas.create(firstFrame.size(), firstFrame.type());
+
+        // Build the full-resolution undistort map ONCE. This map is reused every frame
+        // for both the ROI branch (sliced) and the full-frame fallback branch (sliced to the top crop).
+        Calib3d.initUndistortRectifyMap(matrix, dist, new Mat(), matrix, firstFrame.size(), CvType.CV_32FC1, mapX_full, mapY_full);
 
         Mat tempUndistorted = new Mat();
         Calib3d.undistort(firstFrame, tempUndistorted, matrix, dist);
@@ -153,15 +167,14 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
             if (width > 40 && height > 40) {
                 Rect validBounds = new Rect(x, y, width, height);
-                Mat rawCrop = input.submat(validBounds);
 
-                roiMatrix.put(0, 0,
-                        baseFx, cameraMatrix[1],      baseCx - x,
-                        0,      baseFy, baseCy - y,
-                        0,      0,      1);
+                Mat mapXRoi = mapX_full.submat(validBounds);
+                Mat mapYRoi = mapY_full.submat(validBounds);
 
-                Calib3d.undistort(rawCrop, undistortedCrop, roiMatrix, dist);
-                rawCrop.release();
+                Imgproc.remap(input, undistortedCrop, mapXRoi, mapYRoi, Imgproc.INTER_LINEAR);
+
+                mapXRoi.release();
+                mapYRoi.release();
 
                 Mat canvasSubmat = fullBlackCanvas.submat(validBounds);
                 undistortedCrop.copyTo(canvasSubmat);
@@ -172,23 +185,17 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         }
 
         // 3. Full Frame Fallback Branch (Constrained by the permanent bottom crop)
+        // NOTE: intentionally skips undistort/remap here. Distortion correction only matters for pose accuracy.
         if (!processedCropped) {
             Rect topRegionRect = new Rect(0, 0, input.width(), maxAllowedHeight);
             Mat rawTopRegion = input.submat(topRegionRect);
-
-            // Re-use roiMatrix to correctly handle the static crop's focal center alignment
-            roiMatrix.put(0, 0,
-                    baseFx, 0,      baseCx,
-                    0,      baseFy, baseCy,
-                    0,      0,      1);
-
-            Calib3d.undistort(rawTopRegion, undistortedCrop, roiMatrix, dist);
-            rawTopRegion.release();
-
             Mat canvasSubmat = fullBlackCanvas.submat(topRegionRect);
-            undistortedCrop.copyTo(canvasSubmat);
+            rawTopRegion.copyTo(canvasSubmat);
+            rawTopRegion.release();
             canvasSubmat.release();
         }
+
+        setDecimation(processedCropped ? DECIMATION_LOCKED : DECIMATION_FALLBACK);
 
         // 4. Run native AprilTag sweep across the optimized 1280x720 canvas frame layout
         Object drawCtx = processor.processFrame(fullBlackCanvas, captureTimeNanos);
@@ -197,6 +204,13 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         updateRoi(maxAllowedHeight);
 
         return fullBlackCanvas;
+    }
+
+    private void setDecimation(float decimation) {
+        if (currentDecimation != decimation) {
+            processor.setDecimation(decimation);
+            currentDecimation = decimation;
+        }
     }
 
     private void updateRoi(int maxAllowedHeight) {

@@ -37,4 +37,10 @@ public class BlackWhiteCamera {
     public static final double[] distCoeffs = {
             -0.3492, 0.1757, -0.0005, 0.0010, -0.0552 // k1, k2, p1, p2, k3
     };
+
+    // Locked (ROI) frames search a tiny crop, so we can afford fine (slow) decimation for accuracy.
+    // Fallback (full-frame) frames must search a huge area, so decimation is bumped up to keep the
+    // detector's pixel-sweep cost bounded and avoid the multi-hundred-ms / ~2s spikes on tag loss.
+    public static float DECIMATION_LOCKED = 1f;
+    public static float DECIMATION_FALLBACK = 3f;
 }
