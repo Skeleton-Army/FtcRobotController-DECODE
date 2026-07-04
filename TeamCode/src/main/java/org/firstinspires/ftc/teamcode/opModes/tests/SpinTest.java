@@ -11,6 +11,7 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -23,6 +24,7 @@ import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
 // Does an r shape with constant heading
 @Autonomous
+@Disabled
 public class SpinTest extends ComplexOpMode {
     private Follower follower;
 

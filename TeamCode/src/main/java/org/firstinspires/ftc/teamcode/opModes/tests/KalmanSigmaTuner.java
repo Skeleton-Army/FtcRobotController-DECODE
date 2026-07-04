@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opModes.tests;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.util.NanoTimer;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.skeletonarmy.marrow.TimerEx;
@@ -31,6 +32,7 @@ import java.util.List;
  * 5. The result is the specific 'staticSigma' value to use in your filter.
  */
 @TeleOp(name = "Kalman Static Tuner", group = "Tuning")
+@Disabled
 public class KalmanSigmaTuner extends LinearOpMode {
 
     private Follower follower;

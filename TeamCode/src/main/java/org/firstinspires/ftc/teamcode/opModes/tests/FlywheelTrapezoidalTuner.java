@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opModes.tests;
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -15,6 +16,7 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 
 @TeleOp(name = "Flywheel Trapezoidal Ramp Tuner", group = "Tuning")
+@Disabled
 public class FlywheelTrapezoidalTuner extends LinearOpMode {
 
     // ─── TUNE THESE ──────────────────────────────────────────────────
