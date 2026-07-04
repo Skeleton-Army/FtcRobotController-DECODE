@@ -438,7 +438,9 @@ public class TeleOpApp extends ComplexOpMode {
 //    }
 
     public void updateKFApriltagReading() {
-        if (aprilTagPipeline.getApriltagDetection() != null && KalmanConfig.enableMeasurements) {
+        if (aprilTagPipeline.getApriltagDetection() != null
+                && KalmanConfig.enableMeasurements
+                && distanceFromLaunchZone() < 20) {
             // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
             long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
 
@@ -476,10 +478,10 @@ public class TeleOpApp extends ComplexOpMode {
 
         //calculateCameraLatencyEmpirically();
 
-        updateKFApriltagReading();
-
         robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
         robotZone.setRotation(follower.getPose().getHeading());
+
+        updateKFApriltagReading();
 
         shooter.setZoneCalculator(getCalculatorZone());
 
