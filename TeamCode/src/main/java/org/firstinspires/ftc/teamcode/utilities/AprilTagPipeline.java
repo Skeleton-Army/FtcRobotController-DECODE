@@ -69,16 +69,26 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
     // --- Fallback-frame tracking ---
     // The full-frame fallback branch runs on non-undistorted pixels (cheap, and fine
-    // for re-acquiring the ROI). But that means any detection.robotPose computed
-    // while this branch served the frame carries uncorrected distortion bias. The
-    // fallback branch fires disproportionately often exactly when the tag is lost and
-    // reacquired mid-motion — so without this guard, biased poses were getting fed
-    // into the Kalman filter specifically while the robot was moving. Rather than pay
-    // to undistort the fallback frame too, getApriltagDetection()/getPose() now
-    // simply report "no detection" while this flag is set, so the caller (and the
-    // filter) just rides on odometry until the ROI branch locks back on and resumes
-    // supplying trustworthy poses.
+    // for re-acquiring the ROI), so poses computed on it carry distortion bias and
+    // are never published as a snapshot (see below). The filter just rides on
+    // odometry until the ROI branch locks back on.
     private volatile boolean lastFrameWasFallback = false;
+
+    /**
+     * Immutable pairing of a trusted robot pose and the hardware capture timestamp of
+     * the frame it was computed from. Published atomically once per processed frame.
+     */
+    public static class PoseSnapshot {
+        public final Pose pose;
+        public final long timestampNanos;
+
+        PoseSnapshot(Pose pose, long timestampNanos) {
+            this.pose = pose;
+            this.timestampNanos = timestampNanos;
+        }
+    }
+
+    private volatile PoseSnapshot latestSnapshot = null;
 
     // --- Permanent Static Crop ---
     private final double BOTTOM_CROP_PERCENT = 0.20; // Cuts off the bottom 20% of the image entirely
@@ -217,6 +227,11 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
         updateRoi(maxAllowedHeight);
 
+        this.latestCaptureTimeNanos = captureTimeNanos;
+
+        Pose framePose = processedCropped ? computePose() : null;
+        this.latestSnapshot = (framePose != null) ? new PoseSnapshot(framePose, captureTimeNanos) : null;
+
         return fullBlackCanvas;
     }
 
@@ -336,17 +351,21 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         return processor;
     }
 
-    public Pose getPose() {
-        // Same suppression as getApriltagDetection(): a pose from the un-undistorted
-        // fallback branch is bias-corrupted, so report it the same way we already
-        // report "no tag seen" rather than handing back a wrong-but-plausible pose.
-        if (lastFrameWasFallback) return new Pose(0, 0, 0);
+    /**
+     * Atomic (pose, capture-timestamp) pair from the most recent trusted frame, or
+     * null if the latest frame had no valid detection or was a fallback frame.
+     */
+    public PoseSnapshot getPoseSnapshot() {
+        return latestSnapshot;
+    }
 
+    /** Computes the robot pose from current detections, or null if unavailable. */
+    private Pose computePose() {
         List<AprilTagDetection> detections = getFilteredDetections();
-        if (detections == null || detections.isEmpty()) return new Pose(0, 0, 0);
+        if (detections == null || detections.isEmpty()) return null;
 
         AprilTagDetection detection = detections.get(0);
-        if (detection.robotPose == null) return new Pose(0, 0, 0);
+        if (detection.robotPose == null) return null;
 
         // 1. Force the SDK to return position in INCHES to match Pedro Pathing
         Position pose = detection.robotPose.getPosition().toUnit(DistanceUnit.INCH);
