@@ -296,14 +296,24 @@ public class FusionLocalizer implements Localizer {
 
         double ratio = (double) (timestamp - lowerKey) / (upperKey - lowerKey);
 
-        Pose[] interpolData = new Pose[2]; // Reduced size to 2 to avoid NPEs
+        Pose[] interpolData = new Pose[2]; // index 0 = pose, index 1 = twist
         for (int i = 0; i < 2; i++) {
             Pose lowerPose = lowerKalmanState[i];
             Pose upperPose = upperKalmanState[i];
             double x = lowerPose.getX() + ratio * (upperPose.getX() - lowerPose.getX());
             double y = lowerPose.getY() + ratio * (upperPose.getY() - lowerPose.getY());
-            double headingDiff = MathFunctions.normalizeAngleSigned(upperPose.getHeading() - lowerPose.getHeading());
-            double heading = MathFunctions.normalizeAngle(lowerPose.getHeading() + ratio * headingDiff);
+            double heading;
+
+            if (i == 0) {
+                // Position heading wraps at 2*PI - use signed shortest-path delta,
+                // not getSmallestAngleDifference() which is magnitude-only.
+                double headingDiff = MathFunctions.normalizeAngleSigned(upperPose.getHeading() - lowerPose.getHeading());
+                heading = MathFunctions.normalizeAngle(lowerPose.getHeading() + ratio * headingDiff);
+            } else {
+                // Twist heading is angular velocity, not an angle - no wrapping.
+                heading = lowerPose.getHeading() + ratio * (upperPose.getHeading() - lowerPose.getHeading());
+            }
+
             interpolData[i] = new Pose(x, y, heading);
         }
 
