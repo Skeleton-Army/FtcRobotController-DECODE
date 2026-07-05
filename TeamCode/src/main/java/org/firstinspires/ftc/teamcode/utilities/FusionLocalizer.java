@@ -25,6 +25,9 @@ public class FusionLocalizer implements Localizer {
     }
 
     public static double EPSILON = 1e-6; //floor for covariance matrices
+    public static double OUTLIER_THRESHOLD = 9.21; // Mahalanobis^2 gate, ~99% for 2 active dims
+    public static double MAX_TRANSLATION_ERROR = 10.0; // inches
+
     private final Localizer deadReckoning;
     private Pose currentRawPose;
     private Pose currentPosition;
@@ -138,10 +141,20 @@ public class FusionLocalizer implements Localizer {
         boolean measY = !Double.isNaN(measuredPose.getY());
         boolean measH = !Double.isNaN(measuredPose.getHeading());
 
+        double dx = measX ? measuredPose.getX() - interpPose.getX() : 0;
+        double dy = measY ? measuredPose.getY() - interpPose.getY() : 0;
+        double dh = measH ? MathFunctions.normalizeAngleSigned(measuredPose.getHeading() - interpPose.getHeading()) : 0;
+
+        // --- Hard distance gate ---
+        double translationError = Math.hypot(dx, dy);
+        if (translationError > MAX_TRANSLATION_ERROR) {
+            return; // AprilTag pose too far from odometry — reject outright
+        }
+
         Matrix y = new Matrix(new double[][]{
-                {measX ? measuredPose.getX() - interpPose.getX() : 0},
-                {measY ? measuredPose.getY() - interpPose.getY() : 0},
-                {measH ? MathFunctions.normalizeAngleSigned(measuredPose.getHeading() - interpPose.getHeading()) : 0}
+                {dx},
+                {dy},
+                {dh}
         });
 
         Matrix M = Matrix.diag(
@@ -154,8 +167,17 @@ public class FusionLocalizer implements Localizer {
         Matrix S = Pm.plus(measurementR);
         Matrix S_inv = invert(S);
         if (S_inv == null) return;
-        Matrix K = Pm.multiply(S_inv);
 
+        // --- Outlier rejection (Mahalanobis distance gate) ---
+        Matrix yGated = M.multiply(y); // zero out unmeasured axes before testing
+        Matrix mahalanobis = yGated.transposed().multiply(S_inv).multiply(yGated);
+        double d2 = mahalanobis.get(0, 0);
+        if (d2 > OUTLIER_THRESHOLD) {
+            // Measurement is too inconsistent with current estimate — reject it.
+            return;
+        }
+
+        Matrix K = Pm.multiply(S_inv);
         K = M.multiply(K);
         y = M.multiply(y);
 
