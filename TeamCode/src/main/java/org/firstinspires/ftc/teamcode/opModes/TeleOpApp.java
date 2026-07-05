@@ -116,6 +116,7 @@ public class TeleOpApp extends ComplexOpMode {
     double calculatedLatencySeconds = 0;
     double calculatedLatencyMillis = 0;
     double positionGap = 0;
+    private long lastInjectedFrameTs = Long.MIN_VALUE;
 
     Pose pinpointPose;
 
@@ -433,6 +434,13 @@ public class TeleOpApp extends ComplexOpMode {
             // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
             long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
 
+            // Skip duplicate camera frames — the main loop can outrun the camera's
+            // frame rate, which would otherwise re-inject the same detection repeatedly.
+            if (rawFrameTime == lastInjectedFrameTs) {
+                return;
+            }
+            lastInjectedFrameTs = rawFrameTime;
+
             // 2. Convert the double ms constants from KalmanConfig into nanoseconds
             long cameraLatencyNanos = (long) (CAMERA_PHYSICAL_LATENCY_MS * 1e6);
             long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
@@ -442,11 +450,10 @@ public class TeleOpApp extends ComplexOpMode {
 
             // 4. Align the frame time to the correct moment on the Pinpoint timeline
             long correctedTimestamp = rawFrameTime - relativeLatencyOffset;
-//            long correctedTimestamp = rawFrameTime - (long)lastLoopTime - (long)CAMERA_PHYSICAL_LATENCY_MS;
 
             // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
-            ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
-                    .addMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
+            FusionLocalizer fusionLocalizer = (FusionLocalizer) follower.getPoseTracker().getLocalizer();
+            fusionLocalizer.addMeasurement(aprilTagPipeline.getPose(), correctedTimestamp);
         }
     }
 
