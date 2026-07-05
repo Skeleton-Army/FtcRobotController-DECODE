@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.opModes;
 
 import static com.pedropathing.ftc.PoseConverter.poseToPose2D;
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+import static org.firstinspires.ftc.teamcode.config.KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS;
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.LIMELIGHT_NAME;
 
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -433,7 +434,7 @@ public class TeleOpApp extends ComplexOpMode {
             long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
 
             // 2. Convert the double ms constants from KalmanConfig into nanoseconds
-            long cameraLatencyNanos = (long) (KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS * 1e6);
+            long cameraLatencyNanos = (long) (CAMERA_PHYSICAL_LATENCY_MS * 1e6);
             long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
 
             // 3. Calculate the relative offset package
@@ -441,6 +442,7 @@ public class TeleOpApp extends ComplexOpMode {
 
             // 4. Align the frame time to the correct moment on the Pinpoint timeline
             long correctedTimestamp = rawFrameTime - relativeLatencyOffset;
+//            long correctedTimestamp = rawFrameTime - (long)lastLoopTime - (long)CAMERA_PHYSICAL_LATENCY_MS;
 
             // 5. Inject the measured pose and the timeline-corrected timestamp into the EKF
             ((FusionLocalizer) follower.getPoseTracker().getLocalizer())
@@ -597,9 +599,9 @@ public class TeleOpApp extends ComplexOpMode {
 //        telemetry.addData("hood pos", shooter.getRawHoodPosition());
 //        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
 //        telemetry.addData("Flywheel RPM", shooter.getRPM());
-//        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
-//        telemetry.addData("Target solution RPM", shooter.getTargetRPM());
-//        telemetry.addData("Flywheel error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+        telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
+        telemetry.addData("Target solution RPM", shooter.getTargetRPM());
+        telemetry.addData("Flywheel error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
 //        telemetry.addData("Intake RPM", intake.getRPM());
 //
 //        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
