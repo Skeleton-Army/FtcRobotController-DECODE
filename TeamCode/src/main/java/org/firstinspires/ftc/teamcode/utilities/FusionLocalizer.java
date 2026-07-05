@@ -74,7 +74,7 @@ public class FusionLocalizer implements Localizer {
                 Math.max(measurementVariance.getHeading(), EPSILON)
         );
         this.bufferSize = bufferSize;
-        history.put(0L, new KalmanState(currentPosition, new Pose(), currentRawPose, P));
+        history.put(0L, new KalmanState(currentPosition, new Pose(), currentRawPose, P.copy()));
     }
 
     @Override
@@ -95,7 +95,13 @@ public class FusionLocalizer implements Localizer {
         currentPosition = compose(currentPosition, currentRelativeTransform);
         currentRawPose = rawPose;
 
-        history.put(now, new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P));
+        // IMPORTANT: store a snapshot copy of P, not the live reference. P gets
+        // mutated in place on every subsequent update()/addMeasurement() call,
+        // so without copying here every history entry silently ends up pointing
+        // at "whatever P is right now" instead of "what P was at that timestamp".
+        // That corrupted the covariance used for interpolation/gain during
+        // addMeasurement.
+        history.put(now, new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P.copy()));
         if (history.size() > bufferSize) history.pollFirstEntry();
 
         lastUpdateNanos = System.nanoTime() - tStart;
@@ -138,7 +144,7 @@ public class FusionLocalizer implements Localizer {
     }
 
     private KalmanState getKalmanState() {
-        return new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P);
+        return new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P.copy());
     }
 
     public void addMeasurement(Pose measuredPose, long timestamp) {
@@ -235,7 +241,7 @@ public class FusionLocalizer implements Localizer {
         clampCovariance(cov);
 
         // 1. Put the newly updated interpolated state into history FIRST
-        history.put(timestamp, new KalmanState(updatedInterp, interpolatedData.twist, interpolatedData.relativeTransform, cov));
+        history.put(timestamp, new KalmanState(updatedInterp, interpolatedData.twist, interpolatedData.relativeTransform, cov.copy()));
 
         // 2. Fix the Double Counting by shrinking the relative transform of the strictly next state
         Long nextTime = history.higherKey(timestamp);
@@ -264,7 +270,7 @@ public class FusionLocalizer implements Localizer {
             cov = updateCovarianceInPlace(cov, prevPose, twist, dt);
             prevPose = compose(prevPose, relativeTransform);
 
-            history.put(t, new KalmanState(prevPose, twist, relativeTransform, cov));
+            history.put(t, new KalmanState(prevPose, twist, relativeTransform, cov.copy()));
             prevTime = t;
             lastPropagationCount++;
         }
@@ -380,7 +386,7 @@ public class FusionLocalizer implements Localizer {
     @Override
     public void setStartPose(Pose setStart) {
         deadReckoning.setStartPose(setStart);
-        history.put(0L, new KalmanState(setStart, new Pose(), setStart, P));
+        history.put(0L, new KalmanState(setStart, new Pose(), setStart, P.copy()));
         currentPosition = setStart;
         currentRawPose = setStart;
     }
@@ -426,6 +432,16 @@ public class FusionLocalizer implements Localizer {
 
     public Matrix getCovariance() {
         return P;
+    }
+
+    /** Earliest timestamp (nanoTime base) currently retained in the history buffer, or -1 if empty. */
+    public long getHistoryFirstKey() {
+        return history.isEmpty() ? -1L : history.firstKey();
+    }
+
+    /** Most recent timestamp (nanoTime base) currently retained in the history buffer, or -1 if empty. */
+    public long getHistoryLastKey() {
+        return history.isEmpty() ? -1L : history.lastKey();
     }
 
     // --- Profiling getters ---
