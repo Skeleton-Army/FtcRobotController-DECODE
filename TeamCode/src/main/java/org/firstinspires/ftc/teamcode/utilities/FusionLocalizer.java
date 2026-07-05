@@ -74,7 +74,7 @@ public class FusionLocalizer implements Localizer {
                 Math.max(measurementVariance.getHeading(), EPSILON)
         );
         this.bufferSize = bufferSize;
-        history.put(0L, new KalmanState(currentPosition, new Pose(), currentRawPose, P.copy()));
+        history.put(0L, new KalmanState(currentPosition, new Pose(), new Pose(), P.copy()));
     }
 
     @Override
@@ -396,7 +396,7 @@ public class FusionLocalizer implements Localizer {
     @Override
     public void setStartPose(Pose setStart) {
         deadReckoning.setStartPose(setStart);
-        history.put(0L, new KalmanState(setStart, new Pose(), setStart, P.copy()));
+        history.put(0L, new KalmanState(setStart, new Pose(), new Pose(), P.copy()));
         currentPosition = setStart;
         currentRawPose = setStart;
     }
@@ -407,10 +407,8 @@ public class FusionLocalizer implements Localizer {
         deadReckoning.setPose(setPose);
         currentRawPose = setPose;
 
-        if (!history.isEmpty())
-            history.lastEntry().getValue().pose = setPose;
-        else
-            setStartPose(setPose);
+        history.clear();
+        history.put(System.nanoTime(), new KalmanState(setPose, new Pose(), new Pose(), P.copy()));
     }
 
     @Override
