@@ -101,8 +101,6 @@ public class TeleOpApp extends ComplexOpMode {
     private double sizeVarianceX;
     private double sizeVarianceY;
     private double sizeVarianceAngle;
-    public static boolean testings = true;
-
 
     private double totalTraveledX = 0;
     private double totalTraveledY = 0;
@@ -275,13 +273,6 @@ public class TeleOpApp extends ComplexOpMode {
                     );
         }
 
-
-        if (testings) {
-            new InstantCommand(() -> shooter.disable());
-            new InstantCommand(() -> shooter.enable());
-
-        }
-
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
                     .whenPressed(this::dynamicPoseReset);
@@ -436,7 +427,7 @@ public class TeleOpApp extends ComplexOpMode {
     public void updateKFApriltagReading() {
         if (aprilTagPipeline.getApriltagDetection() != null
                 && KalmanConfig.enableMeasurements
-                && distanceFromLaunchZone() < 20
+                && drive.distanceFromLaunchZone() < 20
                 && Math.abs(follower.getAngularVelocity()) < 0.5) {
             // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
             long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
@@ -622,27 +613,26 @@ public class TeleOpApp extends ComplexOpMode {
 
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
 
-            Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
-            Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
-            Logger.recordOutput("Robot Pose", robotPose);
-            Logger.recordOutput("Voltage", voltage);
-            Logger.recordOutput("Inside LAUNCH ZONE", drive.isInsideLaunchZonePredictive());
-            Logger.recordOutput("Reached Angle", shooter.reachedAngle());
-            Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
-            Logger.recordOutput("Can Shoot", shooter.getCanShoot());
-            Logger.recordOutput("Is Currently Shooting", shooter.getCurrentCommand() != null);
-            Logger.recordOutput("Distance From Pose", goalDistance);
-            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
-            Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
-            Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
-            Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
-            Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
-            Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-            Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
-            Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
-            Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
-            Logger.recordOutput("Turret/Turret/ Turret offset (deg)", Math.toDegrees(shooter.getHorizontalOffset()));
-        }
+        Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
+        Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
+        Logger.recordOutput("Robot Pose", robotPose);
+        Logger.recordOutput("Voltage", voltage);
+        Logger.recordOutput("Inside LAUNCH ZONE", drive.isInsideLaunchZonePredictive());
+        Logger.recordOutput("Reached Angle", shooter.reachedAngle());
+        Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
+        Logger.recordOutput("Can Shoot", shooter.getCanShoot());
+        Logger.recordOutput("Is Currently Shooting", shooter.getCurrentCommand() != null);
+        Logger.recordOutput("Distance From Pose", goalDistance);
+        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
+        Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
+        Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
+        Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
+        Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
+        Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+        Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+        Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+        Logger.recordOutput("Turret/Turret/ Turret offset (deg)", Math.toDegrees(shooter.getHorizontalOffset()));
     }
 
     private boolean isShootingAllowed() {
