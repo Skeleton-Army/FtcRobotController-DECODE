@@ -67,6 +67,19 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     // --- High-Precision Timing Anchor ---
     private volatile long latestCaptureTimeNanos = 0;
 
+    // --- Fallback-frame tracking ---
+    // The full-frame fallback branch runs on non-undistorted pixels (cheap, and fine
+    // for re-acquiring the ROI). But that means any detection.robotPose computed
+    // while this branch served the frame carries uncorrected distortion bias. The
+    // fallback branch fires disproportionately often exactly when the tag is lost and
+    // reacquired mid-motion — so without this guard, biased poses were getting fed
+    // into the Kalman filter specifically while the robot was moving. Rather than pay
+    // to undistort the fallback frame too, getApriltagDetection()/getPose() now
+    // simply report "no detection" while this flag is set, so the caller (and the
+    // filter) just rides on odometry until the ROI branch locks back on and resumes
+    // supplying trustworthy poses.
+    private volatile boolean lastFrameWasFallback = false;
+
     // --- Permanent Static Crop ---
     private final double BOTTOM_CROP_PERCENT = 0.20; // Cuts off the bottom 20% of the image entirely
 
@@ -194,6 +207,8 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
             canvasSubmat.release();
         }
 
+        lastFrameWasFallback = !processedCropped;
+
         setDecimation(processedCropped ? DECIMATION_LOCKED : DECIMATION_FALLBACK);
 
         // 4. Run native AprilTag sweep across the optimized 1280x720 canvas frame layout
@@ -286,6 +301,11 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         return latestCaptureTimeNanos;
     }
 
+    /** True if the most recent processed frame went through the full-frame fallback branch rather than the locked ROI branch. */
+    public boolean wasLastFrameFallback() {
+        return lastFrameWasFallback;
+    }
+
     public List<AprilTagDetection> getDetections() {
         return processor.getDetections();
     }
@@ -304,6 +324,10 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
     public AprilTagDetection getApriltagDetection() {
+        // Never hand out a detection computed on an un-undistorted fallback frame —
+        // its pose is bias-corrupted. Wait for the ROI branch to lock back on.
+        if (lastFrameWasFallback) return null;
+
         List<AprilTagDetection> detections = getFilteredDetections();
         return (detections != null && !detections.isEmpty()) ? detections.get(0) : null;
     }
@@ -313,6 +337,11 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     }
 
     public Pose getPose() {
+        // Same suppression as getApriltagDetection(): a pose from the un-undistorted
+        // fallback branch is bias-corrupted, so report it the same way we already
+        // report "no tag seen" rather than handing back a wrong-but-plausible pose.
+        if (lastFrameWasFallback) return new Pose(0, 0, 0);
+
         List<AprilTagDetection> detections = getFilteredDetections();
         if (detections == null || detections.isEmpty()) return new Pose(0, 0, 0);
 
