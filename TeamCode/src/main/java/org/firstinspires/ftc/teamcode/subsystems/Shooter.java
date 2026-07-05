@@ -7,6 +7,7 @@ import androidx.core.math.MathUtils;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.Vector;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
 import com.qualcomm.robotcore.util.RobotLog;
@@ -40,7 +41,7 @@ public class Shooter extends SubsystemBase {
 
     private final ModifiedMotorEx flywheel1;
     private final ModifiedMotorEx flywheel2;
-    public final ModifiedMotorGroup flywheel;
+    private final ModifiedMotorGroup flywheel;
     private final ModifiedMotorEx turret;
     private final ServoEx hood;
 
@@ -51,10 +52,10 @@ public class Shooter extends SubsystemBase {
     private final IShooterCalculator shooterCalculatorClose;
     private final IShooterCalculator shooterCalculatorFar;
     private final Alliance alliance;
-    public Pose goalPose;
-    public Pose goalPoseFar;
+    private Pose goalPose;
+    private Pose goalPoseFar;
 
-    public boolean isConfiguredCW = true;
+    private boolean isConfiguredCW = true;
     private double targetTPS;
 
     private final TimerEx recoveryTimer;
@@ -63,14 +64,11 @@ public class Shooter extends SubsystemBase {
     private final TimerEx startupTimer;
     private final Kinematics kinematics;
 
-    public boolean calculatedRecovery = false;
-    private double recoveryTime; // in seconds
     public double wrapped;
     public double shotHoodAngle; // in degrees
     public double shotTurretAngle; // in degrees
     public double shotFlywheelRPM;
     public double shotGoalDistance; // in meters
-    final double inchesToMeters = 39.37;
 
     private boolean horizontalManualMode;
     private boolean verticalManualMode;
@@ -95,13 +93,10 @@ public class Shooter extends SubsystemBase {
     private int bufferIndex = 0;
     private double runningRpmSum = 0;
     public double filteredRPM;
-    public double filteredRPMPredicted;
 
     private final PIDController flywheelPID;
     private double lastSpeedFlywheel = 0;
-    private double lastSpeedFlywheelFiltered = 0;
 
-    // Add this as a class variable
     private long lastLoopTime = 0;
 
     private double lastTargetAngle = 0;
@@ -109,24 +104,39 @@ public class Shooter extends SubsystemBase {
     private double targetVel = 0;
     private double targetAccel = 0;
     private double filteredTargetVel = 0;
-    public double filteredTargetAccel = 0;
-    public double filteredTargetAccelFlywheel = 0;
+    private double filteredTargetAccel = 0;
+    private double filteredTargetAccelFlywheel = 0;
+
+    // --- Gyroscopic coupling (turret <-> flywheel speed change) ---
+    private double lastFilteredRPM = 0;
+    private long lastFilteredRPMTime = 0;
+    private double filteredRPMAccel = 0; // RPM/s, derived from filteredRPM (already smoothed)
     private double filteredVelocity = 0; // flywheel velocity
     private final double VELOCITY_FILTER_ALPHA = 0.7; // Adjust (0.1 = heavy filter, 0.9 = light)
     private boolean isBraking = false;
 
+    private double lastWrappedTarget = 0;
+    private boolean hasWrappedTarget = false;
+    private boolean justWrapped = false;
+
     private double voltage = 12;
     private boolean voltageExternallySupplied = false;
     private LaunchZone zoneCalculator = LaunchZone.CLOSE;
+    private boolean sotmEnabled = true;
+    double gyroFF = 0;
 
     public Shooter(final HardwareMap hardwareMap, final PoseTracker poseTracker, IShooterCalculator shooterCalculatorClose,IShooterCalculator shooterCalculatorFar, Alliance alliance) {
         this.poseTracker = poseTracker;
         this.kinematics = new Kinematics();
 
-        flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME, FLYWHEEL_MOTOR);
+        flywheel1 = new ModifiedMotorEx(hardwareMap, FLYWHEEL1_NAME,
+                FLYWHEEL_MOTOR.getCPR() * FLYWHEEL_GEAR_RATIO,
+                FLYWHEEL_MOTOR.getRPM() / FLYWHEEL_GEAR_RATIO);
         flywheel1.setInverted(FLYWHEEL1_INVERTED);
 
-        flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME, FLYWHEEL_MOTOR);
+        flywheel2 = new ModifiedMotorEx(hardwareMap, FLYWHEEL2_NAME,
+                FLYWHEEL_MOTOR.getCPR() * FLYWHEEL_GEAR_RATIO,
+                FLYWHEEL_MOTOR.getRPM() / FLYWHEEL_GEAR_RATIO);
         flywheel2.setInverted(FLYWHEEL2_INVERTED);
 
         flywheel = new ModifiedMotorGroup(flywheel1, flywheel2);
@@ -190,12 +200,14 @@ public class Shooter extends SubsystemBase {
 
         kinematics.update(poseTracker, ACCELERATION_SMOOTHING_GAIN);
 
+        Vector shotVelocity = sotmEnabled ? poseTracker.getVelocity() : new Vector();
+
         filteredRPM = getFilteredRPM(getRPM());
-        //filteredRPMPredicted = getFilteredRPM(getRPMCorrectedTiming());
+        updateFilteredRPMAccel();
         if (zoneCalculator == LaunchZone.CLOSE)
-            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorClose.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, shotVelocity, poseTracker.getAngularVelocity(), (int)filteredRPM);
         else if (zoneCalculator == LaunchZone.FAR) {
-            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPM);
+            solution = shooterCalculatorFar.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPoseFar, shotVelocity, poseTracker.getAngularVelocity(), (int)filteredRPM);
         }
 
         //solution = shooterCalculator.getShootingSolution(currentPose == null ? poseTracker.getPose() : currentPose, goalPose, turretGoalPose , poseTracker.getVelocity(), poseTracker.getAngularVelocity(), (int)filteredRPMPredicted);
@@ -212,78 +224,6 @@ public class Shooter extends SubsystemBase {
         if (!turretDisabled) updateTurretPID(false);
 
         voltageExternallySupplied = false;
-    }
-
-    private void updateFlywheelPID(boolean useDelayCompensation) {
-        if (disabled || emergencyStop) {
-            flywheel.set(0);
-            rampTimer.restart();
-            rampTimer.pause();
-            lastSpeedFlywheel = 0;
-            lastLoopTime = System.nanoTime();
-            return;
-        }
-
-        // 1. Calculate real Delta Time (dt)
-        long currentTime = System.nanoTime();
-        if (lastLoopTime == 0) lastLoopTime = currentTime;
-        double dt = (currentTime - lastLoopTime) / 1.0e9;
-        lastLoopTime = currentTime;
-        if (dt < 0.001) dt = 0.001;
-
-        if (!rampTimer.isOn()) rampTimer.resume();
-        double rampMultiplier = Math.min(rampTimer.getElapsed() / INITIAL_RAMP_DURATION, 1.0);
-
-        double speed = (0.9 * targetTPS) * rampMultiplier;
-        double velocity = flywheel1.getCorrectedVelocity();
-
-        if (useDelayCompensation) {
-            double accel = flywheel1.getAcceleration();
-            velocity += accel * FLYWHEEL_DELAY_SEC;
-            //speed += accel * FLYWHEEL_DELAY_SEC;
-        }
-
-        // --- ASYMMETRIC P-GAIN LOGIC ---
-        double error = speed - velocity;
-
-        if (!isBraking && error < BRAKE_ENTRY_THRESHOLD) {
-            // We are overshooting by a lot: Trigger the Brakes
-            isBraking = true;
-        } else if (isBraking && error > BRAKE_EXIT_THRESHOLD) {
-            // We have slowed down enough: Return to normal control
-            isBraking = false;
-        }
-
-        // Apply the Kp based on the state
-        if (isBraking) {
-            flywheelPID.setPID(FLYWHEEL_KP_DOWN, FLYWHEEL_KI, FLYWHEEL_KD);
-        } else {
-            flywheelPID.setPID(FLYWHEEL_KP, FLYWHEEL_KI, FLYWHEEL_KD);
-        }
-        // -------------------------------
-
-        // 2. Calculate Acceleration
-        double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
-        double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
-
-        // Calculate PID with the newly set coefficients
-        double pid = flywheelPID.calculate(velocity, speed);
-
-        // Feedforward
-        double ff = (FLYWHEEL_KS * Math.signum(speed)) +
-                (FLYWHEEL_KV * speed) +
-                (currentKA * targetAcceleration);
-
-        lastSpeedFlywheel = speed;
-        lastSpeedFlywheelFiltered = filteredRPM;
-
-        double velocityCmd = pid + ff;
-        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
-
-        // Safety: Clamp power between -1.0 and 1.0 before setting
-        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
-
-        flywheel.set(finalPower, voltage);
     }
 
     private void updateFlywheelPIDFiltered(boolean useDelayCompensation) {
@@ -342,7 +282,7 @@ public class Shooter extends SubsystemBase {
         double targetAcceleration = (speed - lastSpeedFlywheel) / dt;
         double currentKA = (targetAcceleration >= 0) ? FLYWHEEL_KA : FLYWHEEL_KA_DOWN;
 
-        // PID calculates based on filtered/compensated velocity
+        // PID and FF now output volts directly
         double pid = flywheelPID.calculate(processVariable, speed);
 
         // Feedforward calculates based on TARGET (speed), not measurement
@@ -352,119 +292,64 @@ public class Shooter extends SubsystemBase {
 
         lastSpeedFlywheel = speed;
 
-        double velocityCmd = pid + ff;
-        double finalPower = velocityCmd / flywheel1.ACHIEVABLE_MAX_TICKS_PER_SECOND;
+        double desiredVoltage = pid + ff;
+        desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
-        finalPower = Math.max(-1.0, Math.min(1.0, finalPower));
-        flywheel.set(finalPower, voltage);
-    }
-
-    private void updateTurretPIDTwoSides() {
-        if (disabled || emergencyStop) {
-            turret.set(0);
-            return;
-        }
-
-        double currentPos = turret.getDistance();
-        double setpoint = turretPID.getSetPoint();
-        double error = setpoint - currentPos;
-
-        // 1. Gain Scheduling with Hysteresis
-        // We only swap gains if the error is larger than a small threshold (e.g., 0.5 degrees)
-        // This creates a "dead zone" where it stops rapidly switching if it's just hovering near 0
-        if (error > 0.5 && !isConfiguredCW) {
-            turretPID.setPID(TURRET_KP_CW, TURRET_KI_CW, TURRET_KD_CW);
-            isConfiguredCW = true;
-        } else if (error < -0.5 && isConfiguredCW) {
-            turretPID.setPID(TURRET_KP_CCW, TURRET_KI_CCW, TURRET_KD_CCW);
-            isConfiguredCW = false;
-        }
-
-        // Now calculate using the single, continuous PID object
-        double pidOutput = turretPID.calculate(currentPos);
-
-        // I-Zone Logic
-        if (Math.abs(error) > TURRET_IZONE) {
-            turretPID.clearTotalError(); // Clears integral if too far away
-        }
-
-        // 2. Robot Motion Compensation (Feedforward)
-        double[] netKinematics = getNetTargetKinematics();
-        double netVel = netKinematics[0];
-        double netAccel = netKinematics[1];
-
-        double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
-        double totalRequest = pidOutput + ffBase;
-
-        // 3. Static Friction (kS)
-        double[] ks = getBandedTurretKS();
-        double ks_cw  = ks[0];
-        double ks_ccw = ks[1];
-        double staticComp = 0;
-
-        if (Math.abs(totalRequest) > 0.05) {
-            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
-        }
-
-        double voltageScale = 12.0 / voltage;
-        double finalOutput = (pidOutput + ffBase + staticComp) * voltageScale;
-
-        turret.set(finalOutput);
+        flywheel.set(desiredVoltage / voltage);
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {
-        if ((disabled || emergencyStop) && !horizontalManualMode) {
+        if ((disabled || emergencyStop || filteredRPM < 200) && !horizontalManualMode) {
             turret.set(0);
             return;
         }
 
-        // --- 1. Sensor Reading & Delay Compensation ---
         double measuredPos = turret.getDistance();
 
         if (useDelayCompensation) {
-            // Grab the velocity (ensure this returns units/sec matching your distance units)
             double measuredVel = turret.getVelocity();
-
-            // Extrapolate the position forward to guess where the turret is RIGHT NOW
             measuredPos += (measuredVel * TURRET_DELAY);
         }
 
-        // --- 2. PID Calculation ---
-        // Feed the (potentially compensated) position into the PID
         double pid = turretPID.calculate(measuredPos);
         double error = turretPID.getPositionError();
 
-        // If we are more than X degrees away, clear the integral sum
-        // This prevents it from building up during the high-speed part of the move
         if (Math.abs(error) > TURRET_IZONE) {
             turretPID.clearTotalError();
         }
 
-        // --- 3. Robot Motion Compensation ---
         double[] netKinematics = getNetTargetKinematics();
         double netVel = netKinematics[0];
         double netAccel = netKinematics[1];
 
         double ffBase = (netVel * TURRET_KV) + (netAccel * TURRET_KA);
-        double totalRequest = pid + ffBase;
 
-        // --- 4. Static Friction (kS) ---
-        // Only apply kS if the baseRequest is actually trying to move the motor
-        // and apply it in the direction of that motion.
+        // --- Gyroscopic coupling compensation ---
+        // A spinning flywheel changing speed while the turret is also rotating (or
+        // accelerating) couples a reaction torque into the turret axis. Both candidate
+        // models are wired in with independent gains, so either or both can be tuned
+        // in by setting the corresponding TURRET_KGYRO_* constant — set to 0 to disable.
+        if (useGyroCompensatoin) {
+            gyroFF = (TURRET_KGYRO_VEL * netVel * filteredRPMAccel)
+                    + (TURRET_KGYRO_ACCEL * netAccel * filteredRPMAccel);
+        }
+        else if (!useGyroCompensatoin) gyroFF = 0;
+
+        double totalRequest = pid + ffBase + gyroFF;
+
         double[] ks = getBandedTurretKS();
         double ks_cw  = ks[0];
         double ks_ccw = ks[1];
         double staticComp = 0;
 
-        if (Math.abs(totalRequest) > 0.05) {
-            staticComp = (totalRequest > 0) ? ks_ccw : -ks_cw;
+        if (Math.abs(totalRequest) > TURRET_MIN_VOLTAGE) {
+            staticComp = (totalRequest > 0) ? TURRET_KS : -TURRET_KS;
         }
 
-        // --- 5. Voltage Scaling & Output ---
-        double voltageScale = 12.0 / voltage;
-        double finalOutput = (totalRequest + staticComp) * voltageScale;
+        double desiredVoltage = totalRequest + staticComp;
+        desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
-        turret.set(finalOutput);
+        turret.set(desiredVoltage / voltage);
     }
 
     /**
@@ -559,6 +444,34 @@ public class Shooter extends SubsystemBase {
         return (motorTPS * 60.0) / flywheel.getCPR();
     }
 
+    /**
+     * Derives flywheel angular acceleration from the already-averaged filteredRPM signal.
+     * Since filteredRPM is a moving average, its derivative is far less noisy than
+     * differentiating the raw encoder velocity directly.
+     */
+    private double updateFilteredRPMAccel() {
+        long currentTime = System.nanoTime();
+
+        if (lastFilteredRPMTime == 0) {
+            lastFilteredRPMTime = currentTime;
+            lastFilteredRPM = filteredRPM;
+            return 0;
+        }
+
+        double dt = (currentTime - lastFilteredRPMTime) / 1e9;
+        if (dt < 0.001) dt = 0.001;
+
+        double rawAccel = (filteredRPM - lastFilteredRPM) / dt; // RPM/s
+
+        // Light additional smoothing — this is a derivative of a signal that's
+        // already averaged, so a small alpha here mostly just kills quantization noise.
+        filteredRPMAccel = Kinematics.lowPassFilter(rawAccel, filteredRPMAccel, FLYWHEEL_ACCEL_FILTER_ALPHA);
+
+        lastFilteredRPM = filteredRPM;
+        lastFilteredRPMTime = currentTime;
+
+        return filteredRPMAccel;
+    }
     public double getRPMCorrectedTiming() {
         double motorTPS = flywheel.getVelocity();
         if (!Double.isNaN(flywheel1.getAcceleration())) {
@@ -689,10 +602,6 @@ public class Shooter extends SubsystemBase {
         return verticalManualMode;
     }
 
-    public double getRecoveryTime() {
-        return recoveryTime;
-    }
-
     public void setHorizontalOffset(double offset) {
         horizontalOffset = offset;
     }
@@ -718,7 +627,7 @@ public class Shooter extends SubsystemBase {
      */
     public void setVerticalAngle(double angleRad) {
         // 1. Clamp the input to ensure it stays within physical hardware limits
-        double clampedAngle = MathUtils.clamp(angleRad, HOOD_MIN, HOOD_MAX);
+        double clampedAngle = MathUtils.clamp(angleRad, HOOD_USABLE_MIN, HOOD_USABLE_MAX);
 
         // 2. Calculate the interpolation factor (t) from 0.0 to 1.0
         double t = (clampedAngle - HOOD_MIN) / (HOOD_MAX - HOOD_MIN);
@@ -735,7 +644,16 @@ public class Shooter extends SubsystemBase {
     }
 
     public void setHorizontalAngle(double targetAngleRad) {
-        wrapped = IShooterCalculator.wrapToTarget(turret.getDistance(), targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP);
+        double lastCmd = hasWrappedTarget ? lastWrappedTarget : turret.getDistance();
+
+        wrapped = IShooterCalculator.wrapToTarget(lastCmd, targetAngleRad, TURRET_MIN, TURRET_MAX, TURRET_WRAP, lastCmd);
+
+        // A real wrap shows up as a big discontinuous jump in the commanded setpoint
+        justWrapped = hasWrappedTarget && Math.abs(wrapped - lastWrappedTarget) > TURRET_WRAP_JUMP_THRESHOLD;
+
+        lastWrappedTarget = wrapped;
+        hasWrappedTarget = true;
+
         turretPID.setSetPoint(wrapped);
         turret.setTargetDistance(wrapped);
     }
@@ -751,6 +669,10 @@ public class Shooter extends SubsystemBase {
     public void updateVoltage(double voltage) {
         this.voltage = voltage;
         voltageExternallySupplied = true;
+    }
+
+    public boolean getJustWrapped() {
+        return justWrapped;
     }
 
     public void disable() {
@@ -777,6 +699,22 @@ public class Shooter extends SubsystemBase {
     public void setRPM(double rpm) {
         rpm = MathUtils.clamp(rpm, 0, flywheel.getMaxRPM());
         this.targetTPS = (rpm * flywheel.getCPR()) / 60.0;
+    }
+
+    public void setSOTMEnabled(boolean enabled) {
+        sotmEnabled = enabled;
+    }
+
+    public boolean getSOTMEnabled() {
+        return sotmEnabled;
+    }
+
+    public void setGoalPose(Pose bluePose, Pose redPose) {
+        this.goalPose = alliance == Alliance.BLUE ? bluePose : redPose;
+    }
+
+    public void setGoalPoseFar(Pose bluePose, Pose redPose) {
+        this.goalPoseFar = alliance == Alliance.BLUE ? bluePose : redPose;
     }
 
     public boolean justShot() {
