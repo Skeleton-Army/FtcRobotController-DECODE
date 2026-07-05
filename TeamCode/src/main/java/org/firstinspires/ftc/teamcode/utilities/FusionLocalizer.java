@@ -302,7 +302,7 @@ public class FusionLocalizer implements Localizer {
             Pose upperPose = upperKalmanState[i];
             double x = lowerPose.getX() + ratio * (upperPose.getX() - lowerPose.getX());
             double y = lowerPose.getY() + ratio * (upperPose.getY() - lowerPose.getY());
-            double headingDiff = MathFunctions.getSmallestAngleDifference(upperPose.getHeading(), lowerPose.getHeading());
+            double headingDiff = MathFunctions.normalizeAngleSigned(upperPose.getHeading() - lowerPose.getHeading());
             double heading = MathFunctions.normalizeAngle(lowerPose.getHeading() + ratio * headingDiff);
             interpolData[i] = new Pose(x, y, heading);
         }
