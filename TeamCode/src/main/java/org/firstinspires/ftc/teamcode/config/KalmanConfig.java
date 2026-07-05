@@ -13,16 +13,16 @@ public class KalmanConfig {
     // TODO: These are not
     public static Pose initialCovariance = new Pose(0.01, 0.01, Math.toRadians(0.0001)); // the initial covariance for pinpoint - how much we trust our first positioning of the robot when placing it on the field
     public static Pose processVariance = new Pose(Math.pow(0.002,2),Math.pow(0.002,2), Math.toRadians(0.05) / 60); // the drift covariance
-    public static Pose measurementVariance = new Pose(2, 2, 100); // the apriltag covariance
+    public static Pose measurementVariance = new Pose(0.5, 0.5, 100); // the apriltag covariance
     public static int bufferSize = 100;
 
     public static boolean enableMeasurements = true;
 
     // Your empirical measurement: 36ms hardware transit delay
-    public static double CAMERA_PHYSICAL_LATENCY_MS = 20; //TODO: tune this
+    public static double CAMERA_PHYSICAL_LATENCY_MS = 100; //TODO: tune this
 
     // Standard FTC I2C bulk read loop overhead: ~3ms delay
-    public static double PINPOINT_I2C_LATENCY_MS = 3;
+    public static double PINPOINT_I2C_LATENCY_MS = 0;
 
     public static double apriltagDistanceCoeff = 0;
     public static double apriltagTagSizeCoeff = 0;

@@ -440,7 +440,8 @@ public class TeleOpApp extends ComplexOpMode {
     public void updateKFApriltagReading() {
         if (aprilTagPipeline.getApriltagDetection() != null
                 && KalmanConfig.enableMeasurements
-                && distanceFromLaunchZone() < 20) {
+                && distanceFromLaunchZone() < 20
+                && Math.abs(follower.getAngularVelocity()) < 0.5) {
             // 1. Fetch the frozen hardware-level capture timestamp from the pipeline
             long rawFrameTime = aprilTagPipeline.getLatestTimestamp();
 
