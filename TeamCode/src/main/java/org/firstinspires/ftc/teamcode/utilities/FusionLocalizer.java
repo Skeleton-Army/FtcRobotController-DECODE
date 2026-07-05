@@ -40,6 +40,12 @@ public class FusionLocalizer implements Localizer {
     private final NavigableMap<Long, KalmanState> history = new TreeMap<>();
     private final int bufferSize;
 
+    private long lastUpdateNanos = 0;
+    private long lastMeasurementTotalNanos = 0;
+    private long lastMeasurementGateNanos = 0;
+    private long lastMeasurementPropagationNanos = 0;
+    private int lastPropagationCount = 0;
+
     public FusionLocalizer(
             Localizer deadReckoning,
             Pose initialCovariance,
@@ -73,6 +79,8 @@ public class FusionLocalizer implements Localizer {
 
     @Override
     public void update() {
+        long tStart = System.nanoTime();
+
         deadReckoning.update();
         long now = System.nanoTime();
         double dt = lastUpdateTime < 0 ? 0 : (now - lastUpdateTime) / 1e9;
@@ -83,33 +91,48 @@ public class FusionLocalizer implements Localizer {
         Pose rawPose = deadReckoning.getPose();
         currentRelativeTransform = compose(invert(currentRawPose), rawPose);
 
-        P = updateCovariance(P, currentPosition, currentVelocity, dt);
+        P = updateCovarianceInPlace(P, currentPosition, currentVelocity, dt);
         currentPosition = compose(currentPosition, currentRelativeTransform);
         currentRawPose = rawPose;
 
         history.put(now, new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P));
         if (history.size() > bufferSize) history.pollFirstEntry();
+
+        lastUpdateNanos = System.nanoTime() - tStart;
     }
 
-    private Matrix updateCovariance(Matrix P, Pose pose, Pose twist, double dt) {
+    /**
+     * Analytic version of the old matrix-multiply-based covariance propagation.
+     * Since Q is diagonal in the body frame, rotating it into the world frame has a
+     * closed form (standard 2D covariance rotation), so this avoids allocating
+     * Matrix.diag(...), Matrix.createRotation(...), two multiplies, and a transpose
+     * on every single call. Mutates and returns the same Matrix instance passed in.
+     */
+    private Matrix updateCovarianceInPlace(Matrix P, Pose pose, Pose twist, double dt) {
         Pose bodyTwist = twist.rotate(-pose.getHeading(), false);
         double dist_x = Math.abs(bodyTwist.getX() * dt);
         double dist_y = Math.abs(bodyTwist.getY() * dt);
         double dist_theta = Math.abs(bodyTwist.getHeading() * dt);
 
-        double q_x = Q.get(0, 0);
-        double q_y = Q.get(1, 1);
-        double q_theta = Q.get(2, 2);
+        double qx = dist_x * Q.get(0, 0);
+        double qy = dist_y * Q.get(1, 1);
+        double qtheta = dist_theta * Q.get(2, 2);
 
-        Matrix bodyQ = Matrix.diag(
-                dist_x * q_x,
-                dist_y * q_y,
-                dist_theta * q_theta
-        );
+        double heading = pose.getHeading();
+        double cos = Math.cos(heading);
+        double sin = Math.sin(heading);
 
-        Matrix rotation = Matrix.createRotation(pose.getHeading());
-        Matrix worldQ = rotation.times(bodyQ).times(rotation.transposed());
-        P = P.plus(worldQ);
+        // R * diag(qx, qy) * R^T, closed form (heading axis doesn't mix with x/y)
+        double worldQxx = qx * cos * cos + qy * sin * sin;
+        double worldQxy = (qx - qy) * sin * cos;
+        double worldQyy = qx * sin * sin + qy * cos * cos;
+
+        P.set(0, 0, P.get(0, 0) + worldQxx);
+        P.set(0, 1, P.get(0, 1) + worldQxy);
+        P.set(1, 0, P.get(1, 0) + worldQxy);
+        P.set(1, 1, P.get(1, 1) + worldQyy);
+        P.set(2, 2, P.get(2, 2) + qtheta);
+
         clampCovariance(P);
         return P;
     }
@@ -123,12 +146,17 @@ public class FusionLocalizer implements Localizer {
     }
 
     public void addMeasurement(Pose measuredPose, long timestamp, Pose measurementVariance) {
+        long tStart = System.nanoTime();
+        lastPropagationCount = 0;
+
         Matrix measurementR = measurementVariance == null ? R :
                 Matrix.diag(measurementVariance.getX(), measurementVariance.getY(), measurementVariance.getHeading());
         clampCovariance(measurementR);
 
-        if (history.isEmpty() || timestamp < history.firstKey() || timestamp > history.lastKey())
+        if (history.isEmpty() || timestamp < history.firstKey() || timestamp > history.lastKey()) {
+            lastMeasurementTotalNanos = System.nanoTime() - tStart;
             return;
+        }
 
         KalmanState interpolatedData = interpolate(timestamp);
         if (interpolatedData == null) interpolatedData = getKalmanState();
@@ -148,6 +176,8 @@ public class FusionLocalizer implements Localizer {
         // --- Hard distance gate ---
         double translationError = Math.hypot(dx, dy);
         if (translationError > MAX_TRANSLATION_ERROR) {
+            lastMeasurementGateNanos = System.nanoTime() - tStart;
+            lastMeasurementTotalNanos = lastMeasurementGateNanos;
             return; // AprilTag pose too far from odometry — reject outright
         }
 
@@ -165,8 +195,16 @@ public class FusionLocalizer implements Localizer {
 
         Matrix Pm = interpolatedData.covariance;
         Matrix S = Pm.plus(measurementR);
-        Matrix S_inv = invert(S);
-        if (S_inv == null) return;
+
+        // Matrix.inverse3x3 throws on a singular matrix rather than returning null,
+        // so check the determinant first to preserve the old "just skip this
+        // measurement" behavior instead of letting an exception propagate.
+        if (Math.abs(S.determinant()) < 1e-12) {
+            lastMeasurementGateNanos = System.nanoTime() - tStart;
+            lastMeasurementTotalNanos = lastMeasurementGateNanos;
+            return;
+        }
+        Matrix S_inv = Matrix.inverse3x3(S);
 
         // --- Outlier rejection (Mahalanobis distance gate) ---
         Matrix yGated = M.multiply(y); // zero out unmeasured axes before testing
@@ -174,8 +212,11 @@ public class FusionLocalizer implements Localizer {
         double d2 = mahalanobis.get(0, 0);
         if (d2 > OUTLIER_THRESHOLD) {
             // Measurement is too inconsistent with current estimate — reject it.
+            lastMeasurementGateNanos = System.nanoTime() - tStart;
+            lastMeasurementTotalNanos = lastMeasurementGateNanos;
             return;
         }
+        lastMeasurementGateNanos = System.nanoTime() - tStart;
 
         Matrix K = Pm.multiply(S_inv);
         K = M.multiply(K);
@@ -208,6 +249,7 @@ public class FusionLocalizer implements Localizer {
         }
 
         // 3. Forward propagate pose + covariance
+        long tPropStart = System.nanoTime();
         long prevTime = timestamp;
         Pose prevPose = updatedInterp;
 
@@ -219,15 +261,19 @@ public class FusionLocalizer implements Localizer {
             double dt = (t - prevTime) / 1e9;
             Pose relativeTransform = entry.getValue().relativeTransform;
 
-            cov = updateCovariance(cov, prevPose, twist, dt);
+            cov = updateCovarianceInPlace(cov, prevPose, twist, dt);
             prevPose = compose(prevPose, relativeTransform);
 
             history.put(t, new KalmanState(prevPose, twist, relativeTransform, cov));
             prevTime = t;
+            lastPropagationCount++;
         }
+        lastMeasurementPropagationNanos = System.nanoTime() - tPropStart;
 
         currentPosition = history.lastEntry().getValue().pose;
         P = history.lastEntry().getValue().covariance;
+
+        lastMeasurementTotalNanos = System.nanoTime() - tStart;
     }
 
     private KalmanState interpolate(long timestamp) {
@@ -259,7 +305,7 @@ public class FusionLocalizer implements Localizer {
         Pose relativeTransform = compose(invert(lowerKalmanState[0]), rawPose);
         double dt = (timestamp - lowerKey) / 1e9;
 
-        Matrix cov = updateCovariance(lower.covariance, lowerKalmanState[0], interpolData[1], dt);
+        Matrix cov = updateCovarianceInPlace(lower.covariance.copy(), lowerKalmanState[0], interpolData[1], dt);
 
         return new KalmanState(interpolData[0], interpolData[1], relativeTransform, cov);
     }
@@ -318,16 +364,6 @@ public class FusionLocalizer implements Localizer {
                 P.set(i, i, EPSILON);
             }
         }
-    }
-
-    private static Matrix invert(Matrix matrix) {
-        if (matrix.getRows() != matrix.getColumns()) return null;
-
-        Matrix I = Matrix.identity(matrix.getRows());
-        Matrix[] r = Matrix.rref(matrix, I);
-
-        if (!r[0].equals(I)) return null;
-        return r[1];
     }
 
     @Override
@@ -390,5 +426,32 @@ public class FusionLocalizer implements Localizer {
 
     public Matrix getCovariance() {
         return P;
+    }
+
+    // --- Profiling getters ---
+
+    /** Time (ms) spent in the last update() call (dead-reckoning propagation only). */
+    public double getLastUpdateMs() {
+        return lastUpdateNanos / 1e6;
+    }
+
+    /** Total time (ms) spent in the last addMeasurement() call, whether it applied or was gated/rejected. */
+    public double getLastMeasurementTotalMs() {
+        return lastMeasurementTotalNanos / 1e6;
+    }
+
+    /** Time (ms) spent computing interpolation + gating (before the forward re-propagation loop). */
+    public double getLastMeasurementGateMs() {
+        return lastMeasurementGateNanos / 1e6;
+    }
+
+    /** Time (ms) spent in the forward re-propagation loop over buffered history after an accepted measurement. */
+    public double getLastMeasurementPropagationMs() {
+        return lastMeasurementPropagationNanos / 1e6;
+    }
+
+    /** Number of history entries re-propagated in the last accepted measurement (0 if rejected/gated/no history after timestamp). */
+    public int getLastPropagationCount() {
+        return lastPropagationCount;
     }
 }
