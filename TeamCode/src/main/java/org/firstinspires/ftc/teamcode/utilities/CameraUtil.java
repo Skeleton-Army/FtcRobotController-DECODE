@@ -18,8 +18,11 @@ public class CameraUtil {
 
     static OpenCvWebcam webcam;
     public static void configureWebcam(OpenCvPipeline selectedPipeline, final HardwareMap hardwareMap) {
-        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
-        webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
+        // PASS 0 HERE: This opens the webcam WITHOUT creating a live UI preview viewport container
+        webcam = OpenCvCameraFactory.getInstance().createWebcam(
+                hardwareMap.get(WebcamName.class, "Webcam 1"),
+                0
+        );
 
         webcam.setPipeline(selectedPipeline);
 
@@ -29,18 +32,10 @@ public class CameraUtil {
             public void onOpened()
             {
                 webcam.startStreaming(BlackWhiteCamera.WIDTH, BlackWhiteCamera.HEIGHT, OpenCvCameraRotation.UPRIGHT, OpenCvWebcam.StreamFormat.MJPEG);
-                //setupCamera(webcam.getExposureControl(), webcam.getFocusControl())
-                /*webcam.getExposureControl().setMode(ExposureControl.Mode.Manual);
-                webcam.getExposureControl().setExposure(2, TimeUnit.MILLISECONDS);
-
-                webcam.getGainControl().setGain(250);*/
             }
 
             @Override
-            public void onError(int errorCode)
-            {
-                //telemetry.addData("Webcam", "Error: " + errorCode);
-            }
+            public void onError(int errorCode) {}
         });
     }
 
