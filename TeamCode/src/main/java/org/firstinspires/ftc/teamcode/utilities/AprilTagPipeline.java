@@ -78,7 +78,6 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
     // --- Hysteresis Logic ---
     private int lostFrameCount = 0;
-    private final int MAX_LOST_FRAMES = 6;
 
     // --- Adaptive Decimation ---
     private float currentDecimation = -1f; // force-set on first frame
@@ -255,7 +254,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
             roiRect = new Rect(roiX, roiY, roiW, roiH);
         } else {
             lostFrameCount++;
-            if (lostFrameCount >= MAX_LOST_FRAMES) {
+            if (lostFrameCount >= BlackWhiteCamera.MAX_LOST_FRAMES) {
                 roiRect = null;
             }
         }

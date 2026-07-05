@@ -41,6 +41,7 @@ public class BlackWhiteCamera {
     // Locked (ROI) frames search a tiny crop, so we can afford fine (slow) decimation for accuracy.
     // Fallback (full-frame) frames must search a huge area, so decimation is bumped up to keep the
     // detector's pixel-sweep cost bounded and avoid the multi-hundred-ms / ~2s spikes on tag loss.
-    public static float DECIMATION_LOCKED = 1f;
+    public static float DECIMATION_LOCKED = 0f;
     public static float DECIMATION_FALLBACK = 5f;
+    public static int MAX_LOST_FRAMES = 2;
 }
