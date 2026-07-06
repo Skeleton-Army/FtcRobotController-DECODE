@@ -22,6 +22,7 @@ public class CameraUtil {
         webcam = OpenCvCameraFactory.getInstance().createWebcam(hardwareMap.get(WebcamName.class, "Webcam 1"), cameraMonitorViewId);
 
         webcam.setPipeline(selectedPipeline);
+        webcam.pauseViewport();
 
         webcam.openCameraDeviceAsync(new OpenCvCamera.AsyncCameraOpenListener()
         {
