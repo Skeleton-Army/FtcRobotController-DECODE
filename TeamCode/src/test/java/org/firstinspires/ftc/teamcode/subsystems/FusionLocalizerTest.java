@@ -35,8 +35,8 @@ public class FusionLocalizerTest {
         fusionLocalizer = new FusionLocalizer(
                 mockDeadReckoning,
                 new Pose(0.1, 0.1, 0.1),
-                new Pose(0.1, 0.1, 0.1),
-                new Pose(0.1, 0.1, 0.1),
+                new Pose(0.001, 0.001, 0.01),
+                new Pose(1, 1, 100),
                 200 // Increased buffer size for longer tests
         );
     }
