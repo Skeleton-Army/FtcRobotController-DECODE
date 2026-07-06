@@ -30,6 +30,7 @@ import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
@@ -265,6 +266,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         shooter.updateVoltage(voltage);
         shooter.setUpdateFlywheel(drive.distanceFromLaunchZone() < 40);
+        shooter.setZoneCalculator(drive.distanceFromCloseLaunchZone() < drive.distanceFromFarLaunchZone() ? LaunchZone.CLOSE : LaunchZone.FAR);
 
         // Immediately cancel drive command if joysticks are moved
         boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
