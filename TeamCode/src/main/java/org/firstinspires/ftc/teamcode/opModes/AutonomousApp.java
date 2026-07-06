@@ -630,7 +630,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Logger.recordOutput("Robot Pose", robotPose);
         Logger.recordOutput("Voltage", voltage);
-        Logger.recordOutput("Shooter/Flywheel RPM", shooter.getRPM());
+        Logger.recordOutput("Shooter/Flywheel RPM", shooter.filteredRPM);
         Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
