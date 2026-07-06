@@ -10,29 +10,33 @@ import java.util.Locale;
 
 import lombok.Getter;
 
-@Getter
 public class Artifact {
     private final Pose artifactPose;
     private final ArtifactColor artifactColor;
-
-    public Artifact(double x, double y, ArtifactColor color) {
-        artifactPose = new Pose(x, y);
-        artifactColor = color;
-    }
-
-    public Artifact(double x, double y, int color) {
-        artifactPose = new Pose(x, y);
-        artifactColor = parseColor(color);
-    }
+    private final double size;
 
     public Artifact(Pose pose, String color) {
         artifactPose = pose;
         artifactColor = parseColor(color);
+        size = Double.NaN;
     }
 
-    public Artifact(Pose pose) {
+    public Artifact(Pose pose, double ta) {
         artifactPose = pose;
         artifactColor = ArtifactColor.UNKNOWN;
+        size = ta;
+    }
+
+    public double getSize() {
+        return size;
+    }
+
+    public ArtifactColor getArtifactColor() {
+        return artifactColor;
+    }
+
+    public Pose getArtifactPose() {
+        return artifactPose;
     }
 
     public static ArtifactColor parseColor(String color) {

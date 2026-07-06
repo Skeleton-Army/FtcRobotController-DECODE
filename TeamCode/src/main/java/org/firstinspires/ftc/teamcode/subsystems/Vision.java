@@ -202,8 +202,9 @@ public class Vision extends SubsystemBase {
             for (int i = 0; i < count * 2; i += 2) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
+                double ta = output[3 + i];
                 Pose absPose = getAbsolutePosition(tx, ty);
-                artifacts.add(new Artifact(absPose));
+                artifacts.add(new Artifact(absPose, ta));
             }
             return this;
         }
@@ -228,11 +229,17 @@ public class Vision extends SubsystemBase {
             return this;
         }
 
+        public ArtifactList sortBySize() {
+            artifacts.sort(Comparator.comparingDouble(Artifact::getSize));
+            return this;
+        }
+
         /** Dispatches to the appropriate sort method via {@link ArtifactSorting}. */
         public ArtifactList sortBy(ArtifactSorting sorting) {
             switch (sorting) {
                 case DISTANCE: return sortByDistance();
                 case COLOR:    return sortByColor();
+                case SIZE:     return sortBySize();
                 default:       return this;
             }
         }
@@ -251,6 +258,11 @@ public class Vision extends SubsystemBase {
         public Artifact getClosest() {
             if (artifacts.isEmpty()) return null;
             return sortByDistance().artifacts.get(0);
+        }
+
+        public Artifact getBiggest() {
+            if (artifacts.isEmpty()) return null;
+            return sortBySize().artifacts.get(0);
         }
 
         /** Returns a copy of the current artifact list. */

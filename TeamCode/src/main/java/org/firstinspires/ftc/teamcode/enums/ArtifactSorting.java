@@ -2,5 +2,6 @@ package org.firstinspires.ftc.teamcode.enums;
 
 public enum ArtifactSorting {
     DISTANCE,
-    COLOR
+    COLOR,
+    SIZE,
 }
