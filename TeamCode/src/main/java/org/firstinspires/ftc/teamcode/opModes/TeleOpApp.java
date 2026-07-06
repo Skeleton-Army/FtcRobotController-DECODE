@@ -18,11 +18,14 @@ import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
@@ -44,6 +47,7 @@ import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.opModes.tests.EpochTimestampSyncOpMode2;
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
@@ -176,10 +180,12 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx2 = new GamepadEx(gamepad2);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whileHeld(new InstantCommand(intake::collect, intake));
+                .and(new Trigger(() -> intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand()))
+                .whileActiveContinuous(new InstantCommand(intake::collect, intake));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whileHeld(new InstantCommand(intake::release, intake, transfer));
+                .and(new Trigger(() -> intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand()))
+                .whileActiveContinuous(new InstantCommand(intake::release, intake, transfer));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new InstantCommand(() -> {
@@ -203,8 +209,8 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenActive(new ShootCommand(shooter, intake, transfer, drive));
 
         // Kick automatically when exiting the launch zone
-        new Trigger(drive::isInsideLaunchZonePredictive)
-                .whenInactive(transfer.kick());
+//        new Trigger(drive::isInsideLaunchZonePredictive)
+//                .whenInactive(transfer.kick());
 
         // Toggle auto-fire on-off
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
@@ -474,6 +480,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         shooter.updateVoltage(voltage);
         shooter.setUpdateFlywheel(drive.distanceFromLaunchZone() < 40);
+        shooter.setZoneCalculator(drive.distanceFromCloseLaunchZone() < drive.distanceFromFarLaunchZone() ? LaunchZone.CLOSE : LaunchZone.FAR);
 
         // Immediately cancel drive command if joysticks are moved
         boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
@@ -501,6 +508,13 @@ public class TeleOpApp extends ComplexOpMode {
             // Cancel shooting ONLY if we are running a standalone ShootCommand, not a complex macro like CloseCycleCommand
             if (currentShooterCommand instanceof ShootCommand) {
                 CommandScheduler.getInstance().cancel(currentShooterCommand);
+
+                // Reverse intake and then block so an artifact doesn't get stuck above the stopper
+                new SequentialCommandGroup(
+                        new InstantCommand(intake::release, intake),
+                        new WaitCommand(10),
+                        new InstantCommand(transfer::block, transfer)
+                ).schedule(false);
             }
         }
 

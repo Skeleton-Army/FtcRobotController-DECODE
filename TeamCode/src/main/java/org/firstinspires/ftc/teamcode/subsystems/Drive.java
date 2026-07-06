@@ -51,10 +51,12 @@ public class Drive extends SubsystemBase {
     private long lastUpdateFrame = -1;
     private long lastZoneFrame = -1;
     private long lastPredictiveFrame = -1;
-    private long lastDistanceFrame = -1;
     private boolean cachedIsInside;
     private boolean cachedIsInsidePredictive;
-    private double cachedDistance;
+    private long lastCloseDistanceFrame = -1;
+    private long lastFarDistanceFrame = -1;
+    private double cachedCloseDistance;
+    private double cachedFarDistance;
 
     public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
@@ -271,11 +273,23 @@ public class Drive extends SubsystemBase {
     }
 
     public double distanceFromLaunchZone() {
-        if (shouldUpdateCache(lastDistanceFrame)) {
-            cachedDistance = Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
-            lastDistanceFrame = lastUpdateFrame;
+        return Math.min(distanceFromCloseLaunchZone(), distanceFromFarLaunchZone());
+    }
+
+    public double distanceFromCloseLaunchZone() {
+        if (shouldUpdateCache(lastCloseDistanceFrame)) {
+            cachedCloseDistance = robotZone.distanceTo(closeLaunchZone);
+            lastCloseDistanceFrame = lastUpdateFrame;
         }
-        return cachedDistance;
+        return cachedCloseDistance;
+    }
+
+    public double distanceFromFarLaunchZone() {
+        if (shouldUpdateCache(lastFarDistanceFrame)) {
+            cachedFarDistance = robotZone.distanceTo(farLaunchZone);
+            lastFarDistanceFrame = lastUpdateFrame;
+        }
+        return cachedFarDistance;
     }
 
     public void disable() {

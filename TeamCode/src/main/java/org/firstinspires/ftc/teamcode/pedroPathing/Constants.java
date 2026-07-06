@@ -20,11 +20,9 @@ import org.firstinspires.ftc.teamcode.utilities.FusionLocalizer;
 public class Constants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(12.7)
-            .headingPIDFCoefficients(new PIDFCoefficients(0.8765432100,0,0.034846467000,0.025))
-            .secondaryHeadingPIDFCoefficients(new PIDFCoefficients(1.584020000,0,0.018,0.025))
+            .headingPIDFCoefficients(new PIDFCoefficients(0.8765432100,0,0.034846467000,0.005))
             .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.05, 0.15927013, 0.001270748))
-            .centripetalScaling(0)
-            .useSecondaryHeadingPIDF(true);
+            .centripetalScaling(0);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)

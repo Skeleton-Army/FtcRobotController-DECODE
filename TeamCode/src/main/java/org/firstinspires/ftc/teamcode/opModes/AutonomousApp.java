@@ -43,6 +43,7 @@ import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -56,13 +57,12 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
 public class AutonomousApp extends ComplexOpMode {
     private final Prompter prompter = new Prompter(this);
-    TimerEx matchTime = new TimerEx(30); // 30 second autonomous
+    private final TimerEx matchTime = new TimerEx(30); // 30 second autonomous
 
     private Follower follower;
     private Intake intake;
@@ -110,6 +110,7 @@ public class AutonomousApp extends ComplexOpMode {
                         )
                 )
                 .setTangentHeadingInterpolation()
+                .setReversed()
                 .setGlobalDeceleration()
                 .build();
     }
@@ -212,10 +213,12 @@ public class AutonomousApp extends ComplexOpMode {
     public PathChain getNearCyclePath() {
         return follower
                 .pathBuilder()
-                .addPath(new BezierLine(
-                        follower.getPose(),
-                        getRelative(new Pose(12, 57.5))
-                ))
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(13.5, 59))
+                        )
+                )
                 .setHeadingInterpolation(
                         HeadingInterpolator.piecewise(
                                 new HeadingInterpolator.PiecewiseNode(
@@ -226,7 +229,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 new HeadingInterpolator.PiecewiseNode(
                                         0.5,
                                         1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(154.8622)))
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(148)))
                                 )
                         )
                 )
@@ -239,15 +242,15 @@ public class AutonomousApp extends ComplexOpMode {
         nearStartingPose = getRelative(new Pose(17, 113, Math.toRadians(270)), 144); // For some reason it needs to be 144" for the pose to be accurate
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
-        Pose farSpike1End = getRelative(new Pose(11.5555, 8));
-        Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
-        Pose spike3End = getRelative(new Pose(9, 56));
+        Pose farSpike1End = getRelative(new Pose(9, 8));
+        Pose spike2End = getRelative(new Pose(9, 36));
+        Pose spike3End = getRelative(new Pose(9, 59));
         Pose spike4End = getRelative(new Pose(15, 83.663));
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
-        farDriveBack = getRelative(new Pose(48, 17.9901));
-        nearDriveBack = getRelative(new Pose(50, 85));
+        farDriveBack = getRelative(new Pose(57, 18));
+        nearDriveBack = getRelative(new Pose(55, 80));
         sortingPose = getRelative(new Pose(30, 113));
 
         nearPathsReturn[0] = this::nearDriveBack;
@@ -526,6 +529,7 @@ public class AutonomousApp extends ComplexOpMode {
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
         shooter.setSOTMEnabled(false);
         if (startingPosition == StartingPosition.CLOSE) shooter.setGoalPose(CLOSE_AUTO_BLUE_GOAL, CLOSE_AUTO_RED_GOAL);
+        if (startingPosition == StartingPosition.FAR) shooter.setZoneCalculator(LaunchZone.FAR);
 
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
@@ -615,6 +619,9 @@ public class AutonomousApp extends ComplexOpMode {
         telemetry.addData("reachedAngle", shooter.reachedAngle());
         telemetry.addData("canShoot", shooter.getCanShoot());
         telemetry.addData("In Zone", drive.isInsideLaunchZonePredictive());
+        telemetry.addData("isArtifactInIntake", transfer.isArtifactInIntake());
+        telemetry.addData("isArtifactDetected", transfer.isArtifactDetected());
+        telemetry.addData("three artifacts detected", transfer.threeArtifactsDetected(intake::isCollecting, 250).getAsBoolean());
 
         final double inchesToMeters = 39.37;
 
@@ -634,6 +641,9 @@ public class AutonomousApp extends ComplexOpMode {
         Logger.recordOutput("reachedAngle", shooter.reachedAngle());
         Logger.recordOutput("canShoot", shooter.getCanShoot());
         Logger.recordOutput("In Zone", drive.isInsideLaunchZonePredictive());
+        Logger.recordOutput("isArtifactInIntake", transfer.isArtifactInIntake());
+        Logger.recordOutput("isArtifactDetected", transfer.isArtifactDetected());
+        Logger.recordOutput("three artifacts detected", transfer.threeArtifactsDetected(intake::isCollecting, 250).getAsBoolean());
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
         telemetry.update();
@@ -707,7 +717,7 @@ public class AutonomousApp extends ComplexOpMode {
                 collect(4),
                 returnAndScore(4, false),
                 collect(3), // Collect spike 3 and shoot
-                returnAndScore(3, false),
+                returnAndScore(4, false), // Spike 4 so it goes in a straight line
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
@@ -721,7 +731,7 @@ public class AutonomousApp extends ComplexOpMode {
                 initialScore(), // Score first 3 artifacts
                 pickupSequence(),
                 collect(1)
-                        .withTimeout(3000),
+                        .withTimeout(2000),
                 returnAndScore(1, false),
                 new ParallelDeadlineGroup(
                         new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
@@ -746,8 +756,8 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycle() {
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
-                new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()), null),
-                new WaitUntilCommand(artifactDetected())
+                new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()).withTimeout(1000), null),
+                new WaitUntilCommand(transfer.threeArtifactsDetected(intake::isCollecting, 250))
                         .withTimeout(2000),
                 followAndShoot(this::nearDriveBack)
         );
@@ -761,7 +771,7 @@ public class AutonomousApp extends ComplexOpMode {
                 new InstantCommand(intake::collect),
                 new FollowPathCommand(follower, path)
                         .withTimeout(2500)
-                        .interruptOn(artifactDetected()),
+                        .interruptOn(transfer.threeArtifactsDetected(intake::isCollecting, 250)),
                 returnAndScore(1, false)
         );
     }
@@ -858,21 +868,6 @@ public class AutonomousApp extends ComplexOpMode {
                 transfer.kick(),
                 new InstantCommand(transfer::block)
         );
-    }
-
-    private BooleanSupplier artifactDetected() {
-        TimerEx debounce = new TimerEx(0.2);
-        return () -> {
-            if (transfer.isArtifactDetected() && transfer.isArtifactInIntake()) {
-                if (!debounce.isOn()) debounce.restart();
-                return debounce.isDone();
-            } else {
-                if (debounce.isOn()) debounce.pause();
-                debounce.restart();
-                debounce.pause();
-                return false;
-            }
-        };
     }
 
     private PathChain getBackPath(int spike) {
