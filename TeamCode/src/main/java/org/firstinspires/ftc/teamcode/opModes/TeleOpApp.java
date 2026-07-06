@@ -285,7 +285,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (!tabletopMode) {
             gamepadEx1.getGamepadButton(GamepadKeys.Button.PS)
-                    .whenPressed(this::dynamicPoseReset);
+                    .whenPressed(this::resetPoseToNearestCorner);
         }
 
         new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
@@ -651,84 +651,16 @@ public class TeleOpApp extends ComplexOpMode {
         return drive.isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
-    private void dynamicPoseReset() {
-        final double VELOCITY_THRESHOLD = 1.0;
-        if (follower.getVelocity().getMagnitude() > VELOCITY_THRESHOLD) {
-            return;
+    private void resetPoseToNearestCorner() {
+        Pose newPose;
+        if (alliance == Alliance.RED) {
+            newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        } else {
+            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         }
 
-        Pose currentPose = follower.getPose();
-        double currentX = currentPose.getX();
-        double currentY = currentPose.getY();
-        double heading = currentPose.getHeading();
-
-        final double WALL_THRESHOLD = 20.0;
-        final double FIELD_LIMIT = 141.5;
-
-        boolean nearLeft = currentX < WALL_THRESHOLD;
-        boolean nearRight = currentX > (FIELD_LIMIT - WALL_THRESHOLD);
-        boolean nearBottom = currentY < WALL_THRESHOLD;
-        boolean nearTop = currentY > (FIELD_LIMIT - WALL_THRESHOLD);
-
-        if (!nearLeft && !nearRight && !nearBottom && !nearTop) return;
-
-        double targetX = currentX;
-        double targetY = currentY;
-        double targetHeading = heading;
-
-        // Normalize heading to [0, 2PI)
-        double normalizedHeading = MathFunctions.normalizeAngle(heading);
-        boolean facingRight = normalizedHeading < Math.toRadians(45) || normalizedHeading >= Math.toRadians(315);
-        boolean facingUp    = normalizedHeading >= Math.toRadians(45) && normalizedHeading < Math.toRadians(135);
-        boolean facingLeft  = normalizedHeading >= Math.toRadians(135) && normalizedHeading < Math.toRadians(225);
-        boolean facingDown  = normalizedHeading >= Math.toRadians(225) && normalizedHeading < Math.toRadians(315);
-
-        boolean frontFacingHorizontal = facingRight || facingLeft;
-        boolean frontFacingVertical   = facingUp || facingDown;
-
-        // --- X Axis Snap Logic ---
-        if (nearLeft) {
-            targetX = getDistanceToCenter(frontFacingHorizontal, facingLeft);
-        } else if (nearRight) {
-            targetX = FIELD_LIMIT - getDistanceToCenter(frontFacingHorizontal, facingRight);
-        }
-
-        // --- Y Axis Snap Logic ---
-        if (nearBottom) {
-            targetY = getDistanceToCenter(frontFacingVertical, facingDown);
-        } else if (nearTop) {
-            targetY = FIELD_LIMIT - getDistanceToCenter(frontFacingVertical, facingUp);
-        }
-
-        // --- Corner Heading Reset Logic ---
-        // Reset heading if the robot is in a corner
-        boolean inCorner = (nearLeft || nearRight) && (nearBottom || nearTop);
-        if (inCorner) {
-            if (facingRight) {
-                targetHeading = Math.toRadians(0);
-            } else if (facingUp) {
-                targetHeading = Math.toRadians(90);
-            } else if (facingLeft) {
-                targetHeading = Math.toRadians(180);
-            } else if (facingDown) {
-                targetHeading = Math.toRadians(270);
-            }
-        }
-
-        follower.setPose(new Pose(targetX, targetY, targetHeading));
+        follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
         follower.startTeleopDrive(USE_BRAKE_MODE);
         gamepad1.rumble(300);
-    }
-
-    /**
-     * Calculates the distance from the wall to the tracking center point of the robot.
-     */
-    private double getDistanceToCenter(boolean axisPerpendicularToFront, boolean frontIsFacingWall) {
-        final double INTAKE_EXTENSION = 3.0; // How much the intake extends from the front
-
-        if (axisPerpendicularToFront) {
-            return frontIsFacingWall ? (X_OFFSET + INTAKE_EXTENSION) : X_OFFSET;
-        }
-        return Y_OFFSET;
     }
 }
