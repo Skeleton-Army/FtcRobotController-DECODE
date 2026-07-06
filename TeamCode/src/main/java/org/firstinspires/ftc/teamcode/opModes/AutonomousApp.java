@@ -213,10 +213,12 @@ public class AutonomousApp extends ComplexOpMode {
     public PathChain getNearCyclePath() {
         return follower
                 .pathBuilder()
-                .addPath(new BezierLine(
-                        follower.getPose(),
-                        getRelative(new Pose(12, 57.5))
-                ))
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(13.5, 59))
+                        )
+                )
                 .setHeadingInterpolation(
                         HeadingInterpolator.piecewise(
                                 new HeadingInterpolator.PiecewiseNode(
@@ -227,10 +229,17 @@ public class AutonomousApp extends ComplexOpMode {
                                 new HeadingInterpolator.PiecewiseNode(
                                         0.5,
                                         1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(154.8622)))
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(148)))
                                 )
                         )
                 )
+//                .addPath(
+//                        new BezierLine(
+//                                getRelative(new Pose(12, 60)),
+//                                getRelative(new Pose(12, 57))
+//                        )
+//                )
+//                .setConstantHeadingInterpolation(getRelative(Math.toRadians(140)))
                 .setGlobalDeceleration()
                 .build();
     }
@@ -242,13 +251,13 @@ public class AutonomousApp extends ComplexOpMode {
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(11.5555, 8));
         Pose spike2End = getRelative(new Pose(12, 34.76673866090713));
-        Pose spike3End = getRelative(new Pose(9, 56));
+        Pose spike3End = getRelative(new Pose(9, 59));
         Pose spike4End = getRelative(new Pose(15, 83.663));
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
         farDriveBack = getRelative(new Pose(48, 17.9901));
-        nearDriveBack = getRelative(new Pose(50, 85));
+        nearDriveBack = getRelative(new Pose(55, 80));
         sortingPose = getRelative(new Pose(30, 113));
 
         nearPathsReturn[0] = this::nearDriveBack;
@@ -709,7 +718,7 @@ public class AutonomousApp extends ComplexOpMode {
                 collect(4),
                 returnAndScore(4, false),
                 collect(3), // Collect spike 3 and shoot
-                returnAndScore(3, false),
+                returnAndScore(4, false), // Spike 4 so it goes in a straight line
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
@@ -748,7 +757,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycle() {
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
-                new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()), null),
+                new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()).withTimeout(1000), null),
                 new WaitUntilCommand(artifactDetected())
                         .withTimeout(2000),
                 followAndShoot(this::nearDriveBack)
