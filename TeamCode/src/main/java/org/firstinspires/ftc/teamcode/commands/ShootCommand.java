@@ -58,7 +58,7 @@ public class ShootCommand extends SequentialCommandGroup {
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, boolean waitUntilReady) {
-        this(shooter, intake, transfer, drive, intakeSpeed, 1200, waitUntilReady);
+        this(shooter, intake, transfer, drive, intakeSpeed, 600, waitUntilReady);
     }
 
     public ShootCommand(Shooter shooter, Intake intake, Transfer transfer, Drive drive, double intakeSpeed, int waitMillis, boolean waitUntilReady) {
@@ -120,11 +120,10 @@ public class ShootCommand extends SequentialCommandGroup {
 
         // Ensure everything is off and in its place when the command ends
         transfer.setKickerPosition(false);
-        transfer.block();
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
         intake.setIntakeSpeed(INTAKE_POWER);
 
-//        if (interrupted) transfer.kick().schedule();
+        if (!interrupted) transfer.block();
     }
 }

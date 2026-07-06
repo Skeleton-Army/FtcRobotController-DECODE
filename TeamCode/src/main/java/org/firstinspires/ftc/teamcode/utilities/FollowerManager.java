@@ -51,6 +51,23 @@ public class FollowerManager {
             newFollower.setPose(lastPose);
         }
 
+        Localizer newLocalizer = newFollower.poseTracker.getLocalizer();
+        if (newLocalizer instanceof PinpointLocalizer) {
+            GoBildaPinpointDriver pinpoint = ((PinpointLocalizer) newLocalizer).getPinpoint();
+
+            int deviceVersion = pinpoint.getDeviceVersion();
+            if (deviceVersion >= 3) {
+                pinpoint.setBulkReadScope(
+                        GoBildaPinpointDriver.Register.X_POSITION,
+                        GoBildaPinpointDriver.Register.Y_POSITION,
+                        GoBildaPinpointDriver.Register.H_ORIENTATION,
+                        GoBildaPinpointDriver.Register.X_VELOCITY,
+                        GoBildaPinpointDriver.Register.Y_VELOCITY,
+                        GoBildaPinpointDriver.Register.H_VELOCITY
+                );
+            }
+        }
+
         follower = newFollower;
         return follower;
     }

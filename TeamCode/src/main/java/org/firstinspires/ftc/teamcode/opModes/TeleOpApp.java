@@ -9,17 +9,19 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.RobotLog;
+import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
-import com.seattlesolvers.solverslib.command.ScheduleCommand;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.button.Trigger;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.settings.Settings;
-import com.skeletonarmy.marrow.zones.Point;
-import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
@@ -31,7 +33,6 @@ import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
@@ -51,11 +52,6 @@ public class TeleOpApp extends ComplexOpMode {
     public static final double ROBOT_LENGTH = 14.96; // Front-to-back
     public static final double X_OFFSET = ROBOT_LENGTH / 2.0;
     public static final double Y_OFFSET = ROBOT_WIDTH / 2.0;
-
-    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
-    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
-    private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH); // Length maps to X-axis and width maps to Y-axis relative to 0° heading
-    private final PolygonZone futureRobotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH); // Length maps to X-axis and width maps to Y-axis relative to 0° heading
 
     private Follower follower;
     private Intake intake;
@@ -85,7 +81,6 @@ public class TeleOpApp extends ComplexOpMode {
     private double totalTraveledX = 0;
     private double totalTraveledY = 0;
 
-    private boolean isInsideLaunchZone;
     private boolean autoFireEnabled = true;
 
     @Override
@@ -127,10 +122,12 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx2 = new GamepadEx(gamepad2);
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER)
-                .whileHeld(new InstantCommand(intake::collect, intake));
+                .and(new Trigger(() -> intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand()))
+                .whileActiveContinuous(new InstantCommand(intake::collect, intake));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER)
-                .whileHeld(new InstantCommand(intake::release, intake, transfer));
+                .and(new Trigger(() -> intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand()))
+                .whileActiveContinuous(new InstantCommand(intake::release, intake, transfer));
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new InstantCommand(() -> {
@@ -145,7 +142,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         // Fire immediately when entering zone
         new Trigger(() -> autoFireEnabled
-                && isInsideLaunchZone
+                && drive.isInsideLaunchZonePredictive()
                 && shooter.getCanShoot()
                 && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
                 && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
@@ -154,8 +151,8 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenActive(new ShootCommand(shooter, intake, transfer, drive));
 
         // Kick automatically when exiting the launch zone
-        new Trigger(this::isInsideLaunchZone)
-                .whenInactive(transfer.kick());
+//        new Trigger(drive::isInsideLaunchZonePredictive)
+//                .whenInactive(transfer.kick());
 
         // Toggle auto-fire on-off
         gamepadEx1.getGamepadButton(GamepadKeys.Button.TRIANGLE)
@@ -181,13 +178,13 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_LEFT))
                 .whileActiveContinuous(
-                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.001))
+                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() + 0.003))
                 );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT)
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT))
                 .whileActiveContinuous(
-                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.001))
+                        new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.003))
                 );
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
@@ -207,11 +204,12 @@ public class TeleOpApp extends ComplexOpMode {
                         })
                 );
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.CIRCLE)
-                .whenPressed(drive.goToGate());
-
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.SHARE)
+                .whenPressed(drive.LoadingZoneCycle());
+
 
 //        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
 //                .whenPressed(() -> {
@@ -268,16 +266,11 @@ public class TeleOpApp extends ComplexOpMode {
             if (deltaY > 0.05) totalTraveledY += deltaY;
         }
 
-        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
-        robotZone.setRotation(follower.getPose().getHeading());
-
-        shooter.setZoneCalculator(getCalculatorZone());
-
-        isInsideLaunchZone = isInsideLaunchZonePredictive();
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
-        shooter.setUpdateFlywheel(distanceFromLaunchZone() < 40);
+        shooter.setUpdateFlywheel(drive.distanceFromLaunchZone() < 40);
+        shooter.setZoneCalculator(drive.distanceFromCloseLaunchZone() < drive.distanceFromFarLaunchZone() ? LaunchZone.CLOSE : LaunchZone.FAR);
 
         // Immediately cancel drive command if joysticks are moved
         boolean inputDetected = Math.abs(gamepad1.left_stick_y) > 0.1 ||
@@ -299,8 +292,20 @@ public class TeleOpApp extends ComplexOpMode {
             isOverrideActive = false;
         }
 
-        if (!isInsideLaunchZone && !isOverrideActive) {
-            CommandScheduler.getInstance().cancel(shooter.getCurrentCommand());
+        if (!drive.isInsideLaunchZonePredictive() && !isOverrideActive) {
+            Command currentShooterCommand = shooter.getCurrentCommand();
+
+            // Cancel shooting ONLY if we are running a standalone ShootCommand, not a complex macro like CloseCycleCommand
+            if (currentShooterCommand instanceof ShootCommand) {
+                CommandScheduler.getInstance().cancel(currentShooterCommand);
+
+                // Reverse intake and then block so an artifact doesn't get stuck above the stopper
+                new SequentialCommandGroup(
+                        new InstantCommand(intake::release, intake),
+                        new WaitCommand(10),
+                        new InstantCommand(transfer::block, transfer)
+                ).schedule(false);
+            }
         }
 
         double goalDistance = follower.getPose().distanceFrom(
@@ -312,7 +317,7 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("!Loop Time (ms)", "%.2f", loopTimeMs);
         telemetry.addData("!Frequency (Hz)", "%.1f", 1000.0 / loopTimeMs);
 
-        telemetry.addData("!Inside LAUNCH ZONE", isInsideLaunchZone);
+        telemetry.addData("!Inside LAUNCH ZONE", drive.isInsideLaunchZonePredictive());
         telemetry.addData("!Reached angle", shooter.reachedAngle());
         telemetry.addData("!can Shoot RPM calc ", shooter.getCanShootRPMCalc());
         telemetry.addData("!Can shoot", shooter.getCanShoot());
@@ -369,7 +374,7 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
             Logger.recordOutput("Robot Pose", robotPose);
             Logger.recordOutput("Voltage", voltage);
-            Logger.recordOutput("Inside LAUNCH ZONE", isInsideLaunchZone);
+            Logger.recordOutput("Inside LAUNCH ZONE", drive.isInsideLaunchZonePredictive());
             Logger.recordOutput("Reached Angle", shooter.reachedAngle());
             Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
             Logger.recordOutput("Can Shoot", shooter.getCanShoot());
@@ -389,30 +394,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private boolean isShootingAllowed() {
-        return isInsideLaunchZone || isOverrideActive;
-    }
-
-    public boolean isInsideLaunchZone() {
-        boolean insideClose = robotZone.isInside(closeLaunchZone);
-        boolean insideFar = robotZone.isInside(farLaunchZone);
-        return insideClose || insideFar;
-    }
-
-    public boolean isInsideLaunchZonePredictive() {
-        // Project future X and Y based on current velocity
-        final double PREDICTION_TIME = 0.3;
-        double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * PREDICTION_TIME);
-        double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * PREDICTION_TIME);
-
-        // Create a temporary zone for the future position
-        futureRobotZone.setPosition(futureX, futureY);
-        futureRobotZone.setRotation(follower.getPose().getHeading());
-
-        return futureRobotZone.isInside(closeLaunchZone) || futureRobotZone.isInside(farLaunchZone);
-    }
-
-    public double distanceFromLaunchZone() {
-        return Math.min(robotZone.distanceTo(closeLaunchZone), robotZone.distanceTo(farLaunchZone));
+        return drive.isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
     private void resetPoseToNearestCorner() {
@@ -425,9 +407,6 @@ public class TeleOpApp extends ComplexOpMode {
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
         follower.startTeleopDrive(USE_BRAKE_MODE);
-    }
-
-    private LaunchZone getCalculatorZone() {
-        return robotZone.distanceTo(closeLaunchZone) < robotZone.distanceTo(farLaunchZone) ? LaunchZone.CLOSE : LaunchZone.FAR;
+        gamepad1.rumble(300);
     }
 }
