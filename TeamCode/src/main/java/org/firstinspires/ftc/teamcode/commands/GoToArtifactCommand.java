@@ -32,7 +32,7 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
                 //new InstantCommand(() -> telemetry.addData("artifactPose", artifactList.getClosest()))
                 new DeferredCommand(
                         () ->   new FollowPathCommand(follower,
-                                buildPathFromArtifact(artifactList.getClosest())),
+                                buildPathFromArtifact(artifactList.getBiggest())),
                         null
                 )
         );

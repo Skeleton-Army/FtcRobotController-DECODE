@@ -110,8 +110,20 @@ public class AutonomousApp extends ComplexOpMode {
                                 farDriveBack
                         )
                 )
-                .setTangentHeadingInterpolation()
-                .setReversed()
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.8,
+                                        HeadingInterpolator.tangent.reverse()
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.8,
+                                        1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
+                                )
+                        )
+                )
                 .setGlobalDeceleration()
                 .build();
     }
