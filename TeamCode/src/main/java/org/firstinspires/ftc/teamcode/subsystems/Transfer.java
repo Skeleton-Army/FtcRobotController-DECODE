@@ -19,6 +19,7 @@ import java.util.function.BooleanSupplier;
 
 public class Transfer extends SubsystemBase {
     private static final int SENSOR_FAIL_THRESHOLD = 5;
+    private static final long EMPTY_POLL_COOLDOWN = 100;
 
     private final ServoEx kicker;
     private final ServoEx stopper;
@@ -29,6 +30,9 @@ public class Transfer extends SubsystemBase {
     private boolean distanceSensorDisabled = false;
     private int colorSensorFailCount = 0;
     private int distanceSensorFailCount = 0;
+
+    private long localDetectedTime = 0;
+    private long lastEmptyCheckTime = 0;
 
     public Transfer(final HardwareMap hardwareMap) {
         kicker = new ServoEx(hardwareMap, KICKER_NAME);
@@ -112,46 +116,39 @@ public class Transfer extends SubsystemBase {
     }
 
     public BooleanSupplier threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
-        return new BooleanSupplier() {
-            private long localDetectedTime = 0;
-            private long lastEmptyCheckTime = 0;
-            private final long EMPTY_POLL_COOLDOWN = 100;
-
-            @Override
-            public boolean getAsBoolean() {
-                if (!isCollecting.getAsBoolean()) {
-                    localDetectedTime = 0;
-                    return false;
-                }
-
-                long currentTime = System.currentTimeMillis();
-
-                if (localDetectedTime == 0) {
-                    // Only poll I2C if the cooldown has expired
-                    if (currentTime - lastEmptyCheckTime >= EMPTY_POLL_COOLDOWN) {
-                        lastEmptyCheckTime = currentTime;
-
-                        if (isArtifactInIntake() && isArtifactDetected()) {
-                            localDetectedTime = currentTime;
-                        }
-                    }
-                    return false;
-                }
-
-                long elapsed = currentTime - localDetectedTime;
-
-                if (elapsed >= thresholdMs) {
-                    if (isArtifactInIntake() && isArtifactDetected()) {
-                        return true;
-                    } else {
-                        localDetectedTime = 0;
-                        lastEmptyCheckTime = currentTime;
-                        return false;
-                    }
-                }
-
+        return () -> {
+            if (!isCollecting.getAsBoolean()) {
+                localDetectedTime = 0;
                 return false;
             }
+
+            long currentTime = System.currentTimeMillis();
+
+            if (localDetectedTime == 0) {
+                // Only poll I2C if the cooldown has expired
+                if (currentTime - lastEmptyCheckTime >= EMPTY_POLL_COOLDOWN) {
+                    lastEmptyCheckTime = currentTime;
+
+                    if (isArtifactInIntake() && isArtifactDetected()) {
+                        localDetectedTime = currentTime;
+                    }
+                }
+                return false;
+            }
+
+            long elapsed = currentTime - localDetectedTime;
+
+            if (elapsed >= thresholdMs) {
+                if (isArtifactInIntake() && isArtifactDetected()) {
+                    return true;
+                } else {
+                    localDetectedTime = 0;
+                    lastEmptyCheckTime = currentTime;
+                    return false;
+                }
+            }
+
+            return false;
         };
     }
 

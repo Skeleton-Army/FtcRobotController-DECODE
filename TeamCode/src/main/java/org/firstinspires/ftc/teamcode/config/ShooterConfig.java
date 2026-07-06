@@ -9,16 +9,16 @@ public class ShooterConfig {
     public static String FLYWHEEL1_NAME = "flywheel1";
     public static String FLYWHEEL2_NAME = "flywheel2";
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
-    public static boolean FLYWHEEL1_INVERTED = false;
-    public static boolean FLYWHEEL2_INVERTED = true;
-    public static double FLYWHEEL_GEAR_RATIO = 52.0 / 51.0; // Motor teeth / Flywheel teeth
+    public static boolean FLYWHEEL1_INVERTED = true;
+    public static boolean FLYWHEEL2_INVERTED = false;
+    public static double FLYWHEEL_GEAR_RATIO = 51.0 / 52.0; // Flywheel teeth / Motor teeth
     public static int RPM_REACHED_THRESHOLD = 200;
-    public static double FLYWHEEL_KP = 0.02;
+    public static double FLYWHEEL_KP = 0.04;
     public static double FLYWHEEL_KP_DOWN = 0.05;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
     public static double FLYWHEEL_KS = 1;
-    public static double FLYWHEEL_KA = 0.008;
+    public static double FLYWHEEL_KA = 0.004;
     public static double FLYWHEEL_KA_DOWN = 0.008;
     public static double FLYWHEEL_KV = 0.0047;
     public static double BRAKE_ENTRY_THRESHOLD = -100; // Error must be THIS negative to start braking
@@ -28,6 +28,10 @@ public class ShooterConfig {
     public static int RPM_WINDOW_SIZE = 5;
     public static double INITIAL_RAMP_DURATION = 0.3;
 
+    public static double TURRET_KGYRO_VEL   = 0.0; // gain for Kgyro * turretVel   * flywheelAccel
+    public static double TURRET_KGYRO_ACCEL = 0.0; // gain for Kgyro * turretAccel * flywheelAccel
+    public static double FLYWHEEL_ACCEL_FILTER_ALPHA = 0.3; // smoothing on d(filteredRPM)/dt
+    public static boolean useGyroCompensatoin = false;
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
     public static boolean TURRET_INVERTED = true;
@@ -38,11 +42,11 @@ public class ShooterConfig {
     public static double TURRET_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_SECOND_DERIVATIVE_GAIN = 0.8;
     public static double TURRET_DELAY = 0.02;
-    public static double TURRET_MIN_VOLTAGE = 0.4;
-    public static double TURRET_KP = 5;
-    public static double TURRET_KI = 0;
-    public static double TURRET_KD = 0.1;
-    public static double TURRET_KS = 1;
+    public static double TURRET_MIN_VOLTAGE = 0.2;
+    public static double TURRET_KP = 15;
+    public static double TURRET_KI = 1;
+    public static double TURRET_KD = 0.7;
+    public static double TURRET_KS = 0.5;
     public static double TURRET_KS_CW_0    = 0;  public static double TURRET_KS_CCW_0    = 0;  // 0–1000 RPM
     public static double TURRET_KS_CW_1000 = 0;  public static double TURRET_KS_CCW_1000 = 0;  // 1000–2000 RPM
     public static double TURRET_KS_CW_2000 = 0;  public static double TURRET_KS_CCW_2000 = 0;  // 2000–3000 RPM
@@ -58,22 +62,23 @@ public class ShooterConfig {
     public static double TURRET_KP_CCW = 0.7;
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
-    public static double TURRET_KV = 1.8;
+    public static double TURRET_KV = 3;
     public static double TURRET_KA = 0;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
     public static double GEAR_RATIO = (double) 286 / 20;
-    public static double TURRET_OFFSET_X = 0; // Positive = Front
-    public static double TURRET_OFFSET_Y = 0; // Positive = Left
+    public static double TURRET_OFFSET_X = -0.0065; // In meters, Positive = Front
+    public static double TURRET_OFFSET_Y = 0; // In meters, Positive = Left
     public static boolean TURRET_WRAP = true;
+    public static double TURRET_WRAP_JUMP_THRESHOLD = Math.toRadians(90);
 
     public static double DIST_CLOSE = 30; // Inches
     public static double DIST_FAR = 160; // Inches
-    public static double WINDOW_CLOSE = Math.toRadians(6.0); // Max error allowed when close
-    public static double WINDOW_FAR = Math.toRadians(1.0); // Max error allowed when far
-    public static double TURRET_VELOCITY_WINDOW = Math.toRadians(40); // Max velocity error threshold
-    public static double VELOCITY_WINDOW_GAIN = Math.toRadians(0.05); // Window growth per inch/sec of speed
-    public static double MAX_WINDOW_SIZE = Math.toRadians(6.0); // Absolute limit for the window
+    public static double WINDOW_CLOSE = Math.toRadians(3.0); // Max error allowed when close
+    public static double WINDOW_FAR = Math.toRadians(1.5); // Max error allowed when far
+    public static double TURRET_VELOCITY_WINDOW = Math.toRadians(200); // Max velocity error threshold
+    public static double VELOCITY_WINDOW_GAIN = Math.toRadians(0.01); // Window growth per inch/sec of speed
+    public static double MAX_WINDOW_SIZE = Math.toRadians(3.0); // Absolute limit for the window
 
     public static String HOOD_NAME = "hood";
     public static boolean HOOD_INVERTED = false;

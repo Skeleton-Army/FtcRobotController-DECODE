@@ -41,11 +41,11 @@ public class Vision extends SubsystemBase {
     private final Limelight3A limelight;
     private LLResult llResult;
 
-    private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
-
+//    private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
+//
     private final List<Consumer<Pose>> onRelocalizeListeners = new ArrayList<>();
 
-    private boolean firstRelocalization = true;
+//    private boolean firstRelocalization = true;
 
     private final int pipeline;
 
@@ -58,22 +58,22 @@ public class Vision extends SubsystemBase {
         limelight.start();
         llResult = null;
 
-        relocalizeTimer.start();
+//        relocalizeTimer.start();
     }
 
     @Override
     public void periodic() {
+//        double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
+//        limelight.updateRobotOrientation(orientationDeg);
         llResult = limelight.getLatestResult();
-        double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
-        limelight.updateRobotOrientation(orientationDeg);
         // Check if it's the first run OR if the timer is done
-        if (relocalizeTimer.isDone() || firstRelocalization) {
-            boolean success = relocalize();
-            if (success) {
-                firstRelocalization = false;
-                relocalizeTimer.restart();
-            }
-        }
+//        if (relocalizeTimer.isDone() || firstRelocalization) {
+//            boolean success = relocalize();
+//            if (success) {
+//                firstRelocalization = false;
+//                relocalizeTimer.restart();
+//            }
+//        }
     }
 
     public Pose getAprilTagPose() {

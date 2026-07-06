@@ -4,10 +4,11 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_USABLE_MA
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.HOOD_USABLE_MIN;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_X;
 import static org.firstinspires.ftc.teamcode.config.ShooterConfig.TURRET_OFFSET_Y;
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.LOWER_RANGE_BUFFER;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY;
-import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.RANGE_BUFFER;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.INCH_TO_METERS;
 import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.SHOT_LATENCY_TURRET;
+import static org.firstinspires.ftc.teamcode.consts.ShooterConsts.UPPER_RANGE_BUFFER;
 
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
@@ -16,6 +17,8 @@ import com.pedropathing.math.Vector;
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 
 import com.pedropathing.math.Vector;
+import com.skeletonarmy.marrow.OpModeManager;
+
 import org.apache.commons.math3.geometry.euclidean.threed.Vector3D;
 import org.firstinspires.ftc.teamcode.consts.ShooterCoefficients;
 
@@ -62,17 +65,31 @@ public class ShooterCalculator implements IShooterCalculator {
     /**
      * Checks if the given velocity is within the valid margin for the given distance.
      */
-    private HoodSolution lookup(double distance, double velocity) {
+    private HoodSolution lookup(double distance, double velocity, double referenceSpeed) {
         double verticalAngle = calculateVerticalAngle(distance);
 
-        // Evaluate limits for the specific distance using polynomials
         double minLimit = evaluatePolynomial(coefficients.MIN_VEL_COEFFS, distance);
         double maxLimit = evaluatePolynomial(coefficients.MAX_VEL_COEFFS, distance);
 
-        // Check if velocity is within the safe "corridor"
-        boolean isValid = (velocity >= minLimit - RANGE_BUFFER) && (velocity <= maxLimit + RANGE_BUFFER);
+        // minLimit/maxLimit were calibrated as a margin band around the STATIONARY
+        // ideal speed for this distance. When compensating for robot motion, the
+        // mechanism's real target speed shifts to referenceSpeed. Shift the whole
+        // band by that same delta so the tolerance width is preserved but it's
+        // centered on the speed we're actually trying to hit.
+        double idealSpeedAtDistance = shooterVelocity(distance);
+        double compensationDelta = referenceSpeed - idealSpeedAtDistance;
+
+        double shiftedMin = minLimit + compensationDelta;
+        double shiftedMax = maxLimit + compensationDelta;
+
+        boolean isValid = (velocity >= shiftedMin - LOWER_RANGE_BUFFER) && (velocity <= shiftedMax + UPPER_RANGE_BUFFER);
 
         return new HoodSolution(verticalAngle, isValid);
+    }
+
+    // Overload for the stationary case, so existing call sites don't need referenceSpeed
+    private HoodSolution lookup(double distance, double velocity) {
+        return lookup(distance, velocity, shooterVelocity(distance)); // delta = 0
     }
 
     public double calculateTurretAngle(Pose targetPose, Pose robotPose) {
@@ -98,7 +115,7 @@ public class ShooterCalculator implements IShooterCalculator {
 
         Vector3D vRobot = new Vector3D(robotVelMeters.getXComponent(), robotVelMeters.getYComponent(), 0);
 
-        // 1. Calculate Ideal Shot
+        // 1. Calculate Ideal Shot (stationary baseline — delta is 0 by definition here)
         double idealSpeed = shooterVelocity(distance);
         HoodSolution idealHood = lookup(distance, idealSpeed);
 
@@ -113,7 +130,11 @@ public class ShooterCalculator implements IShooterCalculator {
 
         // 2. Check Actual Shot (Current Flywheel Speed)
         double currentSpeed = RPMToVelocity(flywheelVel);
-        HoodSolution currentHood = lookup(distance, currentSpeed);
+
+        // Validate against the corridor shifted to be centered on vRequired's norm —
+        // the speed the flywheel is actually being commanded toward while moving —
+        // instead of the stale stationary idealSpeed for this distance.
+        HoodSolution currentHood = lookup(distance, currentSpeed, vRequired.getNorm());
 
         Vector3D vLaunchActual = new Vector3D(
                 currentSpeed * Math.cos(currentHood.getHoodAngle()) * Math.cos(horizontalAngleToGoal),
@@ -128,7 +149,10 @@ public class ShooterCalculator implements IShooterCalculator {
         double aimVerticalAngle = Math.atan2(vAim.getZ(), aimHorizontalComp);
 
         boolean isAngleValid = (aimVerticalAngle >= HOOD_USABLE_MIN) && (aimVerticalAngle <= HOOD_USABLE_MAX);
-        boolean isSolutionPossible = isAngleValid & currentHood.isValid();
+        boolean isSolutionPossible = isAngleValid && currentHood.isValid();
+
+        OpModeManager.getTelemetry().addData("isAngleValid", isAngleValid);
+        OpModeManager.getTelemetry().addData("currentHood.isValid()", currentHood.isValid());
 
         return new ShootingSolution(
                 MathFunctions.normalizeAngle(aimHorizontalAngle),

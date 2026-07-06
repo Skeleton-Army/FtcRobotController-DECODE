@@ -6,8 +6,10 @@ import static org.firstinspires.ftc.teamcode.opModes.TeleOpApp.Y_OFFSET;
 
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.geometry.FuturePose;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.qualcomm.robotcore.hardware.Gamepad;
 import com.seattlesolvers.solverslib.command.Command;
@@ -18,12 +20,23 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.settings.Settings;
+import com.skeletonarmy.marrow.zones.Point;
+import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 
 import java.util.Collections;
 
 public class Drive extends SubsystemBase {
+    public static final double ROBOT_WIDTH = 16.53; // Side-to-side
+    public static final double ROBOT_LENGTH = 14.96; // Front-to-back
+
+    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
+    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
+
+    private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
+    private final PolygonZone futureRobotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
+
     private final Follower follower;
     private final Alliance alliance;
     private final boolean isRobotCentric;
@@ -34,6 +47,16 @@ public class Drive extends SubsystemBase {
     private boolean isHoldingPosition = false;
 
     private boolean enabled = true;
+
+    private long lastUpdateFrame = -1;
+    private long lastZoneFrame = -1;
+    private long lastPredictiveFrame = -1;
+    private boolean cachedIsInside;
+    private boolean cachedIsInsidePredictive;
+    private long lastCloseDistanceFrame = -1;
+    private long lastFarDistanceFrame = -1;
+    private double cachedCloseDistance;
+    private double cachedFarDistance;
 
     public Drive(Follower follower, Alliance alliance) {
         this.follower = follower;
@@ -47,6 +70,11 @@ public class Drive extends SubsystemBase {
     public void periodic() {
         if (!enabled) return;
         follower.update();
+
+        lastUpdateFrame++;
+
+        robotZone.setPosition(follower.getPose().getX(), follower.getPose().getY());
+        robotZone.setRotation(follower.getPose().getHeading());
     }
 
     public Command goToGate() {
@@ -145,6 +173,34 @@ public class Drive extends SubsystemBase {
         );
     }
 
+    public Command LoadingZoneCycle() {
+        if (tabletopMode) return new InstantCommand();
+
+
+        Pose loadingZoneEnd = new Pose(24,18, Math.toRadians(160)); // pose for intaking at the opposing loading zone, the end of the path
+        if (follower.getPose().getX() < 72)
+            loadingZoneEnd.mirror();
+
+        return new DeferredCommand(
+                () -> {
+                    PathChain path = follower
+                            .pathBuilder()
+                            .addPath(new BezierLine(follower.getPose(), loadingZoneEnd))
+                            .setHeadingInterpolation(HeadingInterpolator.linear(follower.getHeading(), loadingZoneEnd.getHeading()))
+                            .build();
+
+
+                    return new SequentialCommandGroup(
+                            new FollowPathCommand(follower, path),
+                            new WaitCommand(1000),
+                            new InstantCommand(() -> follower.startTeleopDrive(USE_BRAKE_MODE))
+                    );
+
+                },
+                Collections.singletonList(this)
+                );
+    }
+
     public void teleOpDrive(Gamepad gamepad) {
         if (tabletopMode || !enabled) return;
 
@@ -191,6 +247,51 @@ public class Drive extends SubsystemBase {
         }
     }
 
+    public boolean isInsideLaunchZone() {
+        if (shouldUpdateCache(lastZoneFrame)) {
+            cachedIsInside = robotZone.isInside(closeLaunchZone) || robotZone.isInside(farLaunchZone);
+            lastZoneFrame = lastUpdateFrame;
+        }
+        return cachedIsInside;
+    }
+
+    public boolean isInsideLaunchZonePredictive() {
+        if (tabletopMode) return true;
+
+        if (shouldUpdateCache(lastPredictiveFrame)) {
+            final double PREDICTION_TIME = 0.3;
+            double futureX = follower.getPose().getX() + (follower.getVelocity().getXComponent() * PREDICTION_TIME);
+            double futureY = follower.getPose().getY() + (follower.getVelocity().getYComponent() * PREDICTION_TIME);
+
+            futureRobotZone.setPosition(futureX, futureY);
+            futureRobotZone.setRotation(follower.getPose().getHeading());
+
+            cachedIsInsidePredictive = futureRobotZone.isInside(closeLaunchZone) || futureRobotZone.isInside(farLaunchZone);
+            lastPredictiveFrame = lastUpdateFrame;
+        }
+        return cachedIsInsidePredictive;
+    }
+
+    public double distanceFromLaunchZone() {
+        return Math.min(distanceFromCloseLaunchZone(), distanceFromFarLaunchZone());
+    }
+
+    public double distanceFromCloseLaunchZone() {
+        if (shouldUpdateCache(lastCloseDistanceFrame)) {
+            cachedCloseDistance = robotZone.distanceTo(closeLaunchZone);
+            lastCloseDistanceFrame = lastUpdateFrame;
+        }
+        return cachedCloseDistance;
+    }
+
+    public double distanceFromFarLaunchZone() {
+        if (shouldUpdateCache(lastFarDistanceFrame)) {
+            cachedFarDistance = robotZone.distanceTo(farLaunchZone);
+            lastFarDistanceFrame = lastUpdateFrame;
+        }
+        return cachedFarDistance;
+    }
+
     public void disable() {
         this.enabled = false;
         follower.setTeleOpDrive(0, 0, 0);
@@ -213,6 +314,10 @@ public class Drive extends SubsystemBase {
 
     public void setShootingMode(boolean enabled) {
         shootingMode = enabled;
+    }
+
+    private boolean shouldUpdateCache(long frameToken) {
+        return lastUpdateFrame != frameToken;
     }
 
     /**
