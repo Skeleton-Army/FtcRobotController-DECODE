@@ -380,12 +380,16 @@ public class TeleOpApp extends ComplexOpMode {
     // the calculated stdevs
 
     public void kalmanDebug(){
-        if (lastKnownSnapshot == null) return;
+        if (lastKnownSnapshot != null) {
+            Pose2D apriltagPose2D = poseToPose2D(lastKnownSnapshot.pose, FTCCoordinates.INSTANCE);
+            telemetry.addData("apriltag pose x", -apriltagPose2D.getX(DistanceUnit.INCH));
+            telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
+            telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
 
-        Pose2D apriltagPose2D = poseToPose2D(lastKnownSnapshot.pose, FTCCoordinates.INSTANCE);
-        telemetry.addData("apriltag pose x", -apriltagPose2D.getX(DistanceUnit.INCH));
-        telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
-        telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
+            Logger.recordOutput("apriltag pose x", lastKnownSnapshot.pose.getX());
+            Logger.recordOutput("apriltag pose y", lastKnownSnapshot.pose.getY());
+            Logger.recordOutput("apriltag pose heading", lastKnownSnapshot.pose.getHeading());
+        }
 
         pinpointPose = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
         Pose2D pinpointPos2D = poseToPose2D(pinpointPose, FTCCoordinates.INSTANCE);
@@ -403,10 +407,6 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("stdev x", sizeVarianceX);
         telemetry.addData("stdev y", sizeVarianceX);
         telemetry.addData("stdev heading", sizeVarianceAngle);
-
-        Logger.recordOutput("apriltag pose x", lastKnownSnapshot.pose.getX());
-        Logger.recordOutput("apriltag pose y", lastKnownSnapshot.pose.getY());
-        Logger.recordOutput("apriltag pose heading", lastKnownSnapshot.pose.getHeading());
 
         Logger.recordOutput("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
         Logger.recordOutput("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
