@@ -120,11 +120,10 @@ public class ShootCommand extends SequentialCommandGroup {
 
         // Ensure everything is off and in its place when the command ends
         transfer.setKickerPosition(false);
-        transfer.block();
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
         intake.setIntakeSpeed(INTAKE_POWER);
 
-//        if (interrupted) transfer.kick().schedule();
+        if (!interrupted) transfer.block();
     }
 }
