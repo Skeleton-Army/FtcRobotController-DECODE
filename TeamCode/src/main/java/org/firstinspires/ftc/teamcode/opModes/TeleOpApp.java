@@ -314,6 +314,7 @@ public class TeleOpApp extends ComplexOpMode {
 
                 if (!transfer.isArtifactInIntake()) {
                     new SequentialCommandGroup(
+                            new InstantCommand(transfer::release, transfer),
                             new InstantCommand(intake::release, intake),
                             new WaitCommand(10),
                             new InstantCommand(transfer::block, transfer)
