@@ -1,25 +1,29 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.math.MathFunctions;
-import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
-import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
 
+@Config
 public class GoToArtifactCommand extends SequentialCommandGroup {
+    // Max estimated artifact speed (inches/sec) we're still willing to treat as "stationary".
+    // Tune alongside Vision.MAX_ARTIFACT_MATCH_DISTANCE.
+    public static final double MAX_ARTIFACT_VELOCITY = 2.0;
+
     private final Follower follower;
     private final Vision vision;
     private final Alliance alliance;
+
     public GoToArtifactCommand(Follower follower, Vision vision, Alliance alliance) {
         this.follower = follower;
         this.vision = vision;
@@ -30,17 +34,13 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         addCommands(
                 //TODO: fixed 🔰
                 new WaitUntilCommand(() ->
-                       artifactList.fetch()
-                               .filterInvalidX()
-                               .filterByYLevel(0, 90)
-                               .isArtifactDetected()
+                       artifactList.fetch().filterStationary(MAX_ARTIFACT_VELOCITY).isArtifactDetected()
                 ),
-                //new InstantCommand(() -> telemetry.addData("artifactPose", artifactList.getClosest()))
                 new DeferredCommand(
                         () ->   new FollowPathCommand(follower,
                                 buildPathFromArtifact(artifactList.getBiggest())),
                         null
-                ).withTimeout(1500)
+                )
         );
     }
 
@@ -50,39 +50,18 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
 
         return follower.pathBuilder()
                 .addPath(new BezierLine(follower.getPose(), artifactPose))
-                .setHeadingInterpolation(
-                        HeadingInterpolator.piecewise(
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0,
-                                        0.7,
-                                        HeadingInterpolator.tangent
-                                ),
-                                new HeadingInterpolator.PiecewiseNode(
-                                        0.7,
-                                        1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
-                                )
-                        )
-                )
+                .setTangentHeadingInterpolation()
                 .setGlobalDeceleration()
                 .build();
+
     }
 
     private Pose getCorrectedPose(Artifact artifact) {
         Pose pose = new Pose(10, artifact.getArtifactPose().getY(), Math.toRadians(180));
-
         if (alliance == Alliance.RED) {
-            pose = pose.mirror(GoalPositions.FIELD_LENGTH);
+            pose = pose.mirror();
         }
 
         return pose;
-    }
-
-    private double getRelative(double headingRad) {
-        if (alliance == Alliance.RED) {
-            return MathFunctions.normalizeAngle(Math.PI - headingRad);
-        }
-
-        return headingRad;
     }
 }

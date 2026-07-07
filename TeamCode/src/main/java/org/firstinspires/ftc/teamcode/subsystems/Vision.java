@@ -2,9 +2,6 @@ package org.firstinspires.ftc.teamcode.subsystems;
 //TODO: add max width to Pipeline
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.*;
 
-import android.content.Context;
-import android.content.Intent;
-
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
@@ -20,11 +17,8 @@ import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.ArtifactSorting;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
-import org.firstinspires.ftc.teamcode.utilities.Kinematics;
-import org.opencv.core.Mat;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -32,11 +26,11 @@ import java.util.function.Consumer;
 import lombok.var;
 
 public class Vision extends SubsystemBase {
-    private static final double METERS_TO_INCHES = 39.37;
-    private static final int GPP_TAG_ID = 23;
+    private final double METERS_TO_INCHES = 39.37;
+    private static final int GPP_TAG_ID = 21;
     private static final int PGP_TAG_ID = 22;
-    private static final int PPG_TAG_ID = 21;
-    private static final int FIELD_HALF_Y_LEVEL = 94;
+    private static final int PPG_TAG_ID = 23;
+    private static final int FIELD_HALF_Y_LEVEL = 72;
 
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
@@ -44,16 +38,14 @@ public class Vision extends SubsystemBase {
 
 //    private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
     private final List<Consumer<Pose>> onRelocalizeListeners = new ArrayList<>();
-
+    
 //    private boolean firstRelocalization = true;
 
     private final int pipeline;
 
     // ─── Artifact velocity tracking ─────────────────────────────────────────────
-    private List<Artifact> previousArtifacts = new ArrayList<>(); //do not use outside fetch() or estimateVelocities(). needs to be part of the bigger class to preserve state
+    private List<Artifact> previousArtifacts = new ArrayList<>();
     private long previousFetchTimeNanos = -1;
-    private double[] previousPythonOutput = null; //small optimization to avoid recalculating if nothing changed
-
     // ────────────────────────────────────────────────────────────────────────────
 
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
@@ -71,8 +63,7 @@ public class Vision extends SubsystemBase {
     @Override
     public void periodic() {
         llResult = limelight.getLatestResult();
-        /*
-        relocalization isn't in the LL anymore
+        /*  relocalization isn't in the LL anymore
         double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
         limelight.updateRobotOrientation(orientationDeg);
       // Check if it's the first run OR if the timer is done
@@ -83,7 +74,7 @@ public class Vision extends SubsystemBase {
                 relocalizeTimer.restart();
             }
         }
-        */
+         */
     }
 
     public Pose getAprilTagPose() {
@@ -136,8 +127,7 @@ public class Vision extends SubsystemBase {
     public ArtifactPattern detectPattern() {
         if (pipeline == APRILTAG_PIPELINE) return null;
 
-        llResult = limelight.getLatestResult();
-        //this method runs before the loop, thus needs explicit redefinition of llResult
+        llResult = limelight.getLatestResult(); //this method runs before the loop, thus needs explicit redefinition of llResult
         if (llResult == null || !llResult.isValid()) return null;
 
         for (LLResultTypes.FiducialResult fiducial : llResult.getFiducialResults()) {
@@ -152,7 +142,7 @@ public class Vision extends SubsystemBase {
 
     /* Proud of this one so I keep it, despite being kinda useless
 
-    pwease don't delete 👉👈🥺
+    please don't delete 👉👈🥺
 
     public Pose getClosestArtifact() {
         if (llResult == null || !llResult.isValid()) {
@@ -210,34 +200,22 @@ public class Vision extends SubsystemBase {
             artifacts.clear(); // this is called every poll (e.g. from WaitUntilCommand), so we must not accumulate stale results
             if (llResult == null) return this;
 
-            double[] output = llResult.getPythonOutput();
-
-            if (previousPythonOutput != null && Arrays.equals(output, previousPythonOutput)) {
-                artifacts.addAll(previousArtifacts);
-                return this;
-            }
-            previousPythonOutput = output;
-
             long now = System.nanoTime();
-            double dt_sec = previousFetchTimeNanos < 0 ? -1 : (now - previousFetchTimeNanos) / 1e9;
+            double dt = previousFetchTimeNanos < 0 ? -1 : (now - previousFetchTimeNanos) / 1e9;
 
             List<Artifact> freshArtifacts = new ArrayList<>();
 
+            double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
-            for (int i = 0; i < count * 3; i += 3) {
+            for (int i = 0; i < count * 2; i += 2) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
                 double ta = output[3 + i];
-
-                if (ta <= 0) continue;
-
                 Pose absPose = getAbsolutePosition(tx, ty);
-
-                if (absPose == null) continue;
                 freshArtifacts.add(new Artifact(absPose, ta));
             }
 
-            List<Artifact> trackedArtifacts = estimateVelocities(freshArtifacts, dt_sec);
+            List<Artifact> trackedArtifacts = estimateVelocities(freshArtifacts, dt);
 
             artifacts.addAll(trackedArtifacts);
             previousArtifacts = trackedArtifacts;
@@ -253,8 +231,8 @@ public class Vision extends SubsystemBase {
             Pose robotPose = poseTracker.getPose();
             artifacts.sort(Comparator.comparingDouble(a ->
                     Math.hypot(
-                            a.getPose().getX() - robotPose.getX(),
-                            a.getPose().getY() - robotPose.getY()
+                            a.getArtifactPose().getX() - robotPose.getX(),
+                            a.getArtifactPose().getY() - robotPose.getY()
                     )
             ));
             return this;
@@ -262,7 +240,7 @@ public class Vision extends SubsystemBase {
 
         /** Sorts by color ordinal ascending (PURPLE → GREEN → MIXED → UNKNOWN). */
         public ArtifactList sortByColor() {
-            artifacts.sort(Comparator.comparingInt(a -> a.getColor().ordinal()));
+            artifacts.sort(Comparator.comparingInt(a -> a.getArtifactColor().ordinal()));
             return this;
         }
 
@@ -285,23 +263,12 @@ public class Vision extends SubsystemBase {
 
         /** Keeps only artifacts whose color matches the given {@link ArtifactColor}. */
         public ArtifactList filterByColor(ArtifactColor color) {
-            artifacts.removeIf(a -> a.getColor() != color);
+            artifacts.removeIf(a -> a.getArtifactColor() != color);
             return this;
         }
 
         public ArtifactList filterStationary(double maxVelocity) {
-            artifacts.removeIf(a -> !a.isMoving(maxVelocity));
-            return this;
-        }
-
-        public ArtifactList filterByYLevel(double minY, double maxY) {
-            artifacts.removeIf(a -> a.getPose().getY() < minY);
-            artifacts.removeIf(a -> a.getPose().getY() > maxY);
-            return this;
-        }
-
-        public ArtifactList filterInvalidX() {
-            artifacts.removeIf(a -> a.getPose().getX() > 188 || a.getPose().getX() < 0);
+            artifacts.removeIf(a -> a.isMoving(maxVelocity));
             return this;
         }
 
@@ -313,7 +280,6 @@ public class Vision extends SubsystemBase {
             return sortByDistance().artifacts.get(0);
         }
 
-        /** Returns the biggest artifact, or {@code null} if the list is empty. */
         public Artifact getBiggest() {
             if (artifacts.isEmpty()) return null;
             return sortBySize().artifacts.get(0);
@@ -323,74 +289,41 @@ public class Vision extends SubsystemBase {
         public List<Artifact> toList() {
             return new ArrayList<>(artifacts);
         }
+
         public int count()      { return artifacts.size(); }
         public boolean isArtifactDetected() { return !artifacts.isEmpty(); }
 
         // ─── Geometry helpers ────────────────────────────────────────────────────
 
         private List<Artifact> estimateVelocities(List<Artifact> freshArtifacts, double dt) {
-            if (dt <= 0 || previousArtifacts.isEmpty()) return freshArtifacts;
+            if (dt <= 0 || previousArtifacts.isEmpty()) return freshArtifacts; // nothing to compare against; defaults to velocity 0
 
-            List<Mat.Tuple3<Double>> candidates = new ArrayList<>();
-            for (int f = 0; f < freshArtifacts.size(); f++) {
-                for (int p = 0; p < previousArtifacts.size(); p++) {
-                    Pose predictedPrevPose = Artifact.predictPose(previousArtifacts.get(p), dt);
-                    double dist = freshArtifacts.get(f).getPose().distanceFrom(predictedPrevPose);
-                    if (dist <= MAX_ARTIFACT_MATCH_DISTANCE) {
-                        candidates.add(new Mat.Tuple3<>((double) f, (double) p, dist));
-                    }
-                }
-            }
+            List<Artifact> tracked = new ArrayList<>(freshArtifacts.size());
+            for (Artifact artifact : freshArtifacts) {
+                double bestDist = Double.MAX_VALUE;
+                for (Artifact prev : previousArtifacts) {
+                    double dist = Math.hypot(
+                            artifact.getArtifactPose().getX() - prev.getArtifactPose().getX(),
+                            artifact.getArtifactPose().getY() - prev.getArtifactPose().getY()
+                    );
 
-            List<Artifact> trackedArtifacts = new ArrayList<>(candidates.size());
-            candidates.sort(Comparator.comparingDouble(Mat.Tuple3::get_2));
-            boolean[] freshTaken = new boolean[freshArtifacts.size()];
-            boolean[] prevTaken = new boolean[previousArtifacts.size()];
-
-            for (Mat.Tuple3<Double> c : candidates) {
-                int f = c.get_0().intValue();
-                int p = c.get_1().intValue();
-                if (freshTaken[f] || prevTaken[p]) continue;
-                freshTaken[f] = true;
-                prevTaken[p] = true;
-
-                Artifact fresh = freshArtifacts.get(f);
-                Artifact prev = previousArtifacts.get(p);
-
-                double deltaXP = fresh.getPose().getX() - prev.getPose().getX();
-                double deltaYP = fresh.getPose().getY() - prev.getPose().getY();
-
-                double rawVx = (deltaXP) / dt;
-                double rawVy = (deltaYP) / dt;
-
-                double vx, vy;
-                double filteredXP, filteredYP;
-
-                if (Math.hypot(rawVx, rawVy) < VELOCITY_NOISE_FLOOR) {
-                    vx = 0;
-                    vy = 0;
-                    filteredXP = prev.getDeltaX();
-                    filteredYP = prev.getDeltaY();
-                } else {
-                    filteredXP = Kinematics.lowPassFilter(deltaXP, prev.getDeltaX(), VELOCITY_LOWPASS_ALPHA);
-                    filteredYP = Kinematics.lowPassFilter(deltaYP, prev.getDeltaY(), VELOCITY_LOWPASS_ALPHA);
-                    vx = filteredXP / dt;
-                    vy = filteredYP / dt;
+                    if (dist < bestDist) bestDist = dist;
                 }
 
-                Artifact tracked = new Artifact(fresh.getPose(), fresh.getSize())
-                        .withVelocity(vx, vy)
-                        .withPositionDelta(filteredXP, filteredYP);
+                if (bestDist <= MAX_ARTIFACT_MATCH_DISTANCE) {
+                    artifact.setVelocity(bestDist / dt);
+                }
 
-                trackedArtifacts.add(tracked);
+                tracked.add(artifact);
             }
 
-            return trackedArtifacts;
+            return tracked;
         }
+
+
 
         private double getDistance(double ty) {
             double angleGoalRad = Math.toRadians(LIMELIGHT_MOUNT_ANGLE + ty);
-            if (Math.tan(angleGoalRad) == 0.0) return 0;
             return (ARTIFACT_HEIGHT_FROM_FLOOR - LENS_HEIGHT_INCHES) / Math.tan(angleGoalRad);
         }
 
@@ -400,7 +333,10 @@ public class Vision extends SubsystemBase {
             double deltaX = distance * Math.cos(theta) + X_OFFSET_INCHES;
             double deltaY = -distance * Math.sin(theta) + Y_OFFSET_INCHES;
 
-            return new Pose(deltaX, deltaY);
+            return new Pose(
+                    deltaX,
+                    deltaY
+            );
         }
 
         private Pose getAbsolutePosition(Pose relativePose) {
@@ -417,8 +353,34 @@ public class Vision extends SubsystemBase {
 
         private Pose getAbsolutePosition(double tx, double ty) {
             double distance = getDistance(ty);
-            if (distance < 0.1) return null;
             return getAbsolutePosition(getRelativePose(distance, tx));
+        }
+
+
+        // ─── Deprecated ──────────────────────────────────────────────────────────
+
+        /** @deprecated Neural net pipeline no longer in use. */
+        @Deprecated
+        public List<Artifact> getArtifactsNeuralNet() {
+            if (llResult == null || !llResult.isValid()) return new ArrayList<>();
+
+            List<Artifact> artifactList = new ArrayList<>();
+            var llArtifactList = llResult.getFiducialResults();
+
+            for (var fiducialResult : llArtifactList) {
+                double distance = getDistance(fiducialResult.getTargetYDegrees());
+                Pose relativePose = getRelativePose(distance, fiducialResult.getTargetXDegrees());
+
+                double theta = poseTracker.getPose().getHeading();
+                double x = relativePose.getX() * Math.cos(theta) - relativePose.getY() * Math.sin(theta);
+                double y = relativePose.getX() * Math.sin(theta) - relativePose.getY() * Math.cos(theta);
+
+                artifactList.add(new Artifact(
+                        new Pose(poseTracker.getPose().getX() + x, poseTracker.getPose().getY() + y),
+                        fiducialResult.getFamily()
+                ));
+            }
+            return artifactList;
         }
     }
 }

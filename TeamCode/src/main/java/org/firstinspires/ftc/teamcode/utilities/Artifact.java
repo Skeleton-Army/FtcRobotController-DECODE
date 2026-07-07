@@ -5,65 +5,46 @@ import androidx.annotation.NonNull;
 import com.pedropathing.geometry.Pose;
 
 import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
-import org.opencv.core.Mat;
 
 import java.util.Locale;
 
-import lombok.Getter;
-
-@Getter
 public class Artifact {
-    private final Pose pose;
-    private final ArtifactColor color;
+    private final Pose artifactPose;
+    private final ArtifactColor artifactColor;
     private final double size;
 
     private double velocity;
-    private double velocityX;
-    private double velocityY;
-
-    private Mat.Tuple2<Double> positionDelta = new Mat.Tuple2<>(0.0, 0.0);
 
     public Artifact(Pose pose, String color) {
-        this.pose = pose;
-        this.color = parseColor(color);
+        artifactPose = pose;
+        artifactColor = parseColor(color);
         size = Double.NaN;
     }
 
     public Artifact(Pose pose, double ta) {
-        this.pose = pose;
-        color = ArtifactColor.UNKNOWN;
+        artifactPose = pose;
+        artifactColor = ArtifactColor.UNKNOWN;
         size = ta;
     }
 
-    /** Sets velocity as a vector (inches/sec in field X/Y). Magnitude is derived automatically. */
-    public void setVelocity(double velocityX, double velocityY) {
-        this.velocityX = velocityX;
-        this.velocityY = velocityY;
-        this.velocity = Math.hypot(velocityX, velocityY);
+    public double getSize() {
+        return size;
     }
 
-    public Artifact withVelocity(double velX, double velY) {
-        this.velocityX = velX;
-        this.velocityY = velY;
-        this.velocity = Math.hypot(velX, velY);
-        return this;
+    public ArtifactColor getArtifactColor() {
+        return artifactColor;
     }
 
-    public Artifact withPositionDelta(double x, double y) {
-        this.positionDelta = new Mat.Tuple2<>(x, y);
-        return this;
+    public Pose getArtifactPose() {
+        return artifactPose;
     }
 
-    public void setPositionDelta(double x, double y) {
-        positionDelta = new Mat.Tuple2<>(x, y);
+    public void setVelocity(double velocity) {
+        this.velocity = velocity;
     }
 
-    public double getDeltaX() {
-        return positionDelta.get_0();
-    }
-
-    public double getDeltaY() {
-        return positionDelta.get_1();
+    public double getVelocity() {
+        return velocity;
     }
 
     public boolean isMoving(double threshold) {
@@ -84,18 +65,31 @@ public class Artifact {
         }
     }
 
+    public static ArtifactColor parseColor(int color) {
+        switch (color) {
+            case 1:
+                return ArtifactColor.PURPLE;
+            case 2:
+                return ArtifactColor.GREEN;
+            case 3:
+                return ArtifactColor.MIXED;
+            default:
+                return ArtifactColor.UNKNOWN;
+        }
+    }
+
+    public static Pair<Double, Double> unpack(double packed) {
+        double tx = packed / 1000.0;
+        double ty = packed % 100;
+        return new Pair<>(tx, ty);
+    }
+
     @NonNull
     @Override
     public String toString() {
         return String.format(Locale.ROOT,
-                "pos: [%f, %f] color: %s, vel: %f",
-                pose.getX(), pose.getY(), color.name(), velocity);
+                "pos: [%f, %f] color: %s",
+                artifactPose.getX(), artifactPose.getY(), artifactColor.name());
     }
 
-    public static Pose predictPose(Artifact artifact, double deltaTime) {
-        double predictedX = artifact.getPose().getX() + artifact.getVelocityX() * deltaTime;
-        double predictedY = artifact.getPose().getY() + artifact.getVelocityY() * deltaTime;
-
-        return new Pose(predictedX, predictedY, artifact.getPose().getHeading());
-    }
 }
