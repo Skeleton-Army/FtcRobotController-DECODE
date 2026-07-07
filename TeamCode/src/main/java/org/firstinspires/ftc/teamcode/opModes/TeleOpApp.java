@@ -83,6 +83,9 @@ public class TeleOpApp extends ComplexOpMode {
 
     private boolean autoFireEnabled = true;
 
+    private final TimerEx zoneExitTimer = new TimerEx(0.3);
+    private boolean zoneExitTimerRunning = false;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -292,14 +295,23 @@ public class TeleOpApp extends ComplexOpMode {
             isOverrideActive = false;
         }
 
-        if (!drive.isInsideLaunchZonePredictive() && !isOverrideActive) {
+        boolean insideZoneNow = drive.isInsideLaunchZonePredictive();
+
+        if (insideZoneNow) {
+            zoneExitTimerRunning = false;
+        } else if (!zoneExitTimerRunning) {
+            zoneExitTimer.restart();
+            zoneExitTimerRunning = true;
+        }
+
+        boolean confirmedOutsideZone = zoneExitTimerRunning && zoneExitTimer.isDone();
+
+        if (confirmedOutsideZone && !isOverrideActive) {
             Command currentShooterCommand = shooter.getCurrentCommand();
 
-            // Cancel shooting ONLY if we are running a standalone ShootCommand, not a complex macro like CloseCycleCommand
             if (currentShooterCommand instanceof ShootCommand) {
                 CommandScheduler.getInstance().cancel(currentShooterCommand);
 
-                // Reverse intake and then block so an artifact doesn't get stuck above the stopper
                 if (!transfer.isArtifactInIntake()) {
                     new SequentialCommandGroup(
                             new InstantCommand(intake::release, intake),
