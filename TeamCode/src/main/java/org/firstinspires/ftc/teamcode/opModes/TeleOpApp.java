@@ -300,11 +300,13 @@ public class TeleOpApp extends ComplexOpMode {
                 CommandScheduler.getInstance().cancel(currentShooterCommand);
 
                 // Reverse intake and then block so an artifact doesn't get stuck above the stopper
-                new SequentialCommandGroup(
-                        new InstantCommand(intake::release, intake),
-                        new WaitCommand(10),
-                        new InstantCommand(transfer::block, transfer)
-                ).schedule(false);
+                if (!transfer.isArtifactInIntake()) {
+                    new SequentialCommandGroup(
+                            new InstantCommand(intake::release, intake),
+                            new WaitCommand(10),
+                            new InstantCommand(transfer::block, transfer)
+                    ).schedule(false);
+                }
             }
         }
 
