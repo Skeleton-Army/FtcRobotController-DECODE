@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
@@ -13,10 +14,16 @@ import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
 
+@Config
 public class GoToArtifactCommand extends SequentialCommandGroup {
+    // Max estimated artifact speed (inches/sec) we're still willing to treat as "stationary".
+    // Tune alongside Vision.MAX_ARTIFACT_MATCH_DISTANCE.
+    public static final double MAX_ARTIFACT_VELOCITY = 2.0;
+
     private final Follower follower;
     private final Vision vision;
     private final Alliance alliance;
+
     public GoToArtifactCommand(Follower follower, Vision vision, Alliance alliance) {
         this.follower = follower;
         this.vision = vision;
@@ -27,9 +34,8 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         addCommands(
                 //TODO: fixed 🔰
                 new WaitUntilCommand(() ->
-                       artifactList.fetch().isArtifactDetected()
+                       artifactList.fetch().filterStationary(MAX_ARTIFACT_VELOCITY).isArtifactDetected()
                 ),
-                //new InstantCommand(() -> telemetry.addData("artifactPose", artifactList.getClosest()))
                 new DeferredCommand(
                         () ->   new FollowPathCommand(follower,
                                 buildPathFromArtifact(artifactList.getBiggest())),

@@ -1,6 +1,5 @@
 package org.firstinspires.ftc.teamcode.subsystems;
 //TODO: add max width to Pipeline
-import static org.firstinspires.ftc.robotcore.internal.system.Assert.assertTrue;
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.*;
 
 import com.pedropathing.ftc.FTCCoordinates;
@@ -10,10 +9,7 @@ import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.skeletonarmy.marrow.OpModeManager;
-import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
@@ -21,7 +17,6 @@ import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.ArtifactSorting;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
-import org.firstinspires.ftc.teamcode.utilities.Pair;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,12 +37,16 @@ public class Vision extends SubsystemBase {
     private LLResult llResult;
 
 //    private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
-//
     private final List<Consumer<Pose>> onRelocalizeListeners = new ArrayList<>();
-
+    
 //    private boolean firstRelocalization = true;
 
     private final int pipeline;
+
+    // ─── Artifact velocity tracking ─────────────────────────────────────────────
+    private List<Artifact> previousArtifacts = new ArrayList<>();
+    private long previousFetchTimeNanos = -1;
+    // ────────────────────────────────────────────────────────────────────────────
 
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
         this.poseTracker = poseTracker;
@@ -58,22 +57,24 @@ public class Vision extends SubsystemBase {
         limelight.start();
         llResult = null;
 
-//        relocalizeTimer.start();
+//      relocalizeTimer.start();
     }
 
     @Override
     public void periodic() {
-//        double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
-//        limelight.updateRobotOrientation(orientationDeg);
         llResult = limelight.getLatestResult();
-        // Check if it's the first run OR if the timer is done
-//        if (relocalizeTimer.isDone() || firstRelocalization) {
-//            boolean success = relocalize();
-//            if (success) {
-//                firstRelocalization = false;
-//                relocalizeTimer.restart();
-//            }
-//        }
+        /*  relocalization isn't in the LL anymore
+        double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
+        limelight.updateRobotOrientation(orientationDeg);
+      // Check if it's the first run OR if the timer is done
+        if (relocalizeTimer.isDone() || firstRelocalization) {
+            boolean success = relocalize();
+            if (success) {
+                firstRelocalization = false;
+                relocalizeTimer.restart();
+            }
+        }
+         */
     }
 
     public Pose getAprilTagPose() {
@@ -94,6 +95,7 @@ public class Vision extends SubsystemBase {
         return new Pose();
     }
 
+    @Deprecated
     public boolean relocalize() {
         if (pipeline == OBELISK_PIPELINE) return false;
 
@@ -134,8 +136,6 @@ public class Vision extends SubsystemBase {
             if (id == PGP_TAG_ID) return ArtifactPattern.PGP;
             if (id == PPG_TAG_ID) return ArtifactPattern.PPG;
         }
-
-
 
         return null;
     }
@@ -195,8 +195,16 @@ public class Vision extends SubsystemBase {
          * Fetches and stores artifacts from the latest Limelight Python output.
          * Always call this first before chaining any sort/filter/terminal methods.
          */
+
         public ArtifactList fetch() {
+            artifacts.clear(); // this is called every poll (e.g. from WaitUntilCommand), so we must not accumulate stale results
             if (llResult == null) return this;
+
+            long now = System.nanoTime();
+            double dt = previousFetchTimeNanos < 0 ? -1 : (now - previousFetchTimeNanos) / 1e9;
+
+            List<Artifact> freshArtifacts = new ArrayList<>();
+
             double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
             for (int i = 0; i < count * 2; i += 2) {
@@ -204,8 +212,15 @@ public class Vision extends SubsystemBase {
                 double ty = output[2 + i];
                 double ta = output[3 + i];
                 Pose absPose = getAbsolutePosition(tx, ty);
-                artifacts.add(new Artifact(absPose, ta));
+                freshArtifacts.add(new Artifact(absPose, ta));
             }
+
+            List<Artifact> trackedArtifacts = estimateVelocities(freshArtifacts, dt);
+
+            artifacts.addAll(trackedArtifacts);
+            previousArtifacts = trackedArtifacts;
+            previousFetchTimeNanos = now;
+
             return this;
         }
 
@@ -252,6 +267,11 @@ public class Vision extends SubsystemBase {
             return this;
         }
 
+        public ArtifactList filterStationary(double maxVelocity) {
+            artifacts.removeIf(a -> a.isMoving(maxVelocity));
+            return this;
+        }
+
         // ─── Terminals ───────────────────────────────────────────────────────────
 
         /** Returns the closest artifact, or {@code null} if the list is empty. */
@@ -275,6 +295,33 @@ public class Vision extends SubsystemBase {
 
         // ─── Geometry helpers ────────────────────────────────────────────────────
 
+        private List<Artifact> estimateVelocities(List<Artifact> freshArtifacts, double dt) {
+            if (dt <= 0 || previousArtifacts.isEmpty()) return freshArtifacts; // nothing to compare against; defaults to velocity 0
+
+            List<Artifact> tracked = new ArrayList<>(freshArtifacts.size());
+            for (Artifact artifact : freshArtifacts) {
+                double bestDist = Double.MAX_VALUE;
+                for (Artifact prev : previousArtifacts) {
+                    double dist = Math.hypot(
+                            artifact.getArtifactPose().getX() - prev.getArtifactPose().getX(),
+                            artifact.getArtifactPose().getY() - prev.getArtifactPose().getY()
+                    );
+
+                    if (dist < bestDist) bestDist = dist;
+                }
+
+                if (bestDist <= MAX_ARTIFACT_MATCH_DISTANCE) {
+                    artifact.setVelocity(bestDist / dt);
+                }
+
+                tracked.add(artifact);
+            }
+
+            return tracked;
+        }
+
+
+
         private double getDistance(double ty) {
             double angleGoalRad = Math.toRadians(LIMELIGHT_MOUNT_ANGLE + ty);
             return (ARTIFACT_HEIGHT_FROM_FLOOR - LENS_HEIGHT_INCHES) / Math.tan(angleGoalRad);
@@ -283,15 +330,13 @@ public class Vision extends SubsystemBase {
         private Pose getRelativePose(double distance, double tx) {
             double theta = Math.toRadians(tx);
 
-            //double deltaX = (distance + X_OFFSET_INCHES) * Math.cos(theta);
             double deltaX = distance * Math.cos(theta) + X_OFFSET_INCHES;
-            //double deltaY = (distance + Y_OFFSET_INCHES) * Math.sin(theta);
             double deltaY = -distance * Math.sin(theta) + Y_OFFSET_INCHES;
 
-            Pose pose  = new Pose(deltaX, deltaY, 0);
-            //OpModeManager.getActiveOpMode().telemetry.addData("Relative", pose.toString());
-
-            return pose;
+            return new Pose(
+                    deltaX,
+                    deltaY
+            );
         }
 
         private Pose getAbsolutePosition(Pose relativePose) {
@@ -338,5 +383,4 @@ public class Vision extends SubsystemBase {
             return artifactList;
         }
     }
-
 }
