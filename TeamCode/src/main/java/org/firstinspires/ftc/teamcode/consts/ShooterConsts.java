@@ -4,8 +4,8 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class ShooterConsts {
-    public static double LOWER_RANGE_BUFFER = 0;
-    public static double UPPER_RANGE_BUFFER = 0;
+    public static double LOWER_RANGE_BUFFER = 0.1;
+    public static double UPPER_RANGE_BUFFER = 0.1;
     public static double INCH_TO_METERS = 0.0254;
     public static double SHOT_LATENCY = 0;
     public static double SHOT_LATENCY_TURRET= 0;
