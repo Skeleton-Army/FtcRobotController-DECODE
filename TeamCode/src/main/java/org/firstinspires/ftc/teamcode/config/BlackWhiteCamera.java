@@ -1,24 +1,27 @@
 package org.firstinspires.ftc.teamcode.config;
 
+import com.acmerobotics.dashboard.config.Config;
+
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
 
+@Config
 public class BlackWhiteCamera {
 
     public static double offsetX_turret = 0; // 174.5mm
     public static double offsetY_turret = 6.87007874 + ShooterConfig.TURRET_OFFSET_X;
     public static double offsetZ = 12.38189; //314.5 mm
     public static double pitchAngle = 15;
-    public static Position relativePos = new Position(DistanceUnit.MM, -44.294, 222.429, 235.137, 0);
+    public static Position relativePos = new Position(DistanceUnit.MM, 179.081, -149.126, 158.1635, 0);
     //public static Position relativePos = new Position(DistanceUnit.MM, -44.294 - 25, 222.429 - 50, 235.137, 0);
 
     // --- Per-Tag Localization Bias (robot-relative frame) ---
     // X: positive = shift correction to the robot's LEFT, negative = RIGHT
     // Y: positive = shift correction BACKWARD (front of robot), negative = FRONT
-    public static double blueTagBiasX = 1.3; // tag id 20
-    public static double blueTagBiasY = 1;
-    public static double redTagBiasX = -1.3;  // tag id 24
-    public static double redTagBiasY = -0.2;
+    public static double blueTagBiasX = -1.3; // tag id 20
+    public static double blueTagBiasY = -0.2;
+    public static double redTagBiasX = 1.3;  // tag id 24
+    public static double redTagBiasY = 0.2;
 
     public static int WIDTH = 1280;
     public static int HEIGHT = 720;
