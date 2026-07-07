@@ -13,14 +13,14 @@ public class ShooterConfig {
     public static boolean FLYWHEEL2_INVERTED = false;
     public static double FLYWHEEL_GEAR_RATIO = 51.0 / 52.0; // Flywheel teeth / Motor teeth
     public static int RPM_REACHED_THRESHOLD = 200;
-    public static double FLYWHEEL_KP = 0.04;
-    public static double FLYWHEEL_KP_DOWN = 0.05;
+    public static double FLYWHEEL_KP = 0.06;
+    public static double FLYWHEEL_KP_DOWN = 0.06;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
-    public static double FLYWHEEL_KS = 1;
-    public static double FLYWHEEL_KA = 0.004;
+    public static double FLYWHEEL_KS = 1.2;
+    public static double FLYWHEEL_KA = 0.008;
     public static double FLYWHEEL_KA_DOWN = 0.008;
-    public static double FLYWHEEL_KV = 0.0047;
+    public static double FLYWHEEL_KV = 0.0049;
     public static double BRAKE_ENTRY_THRESHOLD = -100; // Error must be THIS negative to start braking
     public static double BRAKE_EXIT_THRESHOLD = -50;   // Error must get back up to THIS to stop braking
     public static double FLYWHEEL_DELAY_SEC = 0.02; // ~2 control loops @ 20ms
@@ -44,8 +44,8 @@ public class ShooterConfig {
     public static double TURRET_DELAY = 0.02;
     public static double TURRET_MIN_VOLTAGE = 0.2;
     public static double TURRET_KP = 15;
-    public static double TURRET_KI = 1;
-    public static double TURRET_KD = 0.7;
+    public static double TURRET_KI = 0;
+    public static double TURRET_KD = 0.85;
     public static double TURRET_KS = 0.5;
     public static double TURRET_KS_CW_0    = 0;  public static double TURRET_KS_CCW_0    = 0;  // 0–1000 RPM
     public static double TURRET_KS_CW_1000 = 0;  public static double TURRET_KS_CCW_1000 = 0;  // 1000–2000 RPM
@@ -62,7 +62,7 @@ public class ShooterConfig {
     public static double TURRET_KP_CCW = 0.7;
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
-    public static double TURRET_KV = 3;
+    public static double TURRET_KV = 2.3;
     public static double TURRET_KA = 0;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
