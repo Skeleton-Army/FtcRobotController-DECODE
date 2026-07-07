@@ -96,6 +96,7 @@ public class AutonomousApp extends ComplexOpMode {
     private Pose farDriveBack;
     private Pose nearDriveBack;
     private Pose sortingPose;
+    private double lastLoopTime = 0;
 
     private boolean isSorting = false;
     private ArtifactPattern detectedPattern = ArtifactPattern.PPG; // fallback default
@@ -245,7 +246,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose farSpike1End = getRelative(new Pose(9, 8));
         Pose spike2End = getRelative(new Pose(9, 36));
         Pose spike3End = getRelative(new Pose(9, 59));
-        Pose spike4End = getRelative(new Pose(15, 83.663));
+        Pose spike4End = getRelative(new Pose(17, 83.663));
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
@@ -406,8 +407,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(50.536, 57.712)),
-                                getRelative(new Pose(42.630, 57.712)),
+                                getRelative(new Pose(50.536, 60)),
+                                getRelative(new Pose(42.630, 60)),
                                 spike3End
                         )
                 )
@@ -604,11 +605,16 @@ public class AutonomousApp extends ComplexOpMode {
 
     @Override
     public void run() {
+        double currentTime = matchTime.getElapsed();
+        double loopTimeMs = (currentTime - lastLoopTime) * 1000.0;
+        lastLoopTime = currentTime;
+
         double voltage = voltageSensor.getVoltage();
 
         shooter.updateVoltage(voltage);
         if (!isSorting) shooter.setUpdateFlywheel(drive.distanceFromLaunchZone() < 40);
 
+        telemetry.addData("loop times", loopTimeMs);
         telemetry.addData("Robot Pedro X", follower.getPose().getX());
         telemetry.addData("Robot Pedro Y", follower.getPose().getY());
         telemetry.addData("Robot Pedro Heading (deg)", Math.toDegrees(follower.getPose().getHeading()));
@@ -625,10 +631,11 @@ public class AutonomousApp extends ComplexOpMode {
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
+        Logger.recordOutput("Loop times", loopTimeMs);
         Logger.recordOutput("Robot Pose", robotPose);
         Logger.recordOutput("Voltage", voltage);
         Logger.recordOutput("Shooter/Flywheel RPM", shooter.filteredRPM);
-        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
+        Logger.recordOutput("Shooter/Flywheel Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
         Logger.recordOutput("Shooter/Flywheel Target", shooter.getTargetRPM());
         Logger.recordOutput("Shooter/Hood Raw Position", shooter.getRawHoodPosition());
         Logger.recordOutput("Turret/Turret Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
@@ -708,9 +715,11 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
-                collect(4),
+                collect(4)
+                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 100)),
                 returnAndScore(4, false),
-                collect(3), // Collect spike 3 and shoot
+                collect(3)
+                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 100)),
                 returnAndScore(4, false), // Spike 4 so it goes in a straight line
                 closeCycle(),
                 closeCycle(),
@@ -751,8 +760,13 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()).withTimeout(1000), null),
-                new WaitUntilCommand(transfer.threeArtifactsDetected(intake::isCollecting, 250))
-                        .withTimeout(2000),
+                new WaitCommand(300),
+                new InstantCommand(() -> {
+                    follower.startTeleOpDrive();
+                    follower.setTeleOpDrive(0.1, 0, 0, true);
+                }),
+                new WaitUntilCommand(transfer.threeArtifactsDetected(() -> true, 100))
+                        .withTimeout(1500),
                 followAndShoot(this::nearDriveBack)
         );
     }
@@ -764,8 +778,8 @@ public class AutonomousApp extends ComplexOpMode {
                 // Go to LOADING ZONE, collect, and go back to shoot
                 new InstantCommand(intake::collect),
                 new FollowPathCommand(follower, path)
-                        .withTimeout(2500)
-                        .interruptOn(transfer.threeArtifactsDetected(intake::isCollecting, 250)),
+                        .withTimeout(2000)
+                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 100)),
                 returnAndScore(1, false)
         );
     }
