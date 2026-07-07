@@ -79,6 +79,9 @@ dependencies {
 
     implementation 'org.psilynx.psikit:core:0.1.0-beta2'
     implementation 'org.psilynx.psikit:ftc:0.1.0-beta2'
+
+    compileOnly "org.projectlombok:lombok:1.18.46"
+    annotationProcessor 'org.projectlombok:lombok:1.18.46'
 }
 
 tasks.register('adbDisconnect', Exec) {

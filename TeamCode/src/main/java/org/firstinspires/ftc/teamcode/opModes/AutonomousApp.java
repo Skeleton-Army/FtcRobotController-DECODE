@@ -37,6 +37,7 @@ import com.skeletonarmy.marrow.settings.Settings;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
+import org.firstinspires.ftc.teamcode.commands.GoToArtifactCommand;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
@@ -110,8 +111,20 @@ public class AutonomousApp extends ComplexOpMode {
                                 farDriveBack
                         )
                 )
-                .setTangentHeadingInterpolation()
-                .setReversed()
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.8,
+                                        HeadingInterpolator.tangent.reverse()
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.8,
+                                        1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
+                                )
+                        )
+                )
                 .setGlobalDeceleration()
                 .build();
     }
@@ -250,7 +263,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
-        farDriveBack = getRelative(new Pose(57, 18));
+        farDriveBack = getRelative(new Pose(60, 25));
         nearDriveBack = getRelative(new Pose(55, 80));
         sortingPose = getRelative(new Pose(30, 113));
 
@@ -535,7 +548,7 @@ public class AutonomousApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
-        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.OBELISK_PIPELINE);
+        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.DETECTION_PIPELINE);
 
         setupPaths();
 
@@ -772,13 +785,11 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command farCycle() {
-        PathChain path = pickupOrder.contains(2) ? getFarCyclePath() : farPaths[0];
-
         return new SequentialCommandGroup(
                 // Go to LOADING ZONE, collect, and go back to shoot
                 new InstantCommand(intake::collect),
-                new FollowPathCommand(follower, path)
-                        .withTimeout(2000)
+                new GoToArtifactCommand(follower, vision, alliance)
+                        .withTimeout(1500)
                         .interruptOn(transfer.threeArtifactsDetected(() -> true, 100)),
                 returnAndScore(1, false)
         );
