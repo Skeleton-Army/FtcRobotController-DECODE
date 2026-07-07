@@ -779,13 +779,9 @@ public class AutonomousApp extends ComplexOpMode {
     private Command initialScore() {
         PathChain path = (startingPosition == StartingPosition.FAR) ? initialFarPath : initialNearPath;
 
-        return new SequentialCommandGroup(
-                new InstantCommand(() -> shooter.setSOTMEnabled(startingPosition == StartingPosition.CLOSE)),
-                new ParallelCommandGroup(
-                        new FollowPathCommand(follower, path),
-                        shoot()
-                ),
-                new InstantCommand(() -> shooter.setSOTMEnabled(false))
+        return new ParallelCommandGroup(
+                new FollowPathCommand(follower, path),
+                shoot()
         );
     }
 
