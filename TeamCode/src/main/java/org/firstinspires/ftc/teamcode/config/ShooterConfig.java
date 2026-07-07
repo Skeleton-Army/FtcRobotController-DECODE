@@ -34,7 +34,7 @@ public class ShooterConfig {
     public static boolean useGyroCompensatoin = false;
     public static String TURRET_NAME = "turret";
     public static GoBILDA TURRET_MOTOR = GoBILDA.RPM_1150;
-    public static boolean TURRET_INVERTED = true;
+    public static boolean TURRET_INVERTED = false;
     public static double TURRET_POSITION_TOLERANCE = Math.toRadians(0.3);
     public static double TURRET_VELOCITY_TOLERANCE = Math.toRadians(30);
     public static double TURRET_IZONE = Math.toRadians(30);
@@ -66,7 +66,7 @@ public class ShooterConfig {
     public static double TURRET_KA = 0;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
-    public static double GEAR_RATIO = (double) 286 / 20;
+    public static double GEAR_RATIO = (double) 111 / 11;
     public static double TURRET_OFFSET_X = -0.0065; // In meters, Positive = Front
     public static double TURRET_OFFSET_Y = 0; // In meters, Positive = Left
     public static boolean TURRET_WRAP = true;

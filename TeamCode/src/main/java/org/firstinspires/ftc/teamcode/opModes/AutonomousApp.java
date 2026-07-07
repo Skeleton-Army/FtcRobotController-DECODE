@@ -296,7 +296,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                nearDriveBack
+                                getRelative(new Pose(55, 84.5))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -619,9 +619,6 @@ public class AutonomousApp extends ComplexOpMode {
         telemetry.addData("reachedAngle", shooter.reachedAngle());
         telemetry.addData("canShoot", shooter.getCanShoot());
         telemetry.addData("In Zone", drive.isInsideLaunchZonePredictive());
-        telemetry.addData("isArtifactInIntake", transfer.isArtifactInIntake());
-        telemetry.addData("isArtifactDetected", transfer.isArtifactDetected());
-        telemetry.addData("three artifacts detected", transfer.threeArtifactsDetected(intake::isCollecting, 250).getAsBoolean());
 
         final double inchesToMeters = 39.37;
 
@@ -641,9 +638,6 @@ public class AutonomousApp extends ComplexOpMode {
         Logger.recordOutput("reachedAngle", shooter.reachedAngle());
         Logger.recordOutput("canShoot", shooter.getCanShoot());
         Logger.recordOutput("In Zone", drive.isInsideLaunchZonePredictive());
-        Logger.recordOutput("isArtifactInIntake", transfer.isArtifactInIntake());
-        Logger.recordOutput("isArtifactDetected", transfer.isArtifactDetected());
-        Logger.recordOutput("three artifacts detected", transfer.threeArtifactsDetected(intake::isCollecting, 250).getAsBoolean());
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
         telemetry.update();

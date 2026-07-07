@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.Servo;
 
+import org.firstinspires.ftc.teamcode.config.KickstandConfig;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.config.TransferConfig;
 
@@ -44,6 +45,15 @@ public class ServoTest extends OpMode {
                 }
                 break;
 
+            case "kickstand":
+                if (gamepad1.crossWasPressed()) {
+                    servo.setPosition(KickstandConfig.SERVO_MAX);
+                }
+
+                if (gamepad1.squareWasPressed()) {
+                    servo.setPosition(KickstandConfig.SERVO_MIN);
+                }
+                break;
             case "hood":
             default:
                 if (gamepad1.crossWasPressed()) {
