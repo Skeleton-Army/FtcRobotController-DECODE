@@ -15,11 +15,12 @@ import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
 public class Transfer extends SubsystemBase {
     private static final int SENSOR_FAIL_THRESHOLD = 5;
-    private static final long EMPTY_POLL_COOLDOWN = 100;
+    private static final long EMPTY_POLL_COOLDOWN = 20;
 
     private final ServoEx kicker;
     private final ServoEx stopper;
@@ -116,34 +117,37 @@ public class Transfer extends SubsystemBase {
     }
 
     public BooleanSupplier threeArtifactsDetected(BooleanSupplier isCollecting, long thresholdMs) {
+        AtomicLong localDetectedTime = new AtomicLong(0);
+        AtomicLong lastEmptyCheckTime = new AtomicLong(0);
+
         return () -> {
             if (!isCollecting.getAsBoolean()) {
-                localDetectedTime = 0;
+                localDetectedTime.set(0);
                 return false;
             }
 
             long currentTime = System.currentTimeMillis();
 
-            if (localDetectedTime == 0) {
+            if (localDetectedTime.get() == 0) {
                 // Only poll I2C if the cooldown has expired
-                if (currentTime - lastEmptyCheckTime >= EMPTY_POLL_COOLDOWN) {
-                    lastEmptyCheckTime = currentTime;
+                if (currentTime - lastEmptyCheckTime.get() >= EMPTY_POLL_COOLDOWN) {
+                    lastEmptyCheckTime.set(currentTime);
 
                     if (isArtifactInIntake() && isArtifactDetected()) {
-                        localDetectedTime = currentTime;
+                        localDetectedTime.set(currentTime);
                     }
                 }
                 return false;
             }
 
-            long elapsed = currentTime - localDetectedTime;
+            long elapsed = currentTime - localDetectedTime.get();
 
             if (elapsed >= thresholdMs) {
                 if (isArtifactInIntake() && isArtifactDetected()) {
                     return true;
                 } else {
-                    localDetectedTime = 0;
-                    lastEmptyCheckTime = currentTime;
+                    localDetectedTime.set(0);
+                    lastEmptyCheckTime.set(currentTime);
                     return false;
                 }
             }

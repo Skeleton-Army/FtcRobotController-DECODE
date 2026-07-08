@@ -233,7 +233,10 @@ public class TeleOpApp extends ComplexOpMode {
                     .whenPressed(this::resetPoseToNearestCorner);
         }
 
-        new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
+        new Trigger(transfer.threeArtifactsDetected(
+                () -> gamepadEx1.getButton(GamepadKeys.Button.RIGHT_BUMPER),
+                200
+        ))
                 .whenActive(new InstantCommand(() -> gamepad1.rumble(300)));
 
         // Cancel shooting when turret wraps around
