@@ -48,11 +48,18 @@ public class Constants {
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.FORWARD)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
 
+    public static Follower createPinpointFollower(HardwareMap hardwareMap) {
+        return new FollowerBuilder(followerConstants, hardwareMap)
+                .pathConstraints(pathConstraints)
+                .mecanumDrivetrain(driveConstants)
+                .pinpointLocalizer(localizerConstants)
+                .build();
+    }
+
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
                 .mecanumDrivetrain(driveConstants)
-                //.pinpointLocalizer(localizerConstants)
                 .setLocalizer(new FusionLocalizer(new PinpointLocalizer(hardwareMap, localizerConstants), KalmanConfig.initialCovariance, KalmanConfig.processVariance, KalmanConfig.measurementVariance, KalmanConfig.bufferSize))
                 .build();
     }

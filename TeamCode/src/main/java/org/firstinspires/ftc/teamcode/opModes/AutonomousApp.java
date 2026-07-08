@@ -552,7 +552,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Settings.set("alliance", alliance);
 
-        follower = FollowerManager.createFollower(hardwareMap);
+        follower = FollowerManager.createPinpointFollower(hardwareMap);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
