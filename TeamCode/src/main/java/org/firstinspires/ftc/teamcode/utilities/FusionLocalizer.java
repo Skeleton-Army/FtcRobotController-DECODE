@@ -1,11 +1,20 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
+import static com.pedropathing.ftc.PoseConverter.poseToPose2D;
+
+import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.MathFunctions;
 import com.pedropathing.math.Matrix;
 import com.pedropathing.math.Vector;
+import com.skeletonarmy.marrow.OpModeManager;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+
+import java.util.Map;
 import java.util.NavigableMap;
 import java.util.TreeMap;
 
@@ -31,6 +40,7 @@ public class FusionLocalizer implements Localizer {
     private final Localizer deadReckoning;
     private Pose currentRawPose;
     private Pose currentPosition;
+    private Pose currentMeasurementPosition;
     private Pose currentVelocity;
     private Pose currentRelativeTransform;
     private Matrix P; //State Covariance
@@ -151,6 +161,36 @@ public class FusionLocalizer implements Localizer {
         addMeasurement(measuredPose, timestamp, null);
     }
 
+    /**
+     * Scans the history buffer to find the timestamp of the pose closest to the provided measurement.
+     * This is useful for empirical latency calibration.
+     * * @param measuredPose The pose returned by the camera.
+     * @return The nanoTime timestamp of the best matching historical pose, or -1 if the buffer is empty.
+     */
+    public long findBestMatchingTimestamp(Pose measuredPose) {
+        if (history.isEmpty()) return -1L;
+
+        long bestTimestamp = -1L;
+        double minDistance = Double.MAX_VALUE;
+
+        for (Map.Entry<Long, KalmanState> entry : history.entrySet()) {
+            Pose historyPose = entry.getValue().pose;
+
+            // Calculate spatial distance between the historical pose and the vision pose
+            double distance = Math.hypot(
+                    measuredPose.getX() - historyPose.getX(),
+                    measuredPose.getY() - historyPose.getY()
+            );
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                bestTimestamp = entry.getKey();
+            }
+        }
+
+        return bestTimestamp;
+    }
+
     public void addMeasurement(Pose measuredPose, long timestamp, Pose measurementVariance) {
         long tStart = System.nanoTime();
         lastPropagationCount = 0;
@@ -175,9 +215,28 @@ public class FusionLocalizer implements Localizer {
         boolean measY = !Double.isNaN(measuredPose.getY());
         boolean measH = !Double.isNaN(measuredPose.getHeading());
 
+        // Calculate differences between Vision (AprilTag) and Interpolated Odometry
         double dx = measX ? measuredPose.getX() - interpPose.getX() : 0;
         double dy = measY ? measuredPose.getY() - interpPose.getY() : 0;
         double dh = measH ? MathFunctions.normalizeAngleSigned(measuredPose.getHeading() - interpPose.getHeading()) : 0;
+
+        // --- Debug Telemetry for Latency/Calibration ---
+        if (OpModeManager.getTelemetry() != null) {
+            OpModeManager.getTelemetry().addData("Kalman/Delta X (Tag - Interp)", dx);
+            OpModeManager.getTelemetry().addData("Kalman/Delta Y (Tag - Interp)", dy);
+            OpModeManager.getTelemetry().addData("Kalman/Delta H (Tag - Interp)",dh);
+            // Optional: Log how old the measurement is in milliseconds
+            double latencyMs = (System.nanoTime() - timestamp) / 1e6;
+            OpModeManager.getTelemetry().addData("Kalman/Measurement Latency", "%.1f ms", latencyMs);
+
+
+        }
+
+        Pose2D interpPoseDebug = poseToPose2D(interpPose, FTCCoordinates.INSTANCE);
+
+        OpModeManager.getTelemetry().addData("Kalman/interp pose x", -interpPoseDebug.getX(DistanceUnit.INCH));
+        OpModeManager.getTelemetry().addData("Kalman/interp pose y", -interpPoseDebug.getY(DistanceUnit.INCH));
+        OpModeManager.getTelemetry().addData("Kalman/interp pose heading", interpPoseDebug.getHeading(AngleUnit.RADIANS) - Math.PI);
 
         // --- Hard distance gate ---
         double translationError = Math.hypot(dx, dy);

@@ -94,6 +94,7 @@ public class TeleOpApp extends ComplexOpMode {
     private TimerEx matchTime;
     private TimerEx overrideTimer;
 
+    private long lastCalculatedSnapshotTs = -1;
     private boolean isOverrideActive = false;
 
     private double lastLoopTime = 0;
@@ -321,39 +322,60 @@ public class TeleOpApp extends ComplexOpMode {
     public void calculateCameraLatencyEmpirically() {
         if (lastKnownSnapshot == null) return;
 
-        Pose2D apriltagPose2D = PoseConverter.poseToPose2D(lastKnownSnapshot.pose, FTCCoordinates.INSTANCE);
-        Pose2D pinpointPose2D = PoseConverter.poseToPose2D(((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose(), FTCCoordinates.INSTANCE);
+        // 1. THE FIX: Only run on fresh frames.
+        // If we've already calculated latency for this exact snapshot, skip it.
+        if (lastKnownSnapshot.timestampNanos == lastCalculatedSnapshotTs) {
+            telemetry.addData("[TUNER] Status", "Waiting for fresh tag...");
+            return;
+        }
 
-        Pose pinpoint = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getVelocity();
+        // 2. THE FIX: Ignore default/garbage poses if the pipeline spits out (0,0)
+        if (Math.abs(lastKnownSnapshot.pose.getX()) < 0.01 && Math.abs(lastKnownSnapshot.pose.getY()) < 0.01) {
+            telemetry.addData("[TUNER] Status", "Ignoring empty (0,0) pose");
+            return;
+        }
 
-        double velX = pinpoint.getX();
-        double velY = pinpoint.getY();
-        double netVelocity = Math.hypot(velX, velY);
+        Pose pinpointVelocity = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getVelocity();
+        double netVelocity = Math.hypot(pinpointVelocity.getX(), pinpointVelocity.getY());
 
-        // Filter: Is the robot traveling fast? (e.g., > 18 inches/second)
+        // High speed is required so that historical poses are spatially distinct
         if (netVelocity > 18.0) {
             if (!wasMovingFast) {
-                // The robot just crossed the speed threshold; start the timer
                 highSpeedStartNanos = System.nanoTime();
                 wasMovingFast = true;
             }
 
-            // Calculate how long we have maintained this high speed
             double timeSpentFastSeconds = (System.nanoTime() - highSpeedStartNanos) / 1e9;
 
-            // ONLY log data after maintaining high speed for 0.4 seconds (ensures kickoff is finished)
-            if (timeSpentFastSeconds > 0.4 && aprilTagPipeline.getApriltagDetection() != null) {
+            // ONLY calculate after maintaining high speed for 0.4 seconds
+            if (timeSpentFastSeconds > 0.4) {
+                FusionLocalizer fusionLocalizer = (FusionLocalizer) follower.getPoseTracker().getLocalizer();
 
-                double deltaX = (-pinpointPose2D.getX(DistanceUnit.INCH)) - (-apriltagPose2D.getX(DistanceUnit.INCH));
-                double deltaY = (-pinpointPose2D.getY(DistanceUnit.INCH)) - (-apriltagPose2D.getY(DistanceUnit.INCH));
-                positionGap = Math.hypot(deltaX, deltaY);
+                // Find the timestamp in the odometry buffer that closest matches where the camera thinks we are
+                long bestOdometryMatchNanos = fusionLocalizer.findBestMatchingTimestamp(lastKnownSnapshot.pose);
 
-                calculatedLatencySeconds = positionGap / netVelocity;
-                calculatedLatencyMillis = calculatedLatencySeconds * 1000.0;
+                if (bestOdometryMatchNanos != -1L) {
+                    // Mark as calculated so we don't recalculate on this same frame
+                    lastCalculatedSnapshotTs = lastKnownSnapshot.timestampNanos;
 
-                telemetry.addData("[TUNER] Status", "STEADY CRUISE - Calculating");
-                telemetry.addData("[TUNER] Position Gap (in)", positionGap);
-                telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
+                    // True end-to-end latency: Time we are processing the frame (now) minus the time the robot was physically there
+                    long latencyNanos = System.nanoTime() - bestOdometryMatchNanos;
+                    double currentCalcMillis = latencyNanos / 1e6;
+
+                    // 3. THE FIX: Sanity check. If the match is completely wild (negative or > 1000ms), throw it out.
+                    if (currentCalcMillis < 0 || currentCalcMillis > 1000) {
+                        telemetry.addData("[TUNER] Status", "Match out of bounds (ignoring)");
+                        return;
+                    }
+
+                    calculatedLatencyMillis = currentCalcMillis;
+                    calculatedLatencySeconds = latencyNanos / 1e9;
+
+                    telemetry.addData("[TUNER] Status", "STEADY CRUISE - Calculating");
+                    telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
+                } else {
+                    telemetry.addData("[TUNER] Status", "History buffer empty");
+                }
             } else {
                 telemetry.addData("[TUNER] Status", "Waiting for speed to stabilize...");
             }
@@ -479,6 +501,8 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         updateKFApriltagReading();
+
+        calculateCameraLatencyEmpirically();
 
         double voltage = voltageSensor.getVoltage();
 
