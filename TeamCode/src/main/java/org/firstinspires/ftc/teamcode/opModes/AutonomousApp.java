@@ -1,8 +1,6 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
-import static org.firstinspires.ftc.teamcode.consts.GoalPositions.CLOSE_AUTO_BLUE_GOAL;
-import static org.firstinspires.ftc.teamcode.consts.GoalPositions.CLOSE_AUTO_RED_GOAL;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -230,7 +228,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(13.5, 59))
+                                getRelative(new Pose(13.5, 58))
                         )
                 )
                 .setHeadingInterpolation(
@@ -243,7 +241,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 new HeadingInterpolator.PiecewiseNode(
                                         0.5,
                                         1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(148)))
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(155)))
                                 )
                         )
                 )
@@ -264,7 +262,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
         farDriveBack = getRelative(new Pose(60, 25));
-        nearDriveBack = getRelative(new Pose(55, 80));
+        nearDriveBack = getRelative(new Pose(60, 75));
         sortingPose = getRelative(new Pose(30, 113));
 
         nearPathsReturn[0] = this::nearDriveBack;
@@ -295,7 +293,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                follower.getPose(),
+                                follower::getPose,
                                 farDriveBack
                         )
                 )
@@ -309,14 +307,14 @@ public class AutonomousApp extends ComplexOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierLine(
-                                follower.getPose(),
-                                getRelative(new Pose(55, 84.5))
+                                follower::getPose,
+                                getRelative(new Pose(60, 80))
                         )
                 )
-                .setConstantHeadingInterpolation(
-                        getRelative(Math.toRadians(0))
+                .setLinearHeadingInterpolation(
+                        getRelative(Math.toRadians(270)),
+                        getRelative(Math.toRadians(180))
                 )
-                .setReversed()
                 .setGlobalDeceleration()
                 .build();
 
@@ -542,7 +540,6 @@ public class AutonomousApp extends ComplexOpMode {
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
         shooter.setSOTMEnabled(false);
-        if (startingPosition == StartingPosition.CLOSE) shooter.setGoalPose(CLOSE_AUTO_BLUE_GOAL, CLOSE_AUTO_RED_GOAL);
         if (startingPosition == StartingPosition.FAR) shooter.setZoneCalculator(LaunchZone.FAR);
 
         intake = new Intake(hardwareMap);
@@ -728,16 +725,16 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
-                collect(4)
-                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 100)),
-                returnAndScore(4, false),
                 collect(3)
-                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 100)),
+                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 300)),
                 returnAndScore(4, false), // Spike 4 so it goes in a straight line
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
+                collect(4)
+                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 300)),
+                returnAndScore(4, false),
                 driveForward()
         );
     }
@@ -773,13 +770,13 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()).withTimeout(1000), null),
-                new WaitCommand(300),
+                new WaitCommand(200),
                 new InstantCommand(() -> {
                     follower.startTeleOpDrive();
                     follower.setTeleOpDrive(0.1, 0, 0, true);
                 }),
-                new WaitUntilCommand(transfer.threeArtifactsDetected(() -> true, 100))
-                        .withTimeout(1500),
+                new WaitUntilCommand(transfer.threeArtifactsDetected(() -> true, 300))
+                        .withTimeout(1800),
                 followAndShoot(this::nearDriveBack)
         );
     }
@@ -790,7 +787,7 @@ public class AutonomousApp extends ComplexOpMode {
                 new InstantCommand(intake::collect),
                 new GoToArtifactCommand(follower, vision, alliance)
                         .withTimeout(1500)
-                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 100)),
+                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 300)),
                 returnAndScore(1, false)
         );
     }
@@ -799,8 +796,10 @@ public class AutonomousApp extends ComplexOpMode {
         PathChain path = (startingPosition == StartingPosition.FAR) ? initialFarPath : initialNearPath;
 
         return new ParallelCommandGroup(
+                new InstantCommand(() -> shooter.setSOTMEnabled(startingPosition == StartingPosition.CLOSE)),
                 new FollowPathCommand(follower, path),
-                shoot()
+                shoot(),
+                new InstantCommand(() -> shooter.setSOTMEnabled(false))
         );
     }
 
@@ -871,7 +870,6 @@ public class AutonomousApp extends ComplexOpMode {
                 new DeferredCommand(() -> new FollowPathCommand(follower, pathSupplier.get()), null),
                 new SequentialCommandGroup(
                         new WaitUntilCommand(drive::isInsideLaunchZonePredictive),
-                        new InstantCommand(intake::stop),
                         shootCommand,
                         new InstantCommand(follower::breakFollowing)
                 )
