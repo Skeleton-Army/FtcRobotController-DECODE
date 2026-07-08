@@ -264,7 +264,7 @@ public class AutonomousApp extends ComplexOpMode {
 
         Pose openGateEnd = getRelative(new Pose(21, 72));
 
-        farDriveBack = getRelative(new Pose(60, 25));
+        farDriveBack = getRelative(new Pose(60, 22.5));
         nearDriveBack = getRelative(new Pose(60, 75));
         sortingPose = getRelative(new Pose(30, 113));
 
