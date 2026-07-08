@@ -1,205 +1,269 @@
 package org.firstinspires.ftc.teamcode.utilities;
 
+import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.ftc.localization.constants.PinpointConstants;
 import com.pedropathing.ftc.localization.localizers.PinpointLocalizer;
+import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.localization.Localizer;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.Vector;
 import com.pedropathing.util.NanoTimer;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
 import com.qualcomm.hardware.limelightvision.LLResult;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.config.LimelightConfig;
 
-/**
- * KalmanPinpointLocalizer (MegaTag2 Edition)
- * * Fuses Pinpoint Odometry with Limelight MegaTag2 Vision.
- * * LOGIC:
- * 1. PREDICTION: Tracks robot motion using Pinpoint (X, Y, Heading).
- * 2. SYNC: Sends Pinpoint Heading to Limelight to enable MegaTag2.
- * 3. CORRECTION: Fuses Vision X/Y with Odometry X/Y.
- * (Heading is NOT corrected by vision, as Pinpoint is more reliable).
- */
-public class KalmanPinpointLocalizer extends PinpointLocalizer {
+import java.util.Objects;
 
-    // --- TUNING VALUES ---
-    public static double ODOMETRY_SIGMA_X = 0.02; // Drift per inch
-    public static double ODOMETRY_SIGMA_Y = 0.02;
-    public static double ODOMETRY_SIGMA_H = 0.005;
+public class KalmanPinpointLocalizer implements Localizer {
 
-    public static double STATIC_SIGMA_X = 0.005; // Drift per sqrt(second)
-    public static double STATIC_SIGMA_Y = 0.005;
-    public static double STATIC_SIGMA_H = 0.001;
+    // --- Values from your 500-sample test ---
+    public static double STATIC_SIGMA_X = 0.00846;
+    public static double STATIC_SIGMA_Y = 0.00009;
 
-    public static double VISION_VARIANCE_X = 2.0; // Vision Uncertainty (Inches)
-    public static double VISION_VARIANCE_Y = 2.0;
+    // --- Adaptive Vision Coefficients (Used for sigma_limelight^2) ---
+    public static double VISION_BASE_VARIANCE = 0;
+    public static double VISION_DISTANCE_COEFF_X = 0.002997;
+    public static double VISION_DISTANCE_COEFF_Y = 0.002360;
+    public static double VISION_VELOCITY_COEFF_X = 0.2;
+    public static double VISION_VELOCITY_COEFF_Y = 0.2;
 
-    // --- STATE VARIABLES ---
+
+    // State Variables (xd in your images)
+    private double driftX = 0;
+    private double driftY = 0;
+
+    // Uncertainty (P in your images)
     private double px = 0.001;
     private double py = 0.001;
 
-    // We maintain 'ph' (heading uncertainty) only for the prediction step
-    // effectively, but we won't use it for vision correction.
-    private double ph = 0.001;
-
-    private Pose fusedPose;
-    private Pose lastRawPose; // Tracks raw Pinpoint output for delta calculation
-
     private NanoTimer timer;
     private double lastTime;
-
     private final Limelight3A limelight;
+    private Pose fusedPose;
+    private double totalHeading;
+    private double previousHeading;
 
-    /**
-     * Constructor
-     */
-    public KalmanPinpointLocalizer(HardwareMap map, Limelight3A limelight, PinpointConstants constants, Pose setStartPose) {
-        super(map, constants, setStartPose);
-        this.limelight = limelight;
+    private Pose startPose;
+    private Pose currentVelocity;
+    private Pose pinpointPose;
+    private final PinpointConstants constants;
+    private GoBildaPinpointDriver odo;
 
-        // Start Limelight polling
-        this.limelight.pipelineSwitch(0);
+    public KalmanPinpointLocalizer(HardwareMap map, PinpointConstants constants, Pose setStartPose) {
+
+        odo = map.get(GoBildaPinpointDriver.class,constants.hardwareMapName);
+        odo.setOffsets(constants.forwardPodY, constants.strafePodX, constants.distanceUnit);
+
+        if(constants.yawScalar.isPresent()) {
+            odo.setYawScalar(constants.yawScalar.getAsDouble());
+        }
+
+        if(constants.customEncoderResolution.isPresent()) {
+            odo.setEncoderResolution(constants.customEncoderResolution.getAsDouble(), constants.distanceUnit);
+        } else {
+            odo.setEncoderResolution(constants.encoderResolution);
+        }
+
+        odo.setEncoderDirections(constants.forwardEncoderDirection, constants.strafeEncoderDirection);
+
+        setStartPose(setStartPose);
+        totalHeading = 0;
+        pinpointPose = startPose;
+        currentVelocity = new Pose();
+        previousHeading = setStartPose.getHeading();
+        this.constants = constants;
+
+        this.limelight = map.get(Limelight3A.class, LimelightConfig.LIMELIGHT_NAME);
+        this.limelight.pipelineSwitch(LimelightConfig.LIMELIGHT_INDEX);
         this.limelight.start();
 
-        // Initialize Poses
         this.fusedPose = setStartPose;
-
-        // Initialize Baseline for Deltas
-        super.update();
-        this.lastRawPose = super.getPose();
-
         timer = new NanoTimer();
         lastTime = timer.getElapsedTimeSeconds();
     }
 
-    /**
-     * MAIN LOOP
-     */
     @Override
     public void update() {
-        // --- 1. PREDICTION STEP (Odometry) ---
+        // --- 1. PREDICTION STEP ---
+        // xd = xd (drift remains same)
+        odo.update();
+        Pose rawPinpoint = PoseConverter.pose2DToPose(odo.getPosition(), PedroCoordinates.INSTANCE);
+        currentVelocity = new Pose(odo.getVelX(DistanceUnit.INCH), odo.getVelY(DistanceUnit.INCH), odo.getHeadingVelocity(AngleUnit.RADIANS.getUnnormalized()));
+        totalHeading += MathFunctions.getSmallestAngleDifference(rawPinpoint.getHeading(), previousHeading) * MathFunctions.getTurnDirection(previousHeading, rawPinpoint.getHeading());
+        previousHeading = rawPinpoint.getHeading();
+        pinpointPose = rawPinpoint;
 
-        // Get raw data from Pinpoint
-        super.update();
-        Pose currentRawPose = super.getPose();
-
-        // Calculate Delta (Movement)
-        double deltaX = currentRawPose.getX() - lastRawPose.getX();
-        double deltaY = currentRawPose.getY() - lastRawPose.getY();
-        double deltaH = MathFunctions.getSmallestAngleDifference(currentRawPose.getHeading(), lastRawPose.getHeading());
-
-        // Update Fused Pose (Prediction)
-        double predX = fusedPose.getX() + deltaX;
-        double predY = fusedPose.getY() + deltaY;
-        double predH = MathFunctions.normalizeAngle(fusedPose.getHeading() + deltaH);
-
-        // Update Uncertainty (P = P + Q)
-        double distanceTraveled = Math.hypot(deltaX, deltaY);
         double currentTime = timer.getElapsedTimeSeconds();
-        double deltaTime = currentTime - lastTime;
+        double dt = currentTime - lastTime;
         lastTime = currentTime;
 
-        // Kinematic + Static Variance
-        double q_kinematic_x = Math.pow(distanceTraveled * ODOMETRY_SIGMA_X, 2);
-        double q_kinematic_y = Math.pow(distanceTraveled * ODOMETRY_SIGMA_Y, 2);
-        double q_static_x = Math.pow(STATIC_SIGMA_X, 2) * deltaTime;
-        double q_static_y = Math.pow(STATIC_SIGMA_Y, 2) * deltaTime;
+        // P = P + sigma_d^2 * dt
+        px += Math.pow(STATIC_SIGMA_X, 2) * dt;
+        py += Math.pow(STATIC_SIGMA_Y, 2) * dt;
 
-        px += q_kinematic_x + q_static_x;
-        py += q_kinematic_y + q_static_y;
-
-        // We still track Heading Uncertainty purely for debug or future use,
-        // even though we don't correct it with vision.
-        ph += Math.pow(Math.abs(deltaH) * ODOMETRY_SIGMA_H, 2) + (Math.pow(STATIC_SIGMA_H, 2) * deltaTime);
-
-        // --- 2. MEGATAG2 SYNC ---
-
-        // MegaTag2 REQUIRES accurate robot heading to calculate X/Y.
-        // We provide the Pinpoint's heading (converted to Degrees).
-        double robotYawDegrees = Math.toDegrees(currentRawPose.getHeading());
+        // --- 2. PREPARE MEASUREMENT ---
+        double robotYawDegrees = Math.toDegrees(rawPinpoint.getHeading());
         limelight.updateRobotOrientation(robotYawDegrees);
-
-        // --- 3. CORRECTION STEP (Vision) ---
 
         LLResult result = limelight.getLatestResult();
 
         if (result != null && result.isValid()) {
-
-            // USE MEGATAG2 RESULT
             Pose3D botPose3D = result.getBotpose_MT2();
 
             if (botPose3D != null) {
-                // Convert Meters (Limelight) to Inches (Pedro)
-                double visionX = botPose3D.getPosition().toUnit(DistanceUnit.INCH).x;
-                double visionY = botPose3D.getPosition().toUnit(DistanceUnit.INCH).y;
+                // Convert Vision Meters to Inches
+                double visionX = botPose3D.getPosition().x * 39.3701;
+                double visionY = botPose3D.getPosition().y * 39.3701;
 
-                // 1. Calculate Kalman Gain (K) for X and Y only
-                double kx = px / (px + Math.pow(VISION_VARIANCE_X, 2));
-                double ky = py / (py + Math.pow(VISION_VARIANCE_Y, 2));
+                // z = x_pinpoint - x_limelight
+                double zx = rawPinpoint.getX() - visionX;
+                double zy = rawPinpoint.getY() - visionY;
 
-                // 2. Update State (x = x + K * (z - x))
-                // We fuse Vision X/Y with our Predicted X/Y
-                double correctedX = predX + kx * (visionX - predX);
-                double correctedY = predY + ky * (visionY - predY);
+                // --- 3. CORRECTION STEP ---
+                // Calculate adaptive sigma_limelight^2
+                //double speed = Math.hypot(velocity.getX(), velocity.getY());
+                double[] sigmaLimelightSq = calculateAdaptiveVariance(result, 0);
 
-                // 3. Update Covariance (P = (1 - K) * P)
+                // K = P / (P + sigma_limelight^2)
+                double kx = px / (px + Math.pow(sigmaLimelightSq[0], 2));
+                double ky = py / (py + Math.pow(sigmaLimelightSq[1], 2));
+
+                // xd = xd + K * (z - xd)
+                driftX = driftX + kx * (zx - driftX);
+                driftY = driftY + ky * (zy - driftY);
+
+                // P = (1 - K) * P
                 px = (1.0 - kx) * px;
                 py = (1.0 - ky) * py;
-
-                // 4. Update Fused Pose
-                // Note: We use 'predH' (Odometry Heading) directly. No vision fusion for heading.
-                fusedPose = new Pose(correctedX, correctedY, predH);
-            } else {
-                // No valid MT2 data, keep prediction
-                fusedPose = new Pose(predX, predY, predH);
             }
-        } else {
-            // No tag seen, keep prediction
-            fusedPose = new Pose(predX, predY, predH);
         }
 
-        // Update trackers
-        lastRawPose = currentRawPose;
+        // --- 4. OUTPUT ---
+        // Final Pose = Pinpoint - Estimated Drift
+        double correctedX = rawPinpoint.getX() - driftX;
+        double correctedY = rawPinpoint.getY() - driftY;
+
+        fusedPose = new Pose(correctedX, correctedY, rawPinpoint.getHeading());
     }
 
-    /**
-     * Returns the Kalman-Filtered Pose (Best Estimate)
-     */
     @Override
-    public Pose getPose() {
-        return fusedPose;
+    public double getTotalHeading() {
+        return totalHeading;
     }
 
-    /**
-     * Returns the Current Velocity (Pass-through to Pinpoint)
-     */
+    @Override
+    public double getForwardMultiplier() {
+        return odo.getEncoderY();
+    }
+
+    @Override
+    public double getLateralMultiplier() {
+        return odo.getEncoderX();
+    }
+
+    @Override
+    public double getTurningMultiplier() {
+        return odo.getYawScalar();
+    }
+
+    @Override
+    public void resetIMU() {
+        resetPinpoint();
+    }
+
+    @Override
+    public double getIMUHeading() {
+        return Double.NaN;
+    }
+
+    @Override
+    public boolean isNAN() {
+        return Double.isNaN(getPose().getX()) || Double.isNaN(getPose().getY()) || Double.isNaN(getPose().getHeading());
+    }
+
+    private double[] calculateAdaptiveVariance(LLResult result, double speed) {
+        double varX = VISION_BASE_VARIANCE;
+        double varY = VISION_BASE_VARIANCE;
+        if (!result.getFiducialResults().isEmpty()) {
+            double distInchesX = result.getFiducialResults().get(0).getTargetPoseCameraSpace().getPosition().x * 39.3701; // get the x and y separately for distance
+            double distInchesY = result.getFiducialResults().get(0).getTargetPoseCameraSpace().getPosition().y * 39.3701; // get the x and y separately for distance
+            varX += (distInchesX * VISION_DISTANCE_COEFF_X);
+            varY += (distInchesY * VISION_DISTANCE_COEFF_Y);
+        }
+        varX += (speed * VISION_VELOCITY_COEFF_X);
+        varY += (speed * VISION_VELOCITY_COEFF_Y);
+        return new double[]{varX, varY};
+
+    }
+
+    @Override
+    public Pose getPose() { return fusedPose; }
+
     @Override
     public Pose getVelocity() {
-        return super.getVelocity();
+        return currentVelocity;
     }
 
-    /**
-     * Handles manual position resets
-     */
     @Override
-    public void setPose(Pose setPose) {
-        super.setPose(setPose);      // Reset hardware
-        this.fusedPose = setPose;    // Reset software
-        this.lastRawPose = setPose;  // Sync trackers
-
-        // Reset uncertainty
-        px = 0.001; py = 0.001; ph = 0.001;
+    public Vector getVelocityVector() {
+        return currentVelocity.getAsVector();
     }
 
     @Override
     public void setStartPose(Pose setStart) {
-        super.setStartPose(setStart);
-        this.fusedPose = setStart;
-        this.lastRawPose = super.getPose();
+        if (!Objects.equals(startPose, new Pose()) && startPose != null) {
+            Pose currentPose = pinpointPose.rotate(-startPose.getHeading(), false).minus(startPose);
+            setPose(setStart.plus(currentPose.rotate(setStart.getHeading(), false)));
+        } else {
+            setPose(setStart);
+        }
+
+        this.startPose = setStart;
     }
 
-    // Debug Getters
-    public double getUncertaintyX() { return px; }
-    public double getUncertaintyY() { return py; }
+    @Override
+    public void setPose(Pose setPose) {
+        odo.setPosition(PoseConverter.poseToPose2D(setPose, PedroCoordinates.INSTANCE));
+        pinpointPose = setPose;
+        previousHeading = setPose.getHeading();
+        this.fusedPose = setPose;
+        this.driftX = 0;
+        this.driftY = 0;
+        this.px = 0.001;
+        this.py = 0.001;
+    }
+
+    @Override
+    public void setX(double x) {
+        odo.setPosX(x, constants.distanceUnit);
+    }
+
+    @Override
+    public void setY(double y) {
+        odo.setPosY(y, constants.distanceUnit);
+    }
+
+    @Override
+    public void setHeading(double heading) {
+        odo.setHeading(heading, AngleUnit.RADIANS);
+    }
+    public void recalibrate() {
+        odo.recalibrateIMU();
+    }
+    private void resetPinpoint() {
+        odo.resetPosAndIMU();
+
+        try {
+            Thread.sleep(300);
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
 }
