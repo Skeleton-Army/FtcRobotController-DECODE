@@ -32,9 +32,9 @@ import lombok.var;
 
 public class Vision extends SubsystemBase {
     private final double METERS_TO_INCHES = 39.37;
-    private static final int GPP_TAG_ID = 21;
+    private static final int GPP_TAG_ID = 23;
     private static final int PGP_TAG_ID = 22;
-    private static final int PPG_TAG_ID = 23;
+    private static final int PPG_TAG_ID = 21;
     private static final int FIELD_HALF_Y_LEVEL = 72;
 
     private final PoseTracker poseTracker;

@@ -78,7 +78,7 @@ public class AutonomousApp extends ComplexOpMode {
     private final PathChain[] nearPaths = new PathChain[4];
     private final Supplier<PathChain>[] nearPathsReturn = new Supplier[4];
     private final Supplier<PathChain>[] farPathsReturn = new Supplier[4];
-    private PathChain nearDriveBackEnd;
+    private final PathChain[] goSort = new PathChain[4];
     private PathChain sortEnd;
     private PathChain spike3Open;
     private PathChain spike4Open;
@@ -145,24 +145,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
-    public PathChain goSort() {
-        return follower
-                .pathBuilder()
-                .addPath(
-                        new BezierCurve(
-                                follower.getPose(),
-                                getRelative(new Pose(40, 82.348)),
-                                sortingPose
-                        )
-                )
-                .setLinearHeadingInterpolation(
-                        follower.getHeading(),
-                        getRelative(Math.toRadians(141.5))
-                )
-                .setGlobalDeceleration()
-                .build();
-    }
-
     public PathChain sortAgain() {
         return follower
                 .pathBuilder()
@@ -189,7 +171,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                nearStartingPose
+                                getRelative(new Pose(21, 122))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -262,7 +244,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose spike3End = getRelative(new Pose(9, 59));
         Pose spike4End = getRelative(new Pose(17, 83.663));
 
-        Pose openGateEnd = getRelative(new Pose(21, 72));
+        Pose openGateEnd = getRelative(new Pose(15, 77));
 
         farDriveBack = getRelative(new Pose(60, 22.5));
         nearDriveBack = getRelative(new Pose(60, 75));
@@ -447,32 +429,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .setGlobalDeceleration()
                 .build();
 
-        nearDriveBackEnd = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(53.716, 112.505))
-                        )
-                )
-                .setTangentHeadingInterpolation()
-                .setReversed()
-                .setGlobalDeceleration()
-                .build();
-
-        sortEnd = follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower::getPose,
-                                getRelative(new Pose(43, 123))
-                        )
-                )
-                .setTangentHeadingInterpolation()
-                .setReversed()
-                .setGlobalDeceleration()
-                .build();
-
         spike3Open = follower
                 .pathBuilder()
                 .addPath(
@@ -493,7 +449,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(33.594, 76.111)),
+                                getRelative(new Pose(25, 76.111)),
                                 openGateEnd
                         )
                 )
@@ -515,16 +471,75 @@ public class AutonomousApp extends ComplexOpMode {
                         HeadingInterpolator.piecewise(
                                 new HeadingInterpolator.PiecewiseNode(
                                         0,
-                                        0.8,
-                                        HeadingInterpolator.tangent.reverse()
+                                        0.1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(270)))
                                 ),
                                 new HeadingInterpolator.PiecewiseNode(
-                                        0.8,
+                                        0.1,
                                         1,
                                         HeadingInterpolator.constant(getRelative(Math.toRadians(70)))
                                 )
                         )
                 )
+                .setGlobalDeceleration()
+                .build();
+
+        goSort[1] = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(40, 80)),
+                                sortingPose
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        getRelative(Math.toRadians(180)),
+                        getRelative(Math.toRadians(141.5))
+                )
+                .setGlobalDeceleration()
+                .build();
+
+        goSort[2] = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(40, 60)),
+                                sortingPose
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        getRelative(Math.toRadians(180)),
+                        getRelative(Math.toRadians(141.5))
+                )
+                .setGlobalDeceleration()
+                .build();
+
+        goSort[3] = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                sortingPose
+                        )
+                )
+                .setLinearHeadingInterpolation(
+                        getRelative(Math.toRadians(180)),
+                        getRelative(Math.toRadians(141.5))
+                )
+                .setGlobalDeceleration()
+                .build();
+
+        sortEnd = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                nearDriveBack
+                        )
+                )
+                .setConstantHeadingInterpolation(getRelative(Math.toRadians(180)))
                 .setGlobalDeceleration()
                 .build();
     }
@@ -548,7 +563,9 @@ public class AutonomousApp extends ComplexOpMode {
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
-        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.DETECTION_PIPELINE);
+
+        int pipeline = startingPosition == StartingPosition.FAR ? VisionConfig.DETECTION_PIPELINE : VisionConfig.OBELISK_PIPELINE;
+        vision = new Vision(hardwareMap, follower.poseTracker, pipeline);
 
         setupPaths();
 
@@ -709,22 +726,21 @@ public class AutonomousApp extends ComplexOpMode {
         gateSpike = 4;
 
         return new SequentialCommandGroup(
-                new FollowPathCommand(follower, obeliskInitialScorePath)
-                        .alongWith(
-                                new SequentialCommandGroup(
-                                        new WaitCommand(500),
-                                        new ParallelDeadlineGroup(
-                                                shoot(),
-                                                detectObelisk().withTimeout(2000)
-                                        )
-                                )
-                        ),
+                new InstantCommand(() -> shooter.setSOTMEnabled(true)),
+
+                new ParallelCommandGroup(
+                        new FollowPathCommand(follower, obeliskInitialScorePath),
+                        shoot(),
+                        detectObelisk().withTimeout(2000)
+                ),
 
                 new DeferredCommand(() -> new SequentialCommandGroup(
                         collectSortAndScore(4, detectedPattern),
                         collectSortAndScore(3, detectedPattern),
                         collectSortAndScore(2, detectedPattern)
-                ), null)
+                ), null),
+
+                driveForward()
         );
     }
 
@@ -732,13 +748,13 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 nearInitialScore(), // Score first 3 artifacts
                 collect(3).interruptOn(threeArtifactsDetectedSupplier),
-                returnAndScore(4, false), // Spike 4 so it goes in a straight line
+                returnAndScore(4), // Spike 4 so it goes in a straight line
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
                 collect(4).interruptOn(threeArtifactsDetectedSupplier),
-                returnAndScore(4, false)
+                returnAndScore(4)
                         .interruptOn(() -> matchTime.getRemaining() < 0.2),
                 driveForward()
         );
@@ -750,7 +766,7 @@ public class AutonomousApp extends ComplexOpMode {
                 pickupSequence(),
                 collect(1)
                         .withTimeout(2000),
-                returnAndScore(1, false),
+                returnAndScore(1),
                 new ParallelDeadlineGroup(
                         new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
                         repeatIfTime(this::farCycle, 0.0)
@@ -791,7 +807,7 @@ public class AutonomousApp extends ComplexOpMode {
                 new InstantCommand(intake::collect),
                 new GoToArtifactCommand(follower, vision, alliance)
                         .interruptOn(threeArtifactsDetectedSupplier),
-                returnAndScore(1, false)
+                returnAndScore(1)
         );
     }
 
@@ -819,12 +835,11 @@ public class AutonomousApp extends ComplexOpMode {
 
         for (int i = 0; i < pickupOrder.size(); i++) {
             int spike = pickupOrder.get(i);
-            boolean isLast = i == (pickupOrder.size() - 1);
 
             sequence.addCommands(
                     collect(spike).interruptOn(threeArtifactsDetectedSupplier),
                     openGate(spike),
-                    returnAndScore(spike, isLast)
+                    returnAndScore(spike)
             );
         }
 
@@ -843,23 +858,29 @@ public class AutonomousApp extends ComplexOpMode {
     private Command openGate(int spike) {
         if (spike != gateSpike) return new InstantCommand();
 
-        return new SequentialCommandGroup(
-                new FollowPathCommand(follower, spike == 3 ? spike3Open : spike4Open),
-                new InstantCommand(() -> {
-                    // Drive into the gate to make sure it stays open
-                    follower.startTeleOpDrive();
-                    follower.setTeleOpDrive(0.5, 0, 0, true);
-                }),
-                new WaitCommand(500)
+        return new ParallelCommandGroup(
+                new SequentialCommandGroup(
+                        new FollowPathCommand(follower, spike == 3 ? spike3Open : spike4Open)
+                                .withTimeout(500),
+                        new InstantCommand(() -> {
+                            // Drive into the gate to make sure it stays open
+                            follower.startTeleOpDrive();
+                            follower.setTeleOpDrive(0.5, 0, 0, true);
+                        }),
+                        new WaitCommand(800)
+                ),
+                new SequentialCommandGroup( // Run intake for a bit to make sure the last artifact pickup was successful
+                        new InstantCommand(intake::collect),
+                        new WaitCommand(500),
+                        new InstantCommand(intake::stop)
+                )
         );
     }
 
-    private Command returnAndScore(int spike, boolean isLast) {
-        Supplier<PathChain> path = isLast ? this::getFinalPath : () -> getBackPath(spike);
-
+    private Command returnAndScore(int spike) {
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
-                followAndShoot(path)
+                followAndShoot(() -> getBackPath(spike))
         );
     }
 
@@ -899,17 +920,18 @@ public class AutonomousApp extends ComplexOpMode {
                     intake.stop();
                     transfer.release();
                 }),
+                new WaitCommand(100),
+                new InstantCommand(intake::collect),
                 transfer.kick(),
-                new InstantCommand(transfer::block)
+                new InstantCommand(() -> {
+                    intake.stop();
+                    transfer.block();
+                })
         );
     }
 
     private PathChain getBackPath(int spike) {
         return (startingPosition == StartingPosition.FAR) ? farPathsReturn[spike - 1].get() : nearPathsReturn[spike - 1].get();
-    }
-
-    private PathChain getFinalPath() {
-        return (startingPosition == StartingPosition.FAR) ? farDriveBack() : nearDriveBackEnd;
     }
 
     private Command collectSortAndScore(int spike, ArtifactPattern target) {
@@ -922,31 +944,26 @@ public class AutonomousApp extends ComplexOpMode {
                 SLOW_SHOOTING_POWER
         );
 
-        Command shootWhileDriving =
-                new ParallelCommandGroup(
-                    new DeferredCommand(() -> new FollowPathCommand(follower,
-                            isLast ? sortEnd : getBackPath(1)
-                    ), null),
-                    shootCommand.asProxy()
-                );
-
         Command driveThenShoot = new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
-                followAndShoot(
-                        isLast ? this::getFinalPath : () -> getBackPath(spike),
-                        shootCommand.asProxy()
-                )
+                new DeferredCommand(() -> new FollowPathCommand(follower, getBackPath(4)), null),
+                shootCommand.asProxy()
+        );
+
+        Command last = new SequentialCommandGroup(
+                new FollowPathCommand(follower, sortEnd),
+                shootCommand.asProxy()
         );
 
         return new SequentialCommandGroup(
                 collect(spike),
                 openGate(spike),
-                sortNTimes(sorts),
-                sorts > 0 ? shootWhileDriving : driveThenShoot
+                sortNTimes(sorts, spike),
+                isLast ? last : driveThenShoot
         );
     }
 
-    private Command sortNTimes(int n) {
+    private Command sortNTimes(int n, int spike) {
         return new DeferredCommand(() -> {
             SequentialCommandGroup seq = new SequentialCommandGroup();
             if (n == 0) return seq;
@@ -957,14 +974,15 @@ public class AutonomousApp extends ComplexOpMode {
                         shooter.setUpdateFlywheel(false);
                         shooter.setVerticalManualMode(true);
                         shooter.setHorizontalManualMode(true);
-
-                        shooter.setRPM(600);
-                        shooter.setVerticalAngle(Math.toRadians(90));
+                    }),
+                    new InstantCommand(() -> { // Run in a separate command to make sure there are no race conditions
+                        shooter.setRPM(800);
+                        shooter.setVerticalAngle(Math.toRadians(40));
                         shooter.setHorizontalAngle(Math.toRadians(0));
                     })
             );
 
-            seq.addCommands(n == 1 ? goSortOnce() : goSortTwice());
+            seq.addCommands(n == 1 ? goSortOnce(spike) : goSortTwice(spike));
 
             seq.addCommands(
                     new InstantCommand(() -> {
@@ -979,19 +997,19 @@ public class AutonomousApp extends ComplexOpMode {
         }, null);
     }
 
-    private Command goSortOnce() {
+    private Command goSortOnce(int spike) {
         return new SequentialCommandGroup(
-                new DeferredCommand(() -> new FollowPathCommand(follower, goSort()), null),
+                new DeferredCommand(() -> new FollowPathCommand(follower, goSort[spike - 1]), null),
                 shootWithKicker(),
                 collectSortedArtifact()
         );
     }
 
-    private Command goSortTwice() {
+    private Command goSortTwice(int spike) {
         return new SequentialCommandGroup(
-                goSortOnce(),
+                goSortOnce(spike),
                 new ParallelCommandGroup(
-                        new DeferredCommand(() -> new FollowPathCommand(follower, sortAgain()).withTimeout(300), null),
+                        new DeferredCommand(() -> new FollowPathCommand(follower, sortAgain()).withTimeout(200), null),
                         shootWithKicker()
                 ),
                 collectSortedArtifact()
@@ -1001,9 +1019,9 @@ public class AutonomousApp extends ComplexOpMode {
     private Command collectSortedArtifact() {
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
-                new WaitCommand(1000),
+                new WaitCommand(500),
                 new DeferredCommand(() -> new FollowPathCommand(follower, collectSorted()), null)
-                        .withTimeout(1000)
+                        .withTimeout(500)
         );
     }
 
