@@ -3,7 +3,7 @@ package org.firstinspires.ftc.teamcode.consts;
 import com.pedropathing.geometry.Pose;
 
 public class GoalPositions {
-    private final static double FIELD_LENGTH = 144;
+    private final static double FIELD_LENGTH = 141.5;
 
     public final static Pose BLUE_GOAL = new Pose(8.5, FIELD_LENGTH - 9.5);
     public final static Pose RED_GOAL = new Pose(FIELD_LENGTH - BLUE_GOAL.getX(), BLUE_GOAL.getY());
