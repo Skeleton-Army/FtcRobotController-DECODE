@@ -142,7 +142,7 @@ public class Vision extends SubsystemBase {
 
     /* Proud of this one so I keep it, despite being kinda useless
 
-    please don't delete 👉👈🥺
+    pwease don't delete 👉👈🥺
 
     public Pose getClosestArtifact() {
         if (llResult == null || !llResult.isValid()) {
