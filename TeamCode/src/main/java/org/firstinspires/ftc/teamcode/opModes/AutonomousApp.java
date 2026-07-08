@@ -56,6 +56,7 @@ import org.psilynx.psikit.core.wpi.math.Rotation2d;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 
 import java.util.List;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 @Autonomous(name="Autonomous", preselectTeleOp="TeleOpApp")
@@ -99,6 +100,8 @@ public class AutonomousApp extends ComplexOpMode {
 
     private boolean isSorting = false;
     private ArtifactPattern detectedPattern = ArtifactPattern.PPG; // fallback default
+
+    private BooleanSupplier threeArtifactsDetectedSupplier;
 
     public PathChain farDriveBack() {
         return follower
@@ -228,7 +231,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(13.5, 58))
+                                getRelative(new Pose(13.5, 58.5))
                         )
                 )
                 .setHeadingInterpolation(
@@ -551,6 +554,8 @@ public class AutonomousApp extends ComplexOpMode {
 
         Pose startingPose = startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose;
         follower.setPose(startingPose);
+
+        threeArtifactsDetectedSupplier = transfer.threeArtifactsDetected(() -> true, 100);
     }
 
     @Override
@@ -635,6 +640,7 @@ public class AutonomousApp extends ComplexOpMode {
         telemetry.addData("reachedAngle", shooter.reachedAngle());
         telemetry.addData("canShoot", shooter.getCanShoot());
         telemetry.addData("In Zone", drive.isInsideLaunchZonePredictive());
+//        telemetry.addData("detected artifacts", threeArtifactsDetectedSupplier.getAsBoolean());
 
         final double inchesToMeters = 39.37;
 
@@ -725,16 +731,15 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
                 initialScore(), // Score first 3 artifacts
-                collect(3)
-                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 300)),
+                collect(3).interruptOn(threeArtifactsDetectedSupplier),
                 returnAndScore(4, false), // Spike 4 so it goes in a straight line
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
-                collect(4)
-                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 300)),
-                returnAndScore(4, false),
+                collect(4).interruptOn(threeArtifactsDetectedSupplier),
+                returnAndScore(4, false)
+                        .interruptOn(() -> matchTime.getRemaining() < 0.2),
                 driveForward()
         );
     }
@@ -775,8 +780,7 @@ public class AutonomousApp extends ComplexOpMode {
                     follower.startTeleOpDrive();
                     follower.setTeleOpDrive(0.1, 0, 0, true);
                 }),
-                new WaitUntilCommand(transfer.threeArtifactsDetected(() -> true, 300))
-                        .withTimeout(1800),
+                new WaitUntilCommand(threeArtifactsDetectedSupplier).withTimeout(1700),
                 followAndShoot(this::nearDriveBack)
         );
     }
@@ -787,7 +791,7 @@ public class AutonomousApp extends ComplexOpMode {
                 new InstantCommand(intake::collect),
                 new GoToArtifactCommand(follower, vision, alliance)
                         .withTimeout(1500)
-                        .interruptOn(transfer.threeArtifactsDetected(() -> true, 300)),
+                        .interruptOn(threeArtifactsDetectedSupplier),
                 returnAndScore(1, false)
         );
     }
