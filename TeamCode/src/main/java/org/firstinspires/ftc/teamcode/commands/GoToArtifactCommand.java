@@ -34,7 +34,7 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
                         () ->   new FollowPathCommand(follower,
                                 buildPathFromArtifact(artifactList.getBiggest())),
                         null
-                )
+                ).withTimeout(1500)
         );
     }
 

@@ -116,11 +116,11 @@ public class AutonomousApp extends ComplexOpMode {
                         HeadingInterpolator.piecewise(
                                 new HeadingInterpolator.PiecewiseNode(
                                         0,
-                                        0.8,
+                                        0.4,
                                         HeadingInterpolator.tangent.reverse()
                                 ),
                                 new HeadingInterpolator.PiecewiseNode(
-                                        0.8,
+                                        0.4,
                                         1,
                                         HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
                                 )
@@ -790,7 +790,6 @@ public class AutonomousApp extends ComplexOpMode {
                 // Go to LOADING ZONE, collect, and go back to shoot
                 new InstantCommand(intake::collect),
                 new GoToArtifactCommand(follower, vision, alliance)
-                        .withTimeout(1500)
                         .interruptOn(threeArtifactsDetectedSupplier),
                 returnAndScore(1, false)
         );
@@ -806,7 +805,13 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command farInitialScore() {
-        return followAndShoot(() -> initialFarPath);
+        return new ParallelCommandGroup(
+                new DeferredCommand(() -> new FollowPathCommand(follower, initialFarPath), null),
+                new SequentialCommandGroup(
+                        shoot(),
+                        new InstantCommand(follower::breakFollowing)
+                )
+        );
     }
 
     private Command pickupSequence() {
@@ -817,7 +822,7 @@ public class AutonomousApp extends ComplexOpMode {
             boolean isLast = i == (pickupOrder.size() - 1);
 
             sequence.addCommands(
-                    collect(spike),
+                    collect(spike).interruptOn(threeArtifactsDetectedSupplier),
                     openGate(spike),
                     returnAndScore(spike, isLast)
             );
@@ -852,11 +857,9 @@ public class AutonomousApp extends ComplexOpMode {
     private Command returnAndScore(int spike, boolean isLast) {
         Supplier<PathChain> path = isLast ? this::getFinalPath : () -> getBackPath(spike);
 
-        return new ParallelCommandGroup(
-                new SequentialCommandGroup(
-                        new InstantCommand(intake::collect),
-                        followAndShoot(path)
-                )
+        return new SequentialCommandGroup(
+                new InstantCommand(intake::collect),
+                followAndShoot(path)
         );
     }
 
@@ -872,6 +875,14 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command followAndShoot(Supplier<PathChain> pathSupplier, Command shootCommand) {
+        if (startingPosition == StartingPosition.FAR)
+            return new SequentialCommandGroup(
+                    new DeferredCommand(() -> new FollowPathCommand(follower, pathSupplier.get()), null),
+                    new WaitCommand(200),
+                    shootCommand,
+                    new InstantCommand(follower::breakFollowing)
+            );
+
         return new ParallelCommandGroup(
                 new DeferredCommand(() -> new FollowPathCommand(follower, pathSupplier.get()), null),
                 new SequentialCommandGroup(
