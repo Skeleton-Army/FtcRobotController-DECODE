@@ -454,17 +454,28 @@ public class FusionLocalizer implements Localizer {
 
     @Override
     public void setStartPose(Pose setStart) {
-        deadReckoning.setStartPose(setStart);
-        history.put(0L, new KalmanState(setStart, new Pose(), new Pose(), P.copy()));
         currentPosition = setStart;
-        currentRawPose = setStart;
+        deadReckoning.setStartPose(setStart);
+
+        // Apply the same fix to start pose synchronization
+        deadReckoning.update();
+        currentRawPose = deadReckoning.getPose();
+
+        history.put(0L, new KalmanState(setStart, new Pose(), new Pose(), P.copy()));
     }
 
     @Override
     public void setPose(Pose setPose) {
         currentPosition = setPose;
         deadReckoning.setPose(setPose);
-        currentRawPose = setPose;
+
+        // FORCE the hardware to poll its current state
+        deadReckoning.update();
+
+        // CRITICAL FIX: Anchor currentRawPose to what the hardware ACTUALLY reports,
+        // not what we commanded. This completely prevents the relative tracker
+        // from dragging the robot back to (0,0) if an I2C command is dropped.
+        currentRawPose = deadReckoning.getPose();
 
         history.clear();
         history.put(System.nanoTime(), new KalmanState(setPose, new Pose(), new Pose(), P.copy()));

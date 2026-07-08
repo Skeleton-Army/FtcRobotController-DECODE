@@ -111,8 +111,6 @@ public class TeleOpApp extends ComplexOpMode {
     private double sizeVarianceY;
     private double sizeVarianceAngle;
 
-    private AprilTagPipeline aprilTagPipeline;
-
     private double totalTraveledX = 0;
     private double totalTraveledY = 0;
 
@@ -146,8 +144,7 @@ public class TeleOpApp extends ComplexOpMode {
         matchTime = new TimerEx(120);
         overrideTimer = new TimerEx(1);
 
-//        debugMode = Settings.get("debug_mode", false);
-        debugMode = true;
+        debugMode = Settings.get("debug_mode", false);
         tabletopMode = Settings.get("tabletop_mode", false);
         alliance = Settings.get("alliance", Alliance.RED);
 
@@ -390,15 +387,6 @@ public class TeleOpApp extends ComplexOpMode {
         fusionLocalizer.addMeasurement(snapshot.pose, correctedTimestamp);
     }
 
-    public long getResultTimestamp() {
-        LLResult llResult = limelight.getLatestResult();
-
-        if (llResult == null || !llResult.isValid()) {
-            return Long.MIN_VALUE;
-        }
-
-        return System.currentTimeMillis() - (long) llResult.getStaleness();
-    }
     @Override
     public void run() {
         double currentTime = matchTime.getElapsed();
@@ -572,21 +560,6 @@ public class TeleOpApp extends ComplexOpMode {
 //        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
 //        telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
 //        telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
-
-        Pose pinpointPose = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
-        double driftXPinpoint = Math.abs(X_OFFSET - pinpointPose.getPose().getX());
-        double driftYPinpoint = Math.abs(Y_OFFSET - pinpointPose.getPose().getY());
-        double driftTotalPinpoint = driftXPinpoint + driftYPinpoint;
-        telemetry.addData("Drift x", driftXPinpoint);
-        telemetry.addData("Drift y", driftYPinpoint);
-        telemetry.addData("Drift total pinpoint", driftTotalPinpoint);
-
-        if (driftTotalPinpoint > driftTotal)
-            telemetry.addData("Kalman more accurate by", driftTotalPinpoint - driftTotal);
-
-        else if (driftTotalPinpoint <= driftTotal)
-            telemetry.addData("pinpoint is more accurate by", driftTotal- driftTotalPinpoint);
-
 
         telemetry.update();
 

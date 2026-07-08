@@ -52,8 +52,7 @@ public class Constants {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)
                 .mecanumDrivetrain(driveConstants)
-                //.pinpointLocalizer(localizerConstants)
-                .setLocalizer(new FusionLocalizer(new PinpointLocalizer(hardwareMap, localizerConstants), KalmanConfig.initialCovariance, KalmanConfig.processVariance, KalmanConfig.measurementVariance, KalmanConfig.bufferSize))
+                .pinpointLocalizer(localizerConstants)
                 .build();
     }
 
