@@ -28,8 +28,15 @@ public class FollowerManager {
         if (follower != null) {
             Localizer localizer = follower.poseTracker.getLocalizer();
 
-            if (localizer instanceof PinpointLocalizer) {
-                PinpointLocalizer pinpointLocalizer = (PinpointLocalizer) localizer;
+            Localizer effectiveLocalizer = localizer;
+            if (localizer instanceof FusionLocalizer) {
+                FusionLocalizer fusionLocalizer = (FusionLocalizer) localizer;
+                lastPose = fusionLocalizer.getPose();
+                effectiveLocalizer = fusionLocalizer.getDeadReckoning();
+            }
+
+            if (lastPose == null && effectiveLocalizer instanceof PinpointLocalizer) {
+                PinpointLocalizer pinpointLocalizer = (PinpointLocalizer) effectiveLocalizer;
                 GoBildaPinpointDriver pinpoint = pinpointLocalizer.getPinpoint();
 
                 // Force fresh hardware read
@@ -52,8 +59,14 @@ public class FollowerManager {
         }
 
         Localizer newLocalizer = newFollower.poseTracker.getLocalizer();
-        if (newLocalizer instanceof PinpointLocalizer) {
-            GoBildaPinpointDriver pinpoint = ((PinpointLocalizer) newLocalizer).getPinpoint();
+
+        Localizer effectiveNewLocalizer = newLocalizer;
+        if (newLocalizer instanceof FusionLocalizer) {
+            effectiveNewLocalizer = ((FusionLocalizer) newLocalizer).getDeadReckoning();
+        }
+
+        if (effectiveNewLocalizer instanceof PinpointLocalizer) {
+            GoBildaPinpointDriver pinpoint = ((PinpointLocalizer) effectiveNewLocalizer).getPinpoint();
 
             int deviceVersion = pinpoint.getDeviceVersion();
             if (deviceVersion >= 3) {

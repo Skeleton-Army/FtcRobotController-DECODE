@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+import static org.firstinspires.ftc.teamcode.config.KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
@@ -27,6 +28,7 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.KalmanConfig;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
@@ -39,8 +41,11 @@ import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
+import org.firstinspires.ftc.teamcode.utilities.AprilTagPipeline;
+import org.firstinspires.ftc.teamcode.utilities.CameraUtil;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
+import org.firstinspires.ftc.teamcode.utilities.FusionLocalizer;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -59,7 +64,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Transfer transfer;
     private Drive drive;
     private Kickstand kickstand;
-    private Vision vision;
+//    private Vision vision;
 
     private VoltageSensor voltageSensor;
 
@@ -78,10 +83,15 @@ public class TeleOpApp extends ComplexOpMode {
     private double lastLoopTime = 0;
     private int loopCount = 0;
 
+    private AprilTagPipeline aprilTagPipeline;
+
     private double totalTraveledX = 0;
     private double totalTraveledY = 0;
 
     private boolean autoFireEnabled = true;
+
+    private long lastInjectedFrameTs = Long.MIN_VALUE;
+    private AprilTagPipeline.PoseSnapshot lastKnownSnapshot = null;
 
     private final TimerEx zoneExitTimer = new TimerEx(0.3);
     private boolean zoneExitTimerRunning = false;
@@ -113,13 +123,16 @@ public class TeleOpApp extends ComplexOpMode {
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
         kickstand = new Kickstand(hardwareMap);
-        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
+//        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
 
-        vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
+        //vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         autoFireEnabled = Settings.get("auto_fire", true);
+
+        aprilTagPipeline = new AprilTagPipeline();
+        CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
 
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
@@ -257,6 +270,33 @@ public class TeleOpApp extends ComplexOpMode {
         matchTime.start();
     }
 
+    public void updateKFApriltagReading() {
+        AprilTagPipeline.PoseSnapshot snapshot = aprilTagPipeline.getPoseSnapshot();
+
+        if (snapshot != null) {
+            lastKnownSnapshot = snapshot;
+        }
+
+        if (snapshot == null
+                || !KalmanConfig.enableMeasurements
+                || drive.distanceFromLaunchZone() >= 20
+                || Math.abs(follower.getAngularVelocity()) >= 0.5) {
+            return;
+        }
+
+        // Skip duplicate camera frames — the main loop can outrun the camera's
+        // frame rate, which would otherwise re-inject the same detection repeatedly.
+        if (snapshot.timestampNanos == lastInjectedFrameTs) return;
+        lastInjectedFrameTs = snapshot.timestampNanos;
+
+        long cameraLatencyNanos = (long) (CAMERA_PHYSICAL_LATENCY_MS * 1e6);
+        long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
+        long correctedTimestamp = snapshot.timestampNanos - (cameraLatencyNanos - pinpointLatencyNanos);
+
+        FusionLocalizer fusionLocalizer = (FusionLocalizer) follower.getPoseTracker().getLocalizer();
+        fusionLocalizer.addMeasurement(snapshot.pose, correctedTimestamp);
+    }
+
     @Override
     public void run() {
         double currentTime = matchTime.getElapsed();
@@ -271,6 +311,8 @@ public class TeleOpApp extends ComplexOpMode {
             if (deltaX > 0.05) totalTraveledX += deltaX;
             if (deltaY > 0.05) totalTraveledY += deltaY;
         }
+
+        updateKFApriltagReading();
 
         double voltage = voltageSensor.getVoltage();
 
@@ -345,9 +387,10 @@ public class TeleOpApp extends ComplexOpMode {
 
         double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
         double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        double driftTotal = driftX + driftY;
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
-        telemetry.addData("Drift total", driftX + driftY);
+        telemetry.addData("Drift total", driftTotal);
 
         telemetry.addData("Total Traveled X", totalTraveledX);
         telemetry.addData("Total Traveled Y", totalTraveledY);
@@ -382,6 +425,21 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
         telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
         telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
+
+        Pose pinpointPose = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
+        double driftXPinpoint = Math.abs(X_OFFSET - pinpointPose.getPose().getX());
+        double driftYPinpoint = Math.abs(Y_OFFSET - pinpointPose.getPose().getY());
+        double driftTotalPinpoint = driftXPinpoint + driftYPinpoint;
+        telemetry.addData("Drift x", driftXPinpoint);
+        telemetry.addData("Drift y", driftYPinpoint);
+        telemetry.addData("Drift total pinpoint", driftTotalPinpoint);
+
+        if (driftTotalPinpoint > driftTotal)
+            telemetry.addData("Kalman more accurate by", driftTotalPinpoint - driftTotal);
+
+        else if (driftTotalPinpoint <= driftTotal)
+            telemetry.addData("pinpoint is more accurate by", driftTotal- driftTotalPinpoint);
+
 
         telemetry.update();
 
