@@ -699,7 +699,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command standardRoutine() {
         return new SequentialCommandGroup(
-                initialScore(),
+                nearInitialScore(),
                 pickupSequence(),
                 driveForward()
         );
@@ -730,7 +730,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
-                initialScore(), // Score first 3 artifacts
+                nearInitialScore(), // Score first 3 artifacts
                 collect(3).interruptOn(threeArtifactsDetectedSupplier),
                 returnAndScore(4, false), // Spike 4 so it goes in a straight line
                 closeCycle(),
@@ -746,7 +746,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command farCycleRoutine() {
         return new SequentialCommandGroup(
-                initialScore(), // Score first 3 artifacts
+                farInitialScore(), // Score first 3 artifacts
                 pickupSequence(),
                 collect(1)
                         .withTimeout(2000),
@@ -796,15 +796,17 @@ public class AutonomousApp extends ComplexOpMode {
         );
     }
 
-    private Command initialScore() {
-        PathChain path = (startingPosition == StartingPosition.FAR) ? initialFarPath : initialNearPath;
-
+    private Command nearInitialScore() {
         return new ParallelCommandGroup(
-                new InstantCommand(() -> shooter.setSOTMEnabled(startingPosition == StartingPosition.CLOSE)),
-                new FollowPathCommand(follower, path),
+                new InstantCommand(() -> shooter.setSOTMEnabled(true)),
+                new FollowPathCommand(follower, initialNearPath),
                 shoot(),
                 new InstantCommand(() -> shooter.setSOTMEnabled(false))
         );
+    }
+
+    private Command farInitialScore() {
+        return followAndShoot(() -> initialFarPath);
     }
 
     private Command pickupSequence() {
