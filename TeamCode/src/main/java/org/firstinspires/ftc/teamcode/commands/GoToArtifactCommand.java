@@ -1,5 +1,6 @@
 package org.firstinspires.ftc.teamcode.commands;
 
+import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.BezierLine;
@@ -10,20 +11,22 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.opModes.TeleOpApp;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
 
 @Config
 public class GoToArtifactCommand extends SequentialCommandGroup {
     private final Follower follower;
-    private final Vision vision;
     private final Alliance alliance;
+    private final Telemetry telemetry;
 
     public GoToArtifactCommand(Follower follower, Vision vision, Alliance alliance) {
         this.follower = follower;
-        this.vision = vision;
         this.alliance = alliance;
+        telemetry = FtcDashboard.getInstance().getTelemetry();
 
         Vision.ArtifactList artifactList = vision.artifactList();
         addRequirements(vision);
@@ -45,7 +48,10 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
 
     private PathChain buildPathFromArtifact(Artifact artifact) {
         Pose correctedPose = getCorrectedPose(artifact);
-        Pose artifactPose = new Pose(correctedPose.getX(), correctedPose.getY(), Math.toRadians(180));
+        Pose artifactPose = new Pose(correctedPose.getX(), correctedPose.getY());
+
+        telemetry.addData("Artifact x", artifactPose.getX());
+        telemetry.addData("Artifact y", artifactPose.getY());
 
         return follower.pathBuilder()
                 .addPath(new BezierLine(follower.getPose(), artifactPose))
