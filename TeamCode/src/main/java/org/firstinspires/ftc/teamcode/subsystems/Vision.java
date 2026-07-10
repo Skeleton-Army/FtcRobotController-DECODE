@@ -13,6 +13,7 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.ArtifactSorting;
@@ -207,6 +208,8 @@ public class Vision extends SubsystemBase {
 
             double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
+            if (count != 0) artifacts.clear();
+
             for (int i = 0; i < count * 2; i += 2) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
@@ -269,6 +272,17 @@ public class Vision extends SubsystemBase {
 
         public ArtifactList filterStationary(double maxVelocity) {
             artifacts.removeIf(a -> a.isMoving(maxVelocity));
+            return this;
+        }
+
+        public ArtifactList filterByYLevel(double minY, double maxY) {
+            artifacts.removeIf(a -> a.getArtifactPose().getY() < minY);
+            artifacts.removeIf(a -> a.getArtifactPose().getY() > maxY);
+            return this;
+        }
+
+        public ArtifactList filterInvalidX() {
+            artifacts.removeIf(a -> a.getArtifactPose().getX() > 188 || a.getArtifactPose().getX() < 0);
             return this;
         }
 

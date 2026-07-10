@@ -16,10 +16,6 @@ import org.firstinspires.ftc.teamcode.utilities.Artifact;
 
 @Config
 public class GoToArtifactCommand extends SequentialCommandGroup {
-    // Max estimated artifact speed (inches/sec) we're still willing to treat as "stationary".
-    // Tune alongside Vision.MAX_ARTIFACT_MATCH_DISTANCE.
-    public static final double MAX_ARTIFACT_VELOCITY = 2.0;
-
     private final Follower follower;
     private final Vision vision;
     private final Alliance alliance;
@@ -34,7 +30,10 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         addCommands(
                 //TODO: fixed 🔰
                 new WaitUntilCommand(() ->
-                       artifactList.fetch().filterStationary(MAX_ARTIFACT_VELOCITY).isArtifactDetected()
+                        artifactList.fetch()
+                                .filterInvalidX()
+                                .filterByYLevel(0,0) // add correct y cords
+                                .isArtifactDetected()
                 ),
                 new DeferredCommand(
                         () ->   new FollowPathCommand(follower,

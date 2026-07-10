@@ -8,11 +8,16 @@ import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 
 import java.util.Locale;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
 public class Artifact {
     private final Pose artifactPose;
     private final ArtifactColor artifactColor;
     private final double size;
 
+    @Setter
     private double velocity;
 
     public Artifact(Pose pose, String color) {
@@ -25,26 +30,6 @@ public class Artifact {
         artifactPose = pose;
         artifactColor = ArtifactColor.UNKNOWN;
         size = ta;
-    }
-
-    public double getSize() {
-        return size;
-    }
-
-    public ArtifactColor getArtifactColor() {
-        return artifactColor;
-    }
-
-    public Pose getArtifactPose() {
-        return artifactPose;
-    }
-
-    public void setVelocity(double velocity) {
-        this.velocity = velocity;
-    }
-
-    public double getVelocity() {
-        return velocity;
     }
 
     public boolean isMoving(double threshold) {
