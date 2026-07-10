@@ -171,7 +171,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(21, 122))
+                                getRelative(new Pose(20, 123))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -236,7 +236,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(17, 113, Math.toRadians(270)), 144); // For some reason it needs to be 144" for the pose to be accurate
+        nearStartingPose = getRelative(new Pose(17, 113.5, Math.toRadians(270)), 144); // For some reason it needs to be 144" for the pose to be accurate
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 8));
@@ -738,7 +738,7 @@ public class AutonomousApp extends ComplexOpMode {
                         collectSortAndScore(4, detectedPattern),
                         collectSortAndScore(3, detectedPattern),
                         collectSortAndScore(2, detectedPattern)
-                ), null),
+                ), null).interruptOn(() -> matchTime.getRemaining() < 0.2),
 
                 driveForward()
         );

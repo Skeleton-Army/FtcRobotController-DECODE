@@ -27,7 +27,10 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         addCommands(
                 //TODO: fixed 🔰
                 new WaitUntilCommand(() ->
-                       artifactList.fetch().isArtifactDetected()
+                       artifactList.fetch()
+                               .filterInvalidX()
+                               .filterByYLevel(0, 50)
+                               .isArtifactDetected()
                 ),
                 //new InstantCommand(() -> telemetry.addData("artifactPose", artifactList.getClosest()))
                 new DeferredCommand(
@@ -52,6 +55,7 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
 
     private Pose getCorrectedPose(Artifact artifact) {
         Pose pose = new Pose(10, artifact.getArtifactPose().getY(), Math.toRadians(180));
+
         if (alliance == Alliance.RED) {
             pose = pose.mirror();
         }
