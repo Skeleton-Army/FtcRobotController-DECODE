@@ -85,6 +85,7 @@ public class TeleOpApp extends ComplexOpMode {
 
     private final TimerEx zoneExitTimer = new TimerEx(0.3);
     private boolean zoneExitTimerRunning = false;
+    Pose startPose;
 
     @Override
     public void initialize() {
@@ -102,7 +103,8 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
-        Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        //Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        startPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
         if (debugMode) follower.setPose(startPose);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -343,8 +345,8 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
 
-        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
-        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        double driftX = Math.abs(startPose.getX() - follower.getPose().getX());
+        double driftY = Math.abs(startPose.getY() - follower.getPose().getY());
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
         telemetry.addData("Drift total", driftX + driftY);

@@ -14,7 +14,7 @@ import org.firstinspires.ftc.teamcode.config.TransferConfig;
 public class ServoTest extends OpMode {
     private Servo servo;
 
-    public static String name = "kickstand";
+    public static String name = "hood";
 
     @Override
     public void init() {
