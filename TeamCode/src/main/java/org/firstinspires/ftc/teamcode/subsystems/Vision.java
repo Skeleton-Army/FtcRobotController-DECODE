@@ -36,7 +36,7 @@ public class Vision extends SubsystemBase {
     private static final int GPP_TAG_ID = 23;
     private static final int PGP_TAG_ID = 22;
     private static final int PPG_TAG_ID = 21;
-    private static final int FIELD_HALF_Y_LEVEL = 72;
+    private static final int FIELD_HALF_Y_LEVEL = 94;
 
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
@@ -262,7 +262,7 @@ public class Vision extends SubsystemBase {
         }
 
         public ArtifactList filterInvalidX() {
-            artifacts.removeIf(a -> a.getArtifactPose().getX() > 144 || a.getArtifactPose().getX() < 0);
+            artifacts.removeIf(a -> a.getArtifactPose().getX() > 188 || a.getArtifactPose().getX() < 0);
             return this;
         }
 

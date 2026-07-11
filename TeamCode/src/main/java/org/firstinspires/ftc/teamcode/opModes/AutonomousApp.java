@@ -236,15 +236,15 @@ public class AutonomousApp extends ComplexOpMode {
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(55,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(17, 113.5, Math.toRadians(270)), 144); // For some reason it needs to be 144" for the pose to be accurate
+        nearStartingPose = getRelative(new Pose(17, 113.5, Math.toRadians(270)), 188);
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 8));
-        Pose spike2End = getRelative(new Pose(9, 36));
-        Pose spike3End = getRelative(new Pose(9, 59));
-        Pose spike4End = getRelative(new Pose(17, 83.663));
+        Pose spike2End = getRelative(new Pose(9, 58));
+        Pose spike3End = getRelative(new Pose(9, 82));
+        Pose spike4End = getRelative(new Pose(17, 108.037));
 
-        Pose openGateEnd = getRelative(new Pose(15, 77));
+        Pose openGateEnd = getRelative(new Pose(16.5, 122));
 
         farDriveBack = getRelative(new Pose(60, 22.5));
         nearDriveBack = getRelative(new Pose(60, 75));
