@@ -40,6 +40,7 @@ import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
@@ -690,7 +691,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.RED) {
-            return originalPose.mirror(188);
+            return originalPose.mirror(GoalPositions.FIELD_LENGTH);
         }
 
         return originalPose;

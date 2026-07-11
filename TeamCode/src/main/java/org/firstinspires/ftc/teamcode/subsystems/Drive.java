@@ -23,6 +23,7 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 
 import java.util.Collections;
@@ -358,7 +359,7 @@ public class Drive extends SubsystemBase {
 
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.BLUE) {
-            return originalPose.mirror(188);
+            return originalPose.mirror(GoalPositions.FIELD_LENGTH);
         }
 
         return originalPose;
