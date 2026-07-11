@@ -171,7 +171,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(20, 123))
+                                getRelative(new Pose(21.5, 166))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -187,8 +187,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower.getPose(),
-                                getRelative(new Pose(48, 9)),
-                                getRelative(new Pose(12, 8))
+                                getRelative(new Pose(71, 8)),
+                                getRelative(new Pose(13.5, 9))
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -196,8 +196,8 @@ public class AutonomousApp extends ComplexOpMode {
                 )
                 .addPath(
                         new BezierLine(
-                                getRelative(new Pose(12, 8)),
-                                getRelative(new Pose(11, 35))
+                                getRelative(new Pose(13.5, 9)),
+                                getRelative(new Pose(6, 59))
                         )
                 )
                 .setTranslationalConstraint(5)
@@ -213,7 +213,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(13.5, 58.5))
+                                getRelative(new Pose(12, 81))
                         )
                 )
                 .setHeadingInterpolation(
@@ -235,8 +235,8 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     public void setupPaths() {
-        farStartingPose = getRelative(new Pose(55,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(17, 113.5, Math.toRadians(270)), 188);
+        farStartingPose = getRelative(new Pose(72,8, Math.toRadians(90)));
+        nearStartingPose = getRelative(new Pose(18.5, 160, Math.toRadians(270)), 188);
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 8));
@@ -246,9 +246,9 @@ public class AutonomousApp extends ComplexOpMode {
 
         Pose openGateEnd = getRelative(new Pose(16.5, 122));
 
-        farDriveBack = getRelative(new Pose(60, 22.5));
-        nearDriveBack = getRelative(new Pose(60, 75));
-        sortingPose = getRelative(new Pose(30, 113));
+        farDriveBack = getRelative(new Pose(71, 53));
+        nearDriveBack = getRelative(new Pose(71, 113));
+        sortingPose = getRelative(new Pose(31, 157.5));
 
         nearPathsReturn[0] = this::nearDriveBack;
         nearPathsReturn[1] = this::nearDriveBack;
@@ -690,7 +690,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.RED) {
-            return originalPose.mirror();
+            return originalPose.mirror(188);
         }
 
         return originalPose;

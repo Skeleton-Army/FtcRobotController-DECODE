@@ -87,7 +87,7 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(132, 60.5))
+                                            getRelative(new Pose(181, 107))
                                     )
                             )
                             .setLinearHeadingInterpolation(
@@ -120,7 +120,7 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(38.85, 26.72))
+                                            getRelative(new Pose(125.5, 155.5))
                                     )
                             )
                             .setLinearHeadingInterpolation(
@@ -177,8 +177,8 @@ public class Drive extends SubsystemBase {
         if (tabletopMode) return new InstantCommand();
 
 
-        Pose loadingZoneEnd = new Pose(24,18, Math.toRadians(160)); // pose for intaking at the opposing loading zone, the end of the path
-        if (follower.getPose().getX() < 72)
+        Pose loadingZoneEnd = new Pose(22.5,38.5, Math.toRadians(160)); // pose for intaking at the opposing loading zone, the end of the path
+        if (follower.getPose().getX() < 94)
             loadingZoneEnd.mirror();
 
         return new DeferredCommand(
@@ -358,7 +358,7 @@ public class Drive extends SubsystemBase {
 
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.BLUE) {
-            return originalPose.mirror();
+            return originalPose.mirror(188);
         }
 
         return originalPose;
