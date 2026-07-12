@@ -214,7 +214,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(12, 81))
+                                getRelative(new Pose(17, 104))
                         )
                 )
                 .setHeadingInterpolation(
@@ -748,13 +748,13 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
                 nearInitialScore(), // Score first 3 artifacts
-                collect(3).interruptOn(threeArtifactsDetectedSupplier),
+                collect(4).interruptOn(threeArtifactsDetectedSupplier),
                 returnAndScore(4), // Spike 4 so it goes in a straight line
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
-                collect(4).interruptOn(threeArtifactsDetectedSupplier),
+                collect(3).interruptOn(threeArtifactsDetectedSupplier),
                 returnAndScore(4)
                         .interruptOn(() -> matchTime.getRemaining() < 0.2),
                 driveForward()
