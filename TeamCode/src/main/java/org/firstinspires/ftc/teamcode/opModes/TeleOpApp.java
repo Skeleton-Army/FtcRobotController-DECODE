@@ -85,6 +85,7 @@ public class TeleOpApp extends ComplexOpMode {
 
     private final TimerEx zoneExitTimer = new TimerEx(0.3);
     private boolean zoneExitTimerRunning = false;
+
     Pose startPose;
 
     @Override
@@ -190,6 +191,18 @@ public class TeleOpApp extends ComplexOpMode {
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT))
                 .whileActiveContinuous(
                         new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.003))
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.TOUCHPAD)
+                .toggleWhenPressed(
+                        new InstantCommand(() -> {
+                            shooter.setGoalPose(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
+                            shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
+                        }),
+                        new InstantCommand(() -> {
+                            shooter.setGoalPose(GoalPositions.BLUE_GOAL,GoalPositions.RED_GOAL);
+                            shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_FAR,GoalPositions.RED_GOAL_FAR);
+                        })
                 );
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
@@ -329,7 +342,7 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         double goalDistance = follower.getPose().distanceFrom(
-                alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
+                alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.RED_GOAL
         ) / INCHES_TO_METERS;
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
