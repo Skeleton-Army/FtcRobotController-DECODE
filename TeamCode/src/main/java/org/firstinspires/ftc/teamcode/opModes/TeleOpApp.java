@@ -506,8 +506,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Kalman y", -rotatedPose.getY());
         telemetry.addData("Kalman heading", rotatedPose.getHeading() - Math.PI);
 
-        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
-        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        double driftX = Math.abs(startPose.getX() - follower.getPose().getX());
+        double driftY = Math.abs(startPose.getY() - follower.getPose().getY());
         double driftTotal = driftX + driftY;
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
@@ -532,8 +532,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
         telemetry.addData("Turret horizontal offset (deg)", Math.toDegrees(shooter.getHorizontalOffset()));
 
-        double driftXPinpoint = Math.abs(X_OFFSET - pinpointPose.getPose().getX());
-        double driftYPinpoint = Math.abs(Y_OFFSET - pinpointPose.getPose().getY());
+        double driftXPinpoint = Math.abs(startPose.getX() - pinpointPose.getPose().getX());
+        double driftYPinpoint = Math.abs(startPose.getY() - pinpointPose.getPose().getY());
         double driftTotalPinpoint = driftXPinpoint + driftYPinpoint;
         telemetry.addData("Drift x", driftXPinpoint);
         telemetry.addData("Drift y", driftYPinpoint);

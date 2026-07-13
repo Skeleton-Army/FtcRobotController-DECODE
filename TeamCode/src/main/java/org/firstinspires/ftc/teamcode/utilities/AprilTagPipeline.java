@@ -24,10 +24,12 @@ import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.skeletonarmy.marrow.OpModeManager;
 
+import org.firstinspires.ftc.robotcore.external.matrices.VectorF;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.Quaternion;
 import org.firstinspires.ftc.robotcore.external.navigation.YawPitchRollAngles;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibration;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibrationHelper;
@@ -35,6 +37,8 @@ import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibra
 import org.firstinspires.ftc.teamcode.config.BlackWhiteCamera;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
+import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
+import org.firstinspires.ftc.vision.apriltag.AprilTagMetadata;
 import org.firstinspires.ftc.vision.apriltag.AprilTagProcessor;
 import org.opencv.calib3d.Calib3d;
 import org.opencv.core.CvType;
@@ -119,12 +123,38 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
     public AprilTagPipeline()
     {
+
+        AprilTagLibrary.Builder criApriltagLibrary = new AprilTagLibrary.Builder()
+                .addTag(21, "Obelisk_GPP",
+                        6.5, DistanceUnit.INCH)
+                .addTag(22, "Obelisk_PGP",
+                        6.5, DistanceUnit.INCH)
+                .addTag(23, "Obelisk_PPG",
+                        6.5, DistanceUnit.INCH);
+
+        AprilTagMetadata newBlueApriltag = new AprilTagMetadata(
+                20,                                              // Tag ID
+                "BlueTarget",                               // Name
+                6.5,                                             // Size
+                new VectorF(-58.3727f - 48, -55.6425f, 29.5f), DistanceUnit.INCH,
+                new Quaternion(0.2182149f, -0.2182149f, -0.6725937f, 0.6725937f, 0)        // Orientation Quaternion (w, x, y, z)
+        );
+        AprilTagMetadata newRedApriltag = new AprilTagMetadata(
+                24, "RedTarget",
+                6.5, new VectorF(-58.3727f - 48, 55.6425f + 48, 29.5f), DistanceUnit.INCH,
+                new Quaternion(0.6725937f, -0.6725937f, -0.2182149f, 0.2182149f, 0)       // Orientation Quaternion (w, x, y, z)
+        );
+
+        criApriltagLibrary.addTag(newBlueApriltag);
+        criApriltagLibrary.addTag(newRedApriltag);
+
         this.processor = new AprilTagProcessor.Builder()
                 .setDrawAxes(false)
                 .setDrawCubeProjection(true)
                 .setDrawTagOutline(false)
                 .setDrawTagID(false)
-                .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
+   //            .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
+                .setTagLibrary(criApriltagLibrary.build())
                 .setCameraPose(relativePos, new YawPitchRollAngles(AngleUnit.DEGREES, 180, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
 //                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
                 .setLensIntrinsics(baseFx, baseFy, baseCx, baseCy)
