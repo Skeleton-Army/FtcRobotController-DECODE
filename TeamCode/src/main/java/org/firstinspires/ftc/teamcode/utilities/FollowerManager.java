@@ -11,6 +11,8 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 
+import java.util.function.Supplier;
+
 /**
  * Manages the Follower lifecycle across OpModes.
  * Ensures hardware is fresh while maintaining spatial continuity.
@@ -18,18 +20,33 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 public class FollowerManager {
     private static Follower follower;
 
+    public static Follower createPinpointFollower(HardwareMap hardwareMap) {
+        return doCreateFollower(() -> Constants.createPinpointFollower(hardwareMap));
+    }
+
+    public static Follower createFollower(HardwareMap hardwareMap) {
+        return doCreateFollower(() -> Constants.createFollower(hardwareMap));
+    }
+
     /**
      * Creates a new Follower tied to the current HardwareMap.
      * If a previous Follower exists, it inherits its last known Pose.
      */
-    public static Follower createFollower(HardwareMap hardwareMap) {
+    private static Follower doCreateFollower(Supplier<Follower> method) {
         Pose lastPose = null;
 
         if (follower != null) {
             Localizer localizer = follower.poseTracker.getLocalizer();
 
-            if (localizer instanceof PinpointLocalizer) {
-                PinpointLocalizer pinpointLocalizer = (PinpointLocalizer) localizer;
+            Localizer effectiveLocalizer = localizer;
+            if (localizer instanceof FusionLocalizer) {
+                FusionLocalizer fusionLocalizer = (FusionLocalizer) localizer;
+                lastPose = fusionLocalizer.getPose();
+                effectiveLocalizer = fusionLocalizer.getDeadReckoning();
+            }
+
+            if (lastPose == null && effectiveLocalizer instanceof PinpointLocalizer) {
+                PinpointLocalizer pinpointLocalizer = (PinpointLocalizer) effectiveLocalizer;
                 GoBildaPinpointDriver pinpoint = pinpointLocalizer.getPinpoint();
 
                 // Force fresh hardware read
@@ -45,15 +62,21 @@ public class FollowerManager {
             follower = null; // release old driver
         }
 
-        Follower newFollower = Constants.createFollower(hardwareMap);
+        Follower newFollower = method.get();
 
         if (lastPose != null) {
             newFollower.setPose(lastPose);
         }
 
         Localizer newLocalizer = newFollower.poseTracker.getLocalizer();
-        if (newLocalizer instanceof PinpointLocalizer) {
-            GoBildaPinpointDriver pinpoint = ((PinpointLocalizer) newLocalizer).getPinpoint();
+
+        Localizer effectiveNewLocalizer = newLocalizer;
+        if (newLocalizer instanceof FusionLocalizer) {
+            effectiveNewLocalizer = ((FusionLocalizer) newLocalizer).getDeadReckoning();
+        }
+
+        if (effectiveNewLocalizer instanceof PinpointLocalizer) {
+            GoBildaPinpointDriver pinpoint = ((PinpointLocalizer) effectiveNewLocalizer).getPinpoint();
 
             int deviceVersion = pinpoint.getDeviceVersion();
             if (deviceVersion >= 3) {

@@ -1,15 +1,20 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
+import static com.pedropathing.ftc.PoseConverter.poseToPose2D;
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
+import static org.firstinspires.ftc.teamcode.config.KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS;
+import static org.firstinspires.ftc.teamcode.config.VisionConfig.LIMELIGHT_NAME;
+import static org.firstinspires.ftc.teamcode.config.KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
+import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
+import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -23,15 +28,20 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import com.skeletonarmy.marrow.TimerEx;
 import com.skeletonarmy.marrow.settings.Settings;
 
+import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
-import org.firstinspires.ftc.teamcode.config.VisionConfig;
+import org.firstinspires.ftc.teamcode.config.KalmanConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.enums.LaunchZone;
+import org.firstinspires.ftc.teamcode.opModes.tests.EpochTimestampSyncOpMode2;
+import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -39,8 +49,13 @@ import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
+import org.firstinspires.ftc.teamcode.utilities.AprilTagPipeline;
+import org.firstinspires.ftc.teamcode.utilities.CameraUtil;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
+import org.firstinspires.ftc.teamcode.utilities.FusionLocalizer;
+import org.firstinspires.ftc.teamcode.utilities.WelfordVariance;
+import org.firstinspires.ftc.teamcode.utilities.FusionLocalizer;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -52,6 +67,7 @@ public class TeleOpApp extends ComplexOpMode {
     public static final double ROBOT_LENGTH = 14.96; // Front-to-back
     public static final double X_OFFSET = ROBOT_LENGTH / 2.0;
     public static final double Y_OFFSET = ROBOT_WIDTH / 2.0;
+    private static final double METERS_TO_INCHES = 39.37;
 
     private Follower follower;
     private Intake intake;
@@ -59,7 +75,7 @@ public class TeleOpApp extends ComplexOpMode {
     private Transfer transfer;
     private Drive drive;
     private Kickstand kickstand;
-    private Vision vision;
+//    private Vision vision;
 
     private VoltageSensor voltageSensor;
 
@@ -73,15 +89,41 @@ public class TeleOpApp extends ComplexOpMode {
     private TimerEx matchTime;
     private TimerEx overrideTimer;
 
+    private long lastCalculatedSnapshotTs = -1;
     private boolean isOverrideActive = false;
 
     private double lastLoopTime = 0;
     private int loopCount = 0;
+    private long nanoTimeToEpochMillisOffset = 0;
+
+    AprilTagPipeline aprilTagPipeline;
+    private EpochTimestampSyncOpMode2.TimestampedPinpoint pinpoint;
+
+    private double sizeVarianceX;
+    private double sizeVarianceY;
+    private double sizeVarianceAngle;
 
     private double totalTraveledX = 0;
     private double totalTraveledY = 0;
 
     private boolean autoFireEnabled = true;
+
+    private long lastTimeNanos = 0;
+
+    private long highSpeedStartNanos = 0;
+    private boolean wasMovingFast = false;
+
+    double calculatedLatencySeconds = 0;
+    double calculatedLatencyMillis = 0;
+    double positionGap = 0;
+    private long lastInjectedFrameTs = Long.MIN_VALUE;
+
+    private AprilTagPipeline.PoseSnapshot lastKnownSnapshot = null;
+
+    Pose pinpointPose;
+
+    WelfordVariance welfordVarianceX =  new WelfordVariance();
+    WelfordVariance welfordVarianceY =  new WelfordVariance();
 
     private final TimerEx zoneExitTimer = new TimerEx(0.3);
     private boolean zoneExitTimerRunning = false;
@@ -108,6 +150,13 @@ public class TeleOpApp extends ComplexOpMode {
         startPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
         if (debugMode) follower.setPose(startPose);
 
+        // 1. Calculate the real-time synchronization offset between clocks
+        long epochMillisSample = System.currentTimeMillis();
+        long nanoTimeSample = System.nanoTime();
+
+        // This converts any System.nanoTime() reading directly into an Epoch Millisecond timestamp
+        nanoTimeToEpochMillisOffset = epochMillisSample - (nanoTimeSample / 1_000_000);
+
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
@@ -116,13 +165,16 @@ public class TeleOpApp extends ComplexOpMode {
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
         kickstand = new Kickstand(hardwareMap);
-        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
+//        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.APRILTAG_PIPELINE);
 
-        vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
+        //vision.addRelocalizationListener(drive::holdPoint); // Hold the new pose after relocalizing
 
         voltageSensor = hardwareMap.voltageSensor.iterator().next();
 
         autoFireEnabled = Settings.get("auto_fire", true);
+
+        aprilTagPipeline = new AprilTagPipeline();
+        CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
 
         gamepadEx1 = new GamepadEx(gamepad1);
         gamepadEx2 = new GamepadEx(gamepad2);
@@ -272,6 +324,76 @@ public class TeleOpApp extends ComplexOpMode {
         matchTime.start();
     }
 
+    // kalman debugging, that includes the following:
+    // pinpoint and apriltag poses v
+    // covariance of the model v
+    // the calculated stdevs
+
+    public void kalmanDebug(){
+        if (lastKnownSnapshot != null) {
+            Pose2D apriltagPose2D = poseToPose2D(lastKnownSnapshot.pose, FTCCoordinates.INSTANCE);
+            telemetry.addData("apriltag pose x", -apriltagPose2D.getX(DistanceUnit.INCH));
+            telemetry.addData("apriltag pose y", -apriltagPose2D.getY(DistanceUnit.INCH));
+            telemetry.addData("apriltag pose heading", apriltagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
+
+            Logger.recordOutput("apriltag pose x", lastKnownSnapshot.pose.getX());
+            Logger.recordOutput("apriltag pose y", lastKnownSnapshot.pose.getY());
+            Logger.recordOutput("apriltag pose heading", lastKnownSnapshot.pose.getHeading());
+        }
+
+        pinpointPose = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
+        Pose2D pinpointPos2D = poseToPose2D(pinpointPose, FTCCoordinates.INSTANCE);
+        telemetry.addData("pinpoint pose x", -pinpointPos2D.getX(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose y", -pinpointPos2D.getY(DistanceUnit.INCH));
+        telemetry.addData("pinpoint pose heading", pinpointPos2D.getHeading(AngleUnit.RADIANS) - Math.PI);
+
+        telemetry.addData("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
+        telemetry.addData("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
+        telemetry.addData("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
+
+        telemetry.addData("[TUNER] Position Gap (in)", positionGap);
+        telemetry.addData("[TUNER] CALC LATENCY (ms)", calculatedLatencyMillis);
+
+        telemetry.addData("stdev x", sizeVarianceX);
+        telemetry.addData("stdev y", sizeVarianceX);
+        telemetry.addData("stdev heading", sizeVarianceAngle);
+
+        Logger.recordOutput("covariance x", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(0, 0));
+        Logger.recordOutput("covariance y", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(1, 1));
+        Logger.recordOutput("covariance heading", ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getCovariance().get(2, 2));
+
+        Logger.recordOutput("stdev x", sizeVarianceX);
+        Logger.recordOutput("stdev y", sizeVarianceY);
+        Logger.recordOutput("stdev heading", sizeVarianceAngle);
+    }
+
+    public void updateKFApriltagReading() {
+        AprilTagPipeline.PoseSnapshot snapshot = aprilTagPipeline.getPoseSnapshot();
+
+        if (snapshot != null) {
+            lastKnownSnapshot = snapshot;
+        }
+
+        if (snapshot == null
+                || !KalmanConfig.enableMeasurements
+                || drive.distanceFromLaunchZone() >= 20
+                || Math.abs(follower.getAngularVelocity()) >= 0.5) {
+            return;
+        }
+
+        // Skip duplicate camera frames — the main loop can outrun the camera's
+        // frame rate, which would otherwise re-inject the same detection repeatedly.
+        if (snapshot.timestampNanos == lastInjectedFrameTs) return;
+        lastInjectedFrameTs = snapshot.timestampNanos;
+
+        long cameraLatencyNanos = (long) (CAMERA_PHYSICAL_LATENCY_MS * 1e6);
+        long pinpointLatencyNanos = (long) (KalmanConfig.PINPOINT_I2C_LATENCY_MS * 1e6);
+        long correctedTimestamp = snapshot.timestampNanos - (cameraLatencyNanos - pinpointLatencyNanos);
+
+        FusionLocalizer fusionLocalizer = (FusionLocalizer) follower.getPoseTracker().getLocalizer();
+        fusionLocalizer.addMeasurement(snapshot.pose, correctedTimestamp);
+    }
+
     @Override
     public void run() {
         double currentTime = matchTime.getElapsed();
@@ -286,6 +408,8 @@ public class TeleOpApp extends ComplexOpMode {
             if (deltaX > 0.05) totalTraveledX += deltaX;
             if (deltaY > 0.05) totalTraveledY += deltaY;
         }
+
+        updateKFApriltagReading();
 
         double voltage = voltageSensor.getVoltage();
 
@@ -358,11 +482,36 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
 
-        double driftX = Math.abs(startPose.getX() - follower.getPose().getX());
-        double driftY = Math.abs(startPose.getY() - follower.getPose().getY());
+        kalmanDebug();
+
+        //telemetry.addData(aprilTagPipeline.getProcessor().getDetections().get(0).rawPose);
+
+        if (lastKnownSnapshot != null) {
+            telemetry.addData("x apriltag - x pinpoint", lastKnownSnapshot.pose.minus(pinpointPose).getX());
+            welfordVarianceX.update(lastKnownSnapshot.pose.minus(pinpointPose).getX());
+            telemetry.addData("mean x error", welfordVarianceX.mean());
+            telemetry.addData("y apriltag - y pinpoint", lastKnownSnapshot.pose.minus(pinpointPose).getY());
+            welfordVarianceY.update(lastKnownSnapshot.pose.minus(pinpointPose).getY());
+            telemetry.addData("mean y error", welfordVarianceY.mean());
+            telemetry.addData("heading apriltag - heading pinpoint", lastKnownSnapshot.pose.minus(pinpointPose).getHeading());
+        }
+
+        telemetry.addData("Image size x",aprilTagPipeline.getTagSizeX());
+        telemetry.addData("Image size y",aprilTagPipeline.getTagSizeY());
+
+        telemetry.addData("Pedro Robot x", follower.getPose().getX());
+        telemetry.addData("Pedro Robot y", follower.getPose().getY());
+        telemetry.addData("Pedro Robot heading", follower.getPose().getHeading());
+        telemetry.addData("Kalman x", -rotatedPose.getX());
+        telemetry.addData("Kalman y", -rotatedPose.getY());
+        telemetry.addData("Kalman heading", rotatedPose.getHeading() - Math.PI);
+
+        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
+        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        double driftTotal = driftX + driftY;
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
-        telemetry.addData("Drift total", driftX + driftY);
+        telemetry.addData("Drift total", driftTotal);
 
         telemetry.addData("Total Traveled X", totalTraveledX);
         telemetry.addData("Total Traveled Y", totalTraveledY);
@@ -383,47 +532,66 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
         telemetry.addData("Turret horizontal offset (deg)", Math.toDegrees(shooter.getHorizontalOffset()));
 
-        telemetry.addData("hood pos", shooter.getRawHoodPosition());
-        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
-        telemetry.addData("Flywheel RPM", shooter.getRPM());
+        double driftXPinpoint = Math.abs(X_OFFSET - pinpointPose.getPose().getX());
+        double driftYPinpoint = Math.abs(Y_OFFSET - pinpointPose.getPose().getY());
+        double driftTotalPinpoint = driftXPinpoint + driftYPinpoint;
+        telemetry.addData("Drift x", driftXPinpoint);
+        telemetry.addData("Drift y", driftYPinpoint);
+        telemetry.addData("Drift total pinpoint", driftTotalPinpoint);
+
+        if (driftTotalPinpoint > driftTotal)
+            telemetry.addData("Kalman more accurate by", driftTotalPinpoint - driftTotal);
+
+        else if (driftTotalPinpoint <= driftTotal)
+            telemetry.addData("pinpoint is more accurate by", driftTotal- driftTotalPinpoint);
+
+//        telemetry.addData("Robot velocity", follower.poseTracker.getVelocity());
+//        telemetry.addData("Distance from GOAL", goalDistance);
+//        telemetry.addData("Turret angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+//        telemetry.addData("Turret target (deg)", Math.toDegrees(shooter.wrapped));
+//        telemetry.addData("Turret target solution (deg)", Math.toDegrees(shooter.solution.getHorizontalAngle()));
+//        telemetry.addData("Turret error (deg)", Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES));
+//        telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+//
+//        telemetry.addData("hood pos", shooter.getRawHoodPosition());
+//        telemetry.addData("hood angle(deg)", shooter.getHoodAngleDegrees());
+//        telemetry.addData("Flywheel RPM", shooter.getRPM());
         telemetry.addData("Filtered Flywheel RPM", shooter.filteredRPM);
         telemetry.addData("Target solution RPM", shooter.getTargetRPM());
         telemetry.addData("Flywheel error", Math.abs(shooter.getRPM() - shooter.getTargetRPM()));
-        telemetry.addData("Intake RPM", intake.getRPM());
-
-        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
-        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
-        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
-        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
-        telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
-        telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
+//        telemetry.addData("Intake RPM", intake.getRPM());
+//
+//        telemetry.addData("Shot Hood Angle", shooter.shotHoodAngle);
+//        telemetry.addData("Shot Turret Angle", shooter.shotTurretAngle);
+//        telemetry.addData("Shot Flywheel RPM", shooter.shotFlywheelRPM);
+//        telemetry.addData("Shot goal distance", shooter.shotGoalDistance);
+//        telemetry.addData("robot vel x ", follower.getVelocity().getXComponent());
+//        telemetry.addData("robot vel y ", follower.getVelocity().getYComponent());
 
         telemetry.update();
 
-        if (loopCount % 2 == 0) {
-            Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
+        Pose2d robotPose = new Pose2d(-rotatedPose.getX() / INCHES_TO_METERS, -rotatedPose.getY() / INCHES_TO_METERS, new Rotation2d(-rotatedPose.getHeading()));
 
-            Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
-            Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
-            Logger.recordOutput("Robot Pose", robotPose);
-            Logger.recordOutput("Voltage", voltage);
-            Logger.recordOutput("Inside LAUNCH ZONE", drive.isInsideLaunchZonePredictive());
-            Logger.recordOutput("Reached Angle", shooter.reachedAngle());
-            Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
-            Logger.recordOutput("Can Shoot", shooter.getCanShoot());
-            Logger.recordOutput("Is Currently Shooting", shooter.getCurrentCommand() != null);
-            Logger.recordOutput("Distance From Pose", goalDistance);
-            Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
-            Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
-            Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
-            Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
-            Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
-            Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
-            Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
-            Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
-            Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
-            Logger.recordOutput("Turret/Turret/ Turret offset (deg)", Math.toDegrees(shooter.getHorizontalOffset()));
-        }
+        Logger.recordOutput("Diagnostics/LoopTimeMs", loopTimeMs);
+        Logger.recordOutput("Diagnostics/Hz", 1000.0 / loopTimeMs);
+        Logger.recordOutput("Robot Pose", robotPose);
+        Logger.recordOutput("Voltage", voltage);
+        Logger.recordOutput("Inside LAUNCH ZONE", drive.isInsideLaunchZonePredictive());
+        Logger.recordOutput("Reached Angle", shooter.reachedAngle());
+        Logger.recordOutput("Can Shoot RPM calc", shooter.getCanShootRPMCalc());
+        Logger.recordOutput("Can Shoot", shooter.getCanShoot());
+        Logger.recordOutput("Is Currently Shooting", shooter.getCurrentCommand() != null);
+        Logger.recordOutput("Distance From Pose", goalDistance);
+        Logger.recordOutput("Shooter/Flywheel/ Filtered RPM", shooter.filteredRPM);
+        Logger.recordOutput("Shooter/Flywheel/Error", Math.abs(shooter.filteredRPM - shooter.getTargetRPM()));
+        Logger.recordOutput("Shooter/Flywheel/ Target", shooter.getTargetRPM());
+        Logger.recordOutput("Shooter/Hood/ Raw Position", shooter.getRawHoodPosition());
+        Logger.recordOutput("Shooter/Hood/ Angle (deg)", shooter.getHoodAngleDegrees());
+        Logger.recordOutput("Turret/Turret/ Angle (deg)", shooter.getTurretAngle(AngleUnit.DEGREES));
+        Logger.recordOutput("Turret/Turret/ Angle Target (deg)", Math.toDegrees(shooter.wrapped));
+        Logger.recordOutput("Turret/Turret/ Angle Error (deg)", Math.abs(Math.toDegrees(shooter.wrapped) - shooter.getTurretAngle(AngleUnit.DEGREES)));
+        Logger.recordOutput("Turret/Turret/ Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
+        Logger.recordOutput("Turret/Turret/ Turret offset (deg)", Math.toDegrees(shooter.getHorizontalOffset()));
     }
 
     private boolean isShootingAllowed() {
