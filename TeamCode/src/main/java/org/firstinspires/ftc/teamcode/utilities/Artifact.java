@@ -8,43 +8,36 @@ import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 
 import java.util.Locale;
 
+import lombok.Getter;
+
+@Getter
 public class Artifact {
-    private final Pose artifactPose;
-    private final ArtifactColor artifactColor;
+    private final Pose pose;
+    private final ArtifactColor color;
     private final double size;
 
     private double velocity;
+    private double velocityX;
+    private double velocityY;
 
+    public static Pose predictedPose;
     public Artifact(Pose pose, String color) {
-        artifactPose = pose;
-        artifactColor = parseColor(color);
+        this.pose = pose;
+        this.color = parseColor(color);
         size = Double.NaN;
     }
 
     public Artifact(Pose pose, double ta) {
-        artifactPose = pose;
-        artifactColor = ArtifactColor.UNKNOWN;
+        this.pose = pose;
+        color = ArtifactColor.UNKNOWN;
         size = ta;
     }
 
-    public double getSize() {
-        return size;
-    }
-
-    public ArtifactColor getArtifactColor() {
-        return artifactColor;
-    }
-
-    public Pose getArtifactPose() {
-        return artifactPose;
-    }
-
-    public void setVelocity(double velocity) {
-        this.velocity = velocity;
-    }
-
-    public double getVelocity() {
-        return velocity;
+    /** Sets velocity as a vector (inches/sec in field X/Y). Magnitude is derived automatically. */
+    public void setVelocity(double velocityX, double velocityY) {
+        this.velocityX = velocityX;
+        this.velocityY = velocityY;
+        this.velocity = Math.hypot(velocityX, velocityY);
     }
 
     public boolean isMoving(double threshold) {
@@ -65,31 +58,18 @@ public class Artifact {
         }
     }
 
-    public static ArtifactColor parseColor(int color) {
-        switch (color) {
-            case 1:
-                return ArtifactColor.PURPLE;
-            case 2:
-                return ArtifactColor.GREEN;
-            case 3:
-                return ArtifactColor.MIXED;
-            default:
-                return ArtifactColor.UNKNOWN;
-        }
-    }
-
-    public static Pair<Double, Double> unpack(double packed) {
-        double tx = packed / 1000.0;
-        double ty = packed % 100;
-        return new Pair<>(tx, ty);
-    }
-
     @NonNull
     @Override
     public String toString() {
         return String.format(Locale.ROOT,
-                "pos: [%f, %f] color: %s",
-                artifactPose.getX(), artifactPose.getY(), artifactColor.name());
+                "pos: [%f, %f] color: %s, vel: %f",
+                pose.getX(), pose.getY(), color.name(), velocity);
     }
 
+    public static Pose predictPose(Artifact artifact, double deltaTime) {
+        double predictedX = artifact.getPose().getX() + artifact.getVelocityX() * deltaTime;
+        double predictedY = artifact.getPose().getY() + artifact.getVelocityY() * deltaTime;
+        predictedPose = new Pose(predictedX, predictedY, artifact.getPose().getHeading());
+        return predictedPose;
+    }
 }
