@@ -112,7 +112,7 @@ public class FusionLocalizer implements Localizer {
         // That corrupted the covariance used for interpolation/gain during
         // addMeasurement.
         history.put(now, new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P.copy()));
-        if (history.size() > bufferSize) history.pollFirstEntry();
+        trimHistory();
 
         lastUpdateNanos = System.nanoTime() - tStart;
     }
@@ -335,6 +335,8 @@ public class FusionLocalizer implements Localizer {
         }
         lastMeasurementPropagationNanos = System.nanoTime() - tPropStart;
 
+        trimHistory();
+
         currentPosition = history.lastEntry().getValue().pose;
         P = history.lastEntry().getValue().covariance;
 
@@ -438,6 +440,12 @@ public class FusionLocalizer implements Localizer {
             if (v < EPSILON) {
                 P.set(i, i, EPSILON);
             }
+        }
+    }
+
+    private void trimHistory() {
+        while (history.size() > bufferSize) {
+            history.pollFirstEntry();
         }
     }
 
