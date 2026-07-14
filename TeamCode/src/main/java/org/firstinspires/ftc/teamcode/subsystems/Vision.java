@@ -10,16 +10,20 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.skeletonarmy.marrow.OpModeManager;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.commands.GoToArtifactCommand;
 import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.ArtifactSorting;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
+import org.opencv.core.Mat;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Consumer;
@@ -47,6 +51,20 @@ public class Vision extends SubsystemBase {
     // ─── Artifact velocity tracking ─────────────────────────────────────────────
     private List<Artifact> previousArtifacts = new ArrayList<>();
     private long previousFetchTimeNanos = -1;
+
+    double ALPHA = 0.2;
+    double prevFilteredDeltaXP = 0;
+    double prevFilteredDeltaYP = 0;
+    private double[] previousPythonOutput = null;
+
+    // Below this speed (inches/sec), a computed velocity is treated as sensor/vision
+    // jitter rather than real motion and is clamped to zero. Tune alongside
+    // MAX_ARTIFACT_VELOCITY — this should be comfortably smaller than that threshold.
+    public static double VELOCITY_NOISE_FLOOR = 0.8;
+
+    // Smoothing factor for the velocity estimate (0-1). Higher = trusts the newest
+    // raw measurement more; lower = smoother but slower to react to real changes.
+    public static double VELOCITY_SMOOTHING_ALPHA = 0.2;
     // ────────────────────────────────────────────────────────────────────────────
 
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
@@ -201,16 +219,30 @@ public class Vision extends SubsystemBase {
             artifacts.clear(); // this is called every poll (e.g. from WaitUntilCommand), so we must not accumulate stale results
             if (llResult == null) return this;
 
+            double[] output = llResult.getPythonOutput();
+
+            // The Limelight pipeline runs at its own (slower) framerate, but this method
+            // gets polled every scheduler tick. Between real camera frames, getPythonOutput()
+            // returns the exact same values as last time. Treating that as a "new" sample
+            // would compare a frame against itself (reading as zero velocity even while the
+            // ball is genuinely moving) and would also corrupt dt for the *next* real frame
+            // by advancing previousFetchTimeNanos too early. So: on a duplicate frame, just
+            // hand back the last known artifacts/velocities untouched.
+            if (previousPythonOutput != null && Arrays.equals(output, previousPythonOutput)) {
+                artifacts.addAll(previousArtifacts);
+                return this;
+            }
+            previousPythonOutput = output;
+
             long now = System.nanoTime();
-            double dt = previousFetchTimeNanos < 0 ? -1 : (now - previousFetchTimeNanos) / 1e9;
+            double dt_sec = previousFetchTimeNanos < 0 ? -1 : (now - previousFetchTimeNanos) / 1e9;
 
             List<Artifact> freshArtifacts = new ArrayList<>();
 
-            double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
             if (count != 0) artifacts.clear();
 
-            for (int i = 0; i < count * 2; i += 2) {
+            for (int i = 0; i < count * 3; i += 3) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
                 double ta = output[3 + i];
@@ -218,7 +250,7 @@ public class Vision extends SubsystemBase {
                 freshArtifacts.add(new Artifact(absPose, ta));
             }
 
-            List<Artifact> trackedArtifacts = estimateVelocities(freshArtifacts, dt);
+            List<Artifact> trackedArtifacts = estimateVelocities(freshArtifacts, dt_sec);
 
             artifacts.addAll(trackedArtifacts);
             previousArtifacts = trackedArtifacts;
@@ -234,8 +266,8 @@ public class Vision extends SubsystemBase {
             Pose robotPose = poseTracker.getPose();
             artifacts.sort(Comparator.comparingDouble(a ->
                     Math.hypot(
-                            a.getArtifactPose().getX() - robotPose.getX(),
-                            a.getArtifactPose().getY() - robotPose.getY()
+                            a.getPose().getX() - robotPose.getX(),
+                            a.getPose().getY() - robotPose.getY()
                     )
             ));
             return this;
@@ -243,7 +275,7 @@ public class Vision extends SubsystemBase {
 
         /** Sorts by color ordinal ascending (PURPLE → GREEN → MIXED → UNKNOWN). */
         public ArtifactList sortByColor() {
-            artifacts.sort(Comparator.comparingInt(a -> a.getArtifactColor().ordinal()));
+            artifacts.sort(Comparator.comparingInt(a -> a.getColor().ordinal()));
             return this;
         }
 
@@ -266,23 +298,23 @@ public class Vision extends SubsystemBase {
 
         /** Keeps only artifacts whose color matches the given {@link ArtifactColor}. */
         public ArtifactList filterByColor(ArtifactColor color) {
-            artifacts.removeIf(a -> a.getArtifactColor() != color);
+            artifacts.removeIf(a -> a.getColor() != color);
             return this;
         }
 
         public ArtifactList filterStationary(double maxVelocity) {
-            artifacts.removeIf(a -> a.isMoving(maxVelocity));
+            artifacts.removeIf(a -> !a.isMoving(maxVelocity));
             return this;
         }
 
         public ArtifactList filterByYLevel(double minY, double maxY) {
-            artifacts.removeIf(a -> a.getArtifactPose().getY() < minY);
-            artifacts.removeIf(a -> a.getArtifactPose().getY() > maxY);
+            artifacts.removeIf(a -> a.getPose().getY() < minY);
+            artifacts.removeIf(a -> a.getPose().getY() > maxY);
             return this;
         }
 
         public ArtifactList filterInvalidX() {
-            artifacts.removeIf(a -> a.getArtifactPose().getX() > 188 || a.getArtifactPose().getX() < 0);
+            artifacts.removeIf(a -> a.getPose().getX() > 188 || a.getPose().getX() < 0);
             return this;
         }
 
@@ -295,7 +327,7 @@ public class Vision extends SubsystemBase {
         }
 
         public Artifact getBiggest() {
-            if (artifacts.isEmpty()) return null;
+            if (artifacts.isEmpty()) return new Artifact(new Pose(Double.NaN, Double.NaN), 0);
             return sortBySize().artifacts.get(0);
         }
 
@@ -312,29 +344,83 @@ public class Vision extends SubsystemBase {
         private List<Artifact> estimateVelocities(List<Artifact> freshArtifacts, double dt) {
             if (dt <= 0 || previousArtifacts.isEmpty()) return freshArtifacts; // nothing to compare against; defaults to velocity 0
 
-            List<Artifact> tracked = new ArrayList<>(freshArtifacts.size());
-            for (Artifact artifact : freshArtifacts) {
-                double bestDist = Double.MAX_VALUE;
-                for (Artifact prev : previousArtifacts) {
-                    double dist = Math.hypot(
-                            artifact.getArtifactPose().getX() - prev.getArtifactPose().getX(),
-                            artifact.getArtifactPose().getY() - prev.getArtifactPose().getY()
-                    );
+            // Match against where each previous artifact is PREDICTED to be now (its last
+            // position extrapolated forward by its last known velocity), not where it was
+            // last seen. A ball's index in the detector's output isn't stable frame to frame
+            // (i=1 this frame could be i=3 next frame), so identity is never assumed from
+            // index — but matching against last raw position alone also breaks down for
+            // anything actually moving: a fast ball can easily travel further than
+            // MAX_ARTIFACT_MATCH_DISTANCE in one dt, causing it to fail to match (defaulting
+            // back to 0 velocity) or to wrongly latch onto some other nearby detection instead.
+            // Predicting forward first keeps a genuinely-moving ball's predicted position near
+            // its next real detection, so matching stays correct even while it's moving.
+            List<Mat.Tuple3<Double>> candidates = new ArrayList<>();
+            for (int f = 0; f < freshArtifacts.size(); f++) {
+                for (int p = 0; p < previousArtifacts.size(); p++) {
+                    Pose predictedPrevPose = Artifact.predictPose(previousArtifacts.get(p), dt);
+                    double dist = freshArtifacts.get(f).getPose().distanceFrom(predictedPrevPose);
+                    if (dist <= MAX_ARTIFACT_MATCH_DISTANCE) {
+                        candidates.add(new Mat.Tuple3<>((double) f, (double) p, dist));
+                    }
+                }
+            }
+            candidates.sort(Comparator.comparingDouble(Mat.Tuple3::get_2));
 
-                    if (dist < bestDist) bestDist = dist;
+            boolean[] freshTaken = new boolean[freshArtifacts.size()];
+            boolean[] prevTaken = new boolean[previousArtifacts.size()];
+
+            for (Mat.Tuple3<Double> c : candidates) {
+                int f = c.get_0().intValue();
+                int p = c.get_1().intValue();
+                if (freshTaken[f] || prevTaken[p]) continue;
+                freshTaken[f] = true;
+                prevTaken[p] = true;
+
+                Artifact fresh = freshArtifacts.get(f);
+                Artifact prev = previousArtifacts.get(p);
+
+                double deltaXP = fresh.getPose().getX() - prev.getPose().getX();
+                double deltaYP = fresh.getPose().getY() - prev.getPose().getY();
+
+                // Raw instantaneous velocity from actual measured positions (not predicted
+                // ones) — the prediction above was only to help matching, not to compute speed.
+                double rawVx = (deltaXP) / dt;
+                double rawVy = (deltaYP) / dt;
+
+                if (Math.hypot(rawVx, rawVy) < VELOCITY_NOISE_FLOOR) {
+                    rawVx = 0;
+                    rawVy = 0;
                 }
 
-                if (bestDist <= MAX_ARTIFACT_MATCH_DISTANCE) {
-                    artifact.setVelocity(bestDist / dt);
-                }
+                /*
+                // Exponential smoothing against the track's previous velocity estimate so a
+                // single noisy frame doesn't cause a wild velocity spike/dip.
+                double vx = VELOCITY_SMOOTHING_ALPHA * rawVx + (1 - VELOCITY_SMOOTHING_ALPHA) * prev.getVelocityX();
+                double vy = VELOCITY_SMOOTHING_ALPHA * rawVy + (1 - VELOCITY_SMOOTHING_ALPHA) * prev.getVelocityY();
+                 */
 
-                tracked.add(artifact);
+                double someCon = 1;
+
+                double filteredXP = ALPHA * deltaXP + (1 - ALPHA) * prevFilteredDeltaXP;
+                double filteredYP = ALPHA * deltaYP + (1 - ALPHA) * prevFilteredDeltaYP;
+                /*
+                Telemetry telemetry = OpModeManager.getTelemetry();
+                telemetry.addData("deltax", deltaXP);
+                telemetry.addData("deltaY", deltaYP);
+                 */
+
+                if(Math.abs(deltaXP) > 5 || Math.abs(deltaYP) > 5) continue;
+
+                double vx = filteredXP * someCon / dt;
+                double vy = filteredYP * someCon / dt;
+
+                prevFilteredDeltaXP = filteredXP;
+                prevFilteredDeltaYP = filteredYP;
+                fresh.setVelocity(vx, vy);
             }
 
-            return tracked;
+            return freshArtifacts;
         }
-
-
 
         private double getDistance(double ty) {
             double angleGoalRad = Math.toRadians(LIMELIGHT_MOUNT_ANGLE + ty);

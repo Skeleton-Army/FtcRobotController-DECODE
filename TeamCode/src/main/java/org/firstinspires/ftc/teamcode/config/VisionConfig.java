@@ -21,6 +21,5 @@ public class VisionConfig {
     public static double X_OFFSET_INCHES = 8; //-7.67
 
     // Velocity Tracking
-    public static final double MAX_ARTIFACT_MATCH_DISTANCE = 8.0;
-
+    public static double MAX_ARTIFACT_MATCH_DISTANCE = 3.0;
 }

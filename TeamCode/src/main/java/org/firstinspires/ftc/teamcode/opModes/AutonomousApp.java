@@ -622,6 +622,8 @@ public class AutonomousApp extends ComplexOpMode {
         shooter.updateVoltage(voltage);
         if (!isSorting) shooter.setUpdateFlywheel(drive.distanceFromLaunchZone() < 40);
 
+        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
+
         telemetry.addData("Robot Pedro X", follower.getPose().getX());
         telemetry.addData("Robot Pedro Y", follower.getPose().getY());
         telemetry.addData("Robot Pedro Heading (deg)", Math.toDegrees(follower.getPose().getHeading()));
@@ -632,10 +634,12 @@ public class AutonomousApp extends ComplexOpMode {
         telemetry.addData("reachedAngle", shooter.reachedAngle());
         telemetry.addData("canShoot", shooter.getCanShoot());
         telemetry.addData("In Zone", drive.isInsideLaunchZonePredictive());
+        telemetry.addData("Robot x", -rotatedPose.getX());
+        telemetry.addData("Robot y", -rotatedPose.getY());
+        telemetry.addData("Robot heading", rotatedPose.getHeading() - Math.PI);
 
         final double inchesToMeters = 39.37;
 
-        Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
         Pose2d robotPose = new Pose2d(-rotatedPose.getX() / inchesToMeters, -rotatedPose.getY() / inchesToMeters, new Rotation2d(rotatedPose.getHeading() - Math.PI));
 
         Logger.recordOutput("Robot Pose", robotPose);
