@@ -17,6 +17,7 @@ import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.ArtifactSorting;
@@ -199,6 +200,8 @@ public class Vision extends SubsystemBase {
             if (llResult == null) return this;
             double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
+            if (count != 0) artifacts.clear();
+
             for (int i = 0; i < count * 2; i += 2) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
@@ -249,6 +252,17 @@ public class Vision extends SubsystemBase {
         /** Keeps only artifacts whose color matches the given {@link ArtifactColor}. */
         public ArtifactList filterByColor(ArtifactColor color) {
             artifacts.removeIf(a -> a.getArtifactColor() != color);
+            return this;
+        }
+
+        public ArtifactList filterByYLevel(double minY, double maxY) {
+            artifacts.removeIf(a -> a.getArtifactPose().getY() < minY);
+            artifacts.removeIf(a -> a.getArtifactPose().getY() > maxY);
+            return this;
+        }
+
+        public ArtifactList filterInvalidX() {
+            artifacts.removeIf(a -> a.getArtifactPose().getX() > 144 || a.getArtifactPose().getX() < 0);
             return this;
         }
 

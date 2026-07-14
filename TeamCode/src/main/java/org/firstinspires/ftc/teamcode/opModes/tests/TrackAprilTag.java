@@ -7,6 +7,7 @@ import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.config.Config;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
@@ -32,6 +33,7 @@ import java.util.List;
 
 @Config
 @TeleOp
+@Disabled
 public class TrackAprilTag extends ComplexOpMode {
     public static double Ki = 0.00008;
     public static double Kp = 0.200011;

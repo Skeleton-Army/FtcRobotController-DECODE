@@ -1,6 +1,7 @@
 package org.firstinspires.ftc.teamcode.opModes.tests;
 
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
@@ -15,6 +16,7 @@ import java.util.List;
 import java.util.Locale;
 
 @TeleOp(name = "FTC SysId Logger Fixed", group = "SysId")
+@Disabled
 public class SysIdRunner extends OpMode {
 
     /* ================= CONFIG ================= */
