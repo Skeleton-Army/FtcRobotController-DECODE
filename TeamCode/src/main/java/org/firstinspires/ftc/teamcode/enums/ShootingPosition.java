@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.enums;
 
-public enum StartingPosition {
+public enum ShootingPosition {
     CLOSE,
-    FAR,
-    MIDDLE
+    FAR
 }

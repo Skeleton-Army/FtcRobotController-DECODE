@@ -44,6 +44,7 @@ import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
+import org.firstinspires.ftc.teamcode.enums.ShootingPosition;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -85,6 +86,7 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain spike4Open;
     private PathChain obeliskInitialScorePath;
     private PathChain initialFarPath;
+    private PathChain initialMiddlePath;
     private PathChain initialNearPath;
 
     private Alliance alliance;
@@ -95,6 +97,7 @@ public class AutonomousApp extends ComplexOpMode {
     private VoltageSensor voltageSensor;
 
     private Pose farDriveBack;
+    private Pose middleDriveBack;
     private Pose nearDriveBack;
     private Pose sortingPose;
     private double lastLoopTime = 0;
@@ -234,6 +237,23 @@ public class AutonomousApp extends ComplexOpMode {
                 .setGlobalDeceleration()
                 .build();
     }
+    public PathChain getMiddleCyclePath() {
+        Pose targetPose = (prompter.get("shooting_position") == ShootingPosition.CLOSE)
+                ? new Pose(94, 94)
+                : new Pose(94, 70);
+
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(targetPose)
+                        )
+                )
+                .setConstantHeadingInterpolation(getRelative(Math.toRadians(180)))
+                .setGlobalDeceleration()
+                .build();
+    }
 
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(72,8, Math.toRadians(90)));
@@ -248,6 +268,9 @@ public class AutonomousApp extends ComplexOpMode {
         Pose openGateEnd = getRelative(new Pose(16.5, 122));
 
         farDriveBack = getRelative(new Pose(71, 53));
+        middleDriveBack = (prompter.get("shooting_position") == ShootingPosition.CLOSE)
+                ? getRelative(new Pose(113.00, 100.00))
+                : getRelative(new Pose(113.00, 63.00));
         nearDriveBack = getRelative(new Pose(71, 113));
         sortingPose = getRelative(new Pose(31, 157.5));
 
@@ -281,6 +304,20 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierLine(
                                 follower::getPose,
                                 farDriveBack
+                        )
+                )
+                .setConstantHeadingInterpolation(
+                        getRelative(Math.toRadians(180))
+                )
+                .setGlobalDeceleration()
+                .build();
+
+        initialMiddlePath = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower::getPose,
+                                middleDriveBack
                         )
                 )
                 .setConstantHeadingInterpolation(
@@ -585,10 +622,12 @@ public class AutonomousApp extends ComplexOpMode {
         Settings.set("tabletop_mode", false, true);
 
         prompter.prompt("alliance", new OptionPrompt<>("SELECT ALLIANCE", Alliance.RED, Alliance.BLUE))
-                .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE))
+                .prompt("starting_position", new OptionPrompt<>("SELECT STARTING POSITION", StartingPosition.FAR, StartingPosition.CLOSE, StartingPosition.MIDDLE))
                 .prompt("delay", new ValuePrompt<>("SELECT DELAY", Double.class, 0.0, 5.0, 0.0, 0.5))
                 .prompt("sorted", new BooleanPrompt("RUN VIRTUAL SORTING?", false))
                     .showIf("starting_position", StartingPosition.CLOSE)
+                .prompt("shooting_position", new OptionPrompt<>("SHOOTING POSITION", ShootingPosition.CLOSE, ShootingPosition.FAR))
+                    .showIf("starting_position", StartingPosition.MIDDLE)
                 .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
                     .showIf("sorted", false)
                     .or("starting_position", StartingPosition.FAR)
@@ -597,9 +636,6 @@ public class AutonomousApp extends ComplexOpMode {
                     .or("starting_position", StartingPosition.FAR)
                     .showIf("cycle", false)
                     .or("starting_position", StartingPosition.FAR)
-                .prompt("open_gate", new BooleanPrompt("OPEN GATE?", false))
-                    .showIf("sorted", false)
-                    .showIf("cycle", false)
                 .prompt("gate_spike", new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4))
                     .showIf("sorted", false)
                     .showIf("cycle", false)
@@ -618,9 +654,14 @@ public class AutonomousApp extends ComplexOpMode {
         boolean sorted = prompter.getOrDefault("sorted", false);
         double delay = prompter.get("delay");
 
-        Command cycleRoutine = (startingPosition == StartingPosition.CLOSE)
-                ? closeCycleRoutine()
-                : farCycleRoutine();
+        Command cycleRoutine;
+        if (startingPosition == StartingPosition.CLOSE) {
+            cycleRoutine = closeCycleRoutine();
+        } else if (startingPosition == StartingPosition.MIDDLE) {
+            cycleRoutine = middleCycleRoutine();
+        } else {
+            cycleRoutine = farCycleRoutine();
+        }
 
         Command autonomousRoutine = doCycle
                 ? cycleRoutine
@@ -776,6 +817,21 @@ public class AutonomousApp extends ComplexOpMode {
         );
     }
 
+    private Command middleCycleRoutine() {
+        return new SequentialCommandGroup(
+                middleInitialScore(),
+                pickupSequence(),
+                middleCycle(),
+        new ParallelDeadlineGroup(
+                new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
+                repeatIfTime(this::middleCycle, 0.0)
+        ),
+                driveForward()
+                // console.log("Roem Samsh need to make new instant coffee for me.,"
+        );
+    //    "razi" "roem samsh"
+    }
+
     private Command driveForward() {
         // Move forward at max speed
         return new SequentialCommandGroup(
@@ -799,6 +855,15 @@ public class AutonomousApp extends ComplexOpMode {
                 }),
                 new WaitUntilCommand(threeArtifactsDetectedSupplier).withTimeout(1700),
                 followAndShoot(this::nearDriveBack)
+        );
+    }
+
+    private Command middleCycle() {
+        return new SequentialCommandGroup(
+                new InstantCommand(intake::collect),
+                new GoToArtifactCommand(follower, vision, alliance)
+                        .interruptOn(threeArtifactsDetectedSupplier),
+                new DeferredCommand(() -> new FollowPathCommand(follower, getMiddleCyclePath()).withTimeout(10000), null)
         );
     }
 
@@ -828,6 +893,15 @@ public class AutonomousApp extends ComplexOpMode {
                         shoot(),
                         new InstantCommand(follower::breakFollowing)
                 )
+        );
+    }
+
+    private Command middleInitialScore() {
+        return new ParallelCommandGroup(
+            new DeferredCommand(() -> new FollowPathCommand(follower, initialMiddlePath), null),
+            new SequentialCommandGroup(
+                shoot(),
+                new InstantCommand(follower::breakFollowing))
         );
     }
 
