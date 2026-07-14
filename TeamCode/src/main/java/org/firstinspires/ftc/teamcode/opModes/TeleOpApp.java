@@ -86,6 +86,8 @@ public class TeleOpApp extends ComplexOpMode {
     private final TimerEx zoneExitTimer = new TimerEx(0.3);
     private boolean zoneExitTimerRunning = false;
 
+    private boolean gemsGoal = false;
+
     Pose startPose;
 
     @Override
@@ -150,6 +152,7 @@ public class TeleOpApp extends ComplexOpMode {
         new Trigger(() -> autoFireEnabled
                 && drive.isInsideLaunchZonePredictive()
                 && shooter.getCanShoot()
+                && isShootingBlocked()
                 && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
                 && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
                 && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
@@ -198,10 +201,12 @@ public class TeleOpApp extends ComplexOpMode {
                         new InstantCommand(() -> {
                             shooter.setGoalPose(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
                             shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
+                            gemsGoal = true;
                         }),
                         new InstantCommand(() -> {
                             shooter.setGoalPose(GoalPositions.BLUE_GOAL,GoalPositions.RED_GOAL);
                             shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_FAR,GoalPositions.RED_GOAL_FAR);
+                            gemsGoal = false;
                         })
                 );
 
@@ -427,7 +432,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private boolean isShootingAllowed() {
-        return drive.isInsideLaunchZonePredictive() || isOverrideActive;
+        return isShootingBlocked() && drive.isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
     private void resetPoseToNearestCorner() {
@@ -442,4 +447,22 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(USE_BRAKE_MODE);
         gamepad1.rumble(300);
     }
+
+    public boolean getShooterGoal(){
+        return gemsGoal;
+    }
+
+    private boolean isShootingBlocked(){
+        if(!gemsGoal)
+            return follower.getPose().getX() > getRelative(105) && follower.getPose().getY() > 150;
+        else
+            return follower.getPose().getX() > getRelative(87);
+    }
+
+    private double getRelative(double x){
+        if(alliance == Alliance.RED)
+            return GoalPositions.FIELD_LENGTH - x;
+        return x;
+    }
+
 }

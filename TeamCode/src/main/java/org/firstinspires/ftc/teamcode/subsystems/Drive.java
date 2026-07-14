@@ -25,6 +25,7 @@ import com.skeletonarmy.marrow.zones.PolygonZone;
 
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.opModes.TeleOpApp;
 
 import java.util.Collections;
 
@@ -266,6 +267,7 @@ public class Drive extends SubsystemBase {
 
             futureRobotZone.setPosition(futureX, futureY);
             futureRobotZone.setRotation(follower.getPose().getHeading());
+
 
             cachedIsInsidePredictive = futureRobotZone.isInside(closeLaunchZone) || futureRobotZone.isInside(farLaunchZone);
             lastPredictiveFrame = lastUpdateFrame;
