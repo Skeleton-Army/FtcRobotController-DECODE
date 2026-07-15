@@ -256,8 +256,8 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     public void setupPaths() {
-        farStartingPose = getRelative(new Pose(72,8, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(18.5, 160, Math.toRadians(270)), 188);
+        farStartingPose = getRelative(new Pose(79,7.48, Math.toRadians(90)));
+        nearStartingPose = getRelative(new Pose(17, 162, Math.toRadians(270)), 192);
 
         Pose nearSpike1End = getRelative(new Pose(10, 9.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 8));
@@ -268,7 +268,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose openGateEnd = getRelative(new Pose(16.5, 122));
 
         farDriveBack = getRelative(new Pose(71, 53));
-        middleDriveBack = (prompter.get("shooting_position") == ShootingPosition.CLOSE)
+        middleDriveBack = (prompter.getOrDefault("shooting_position", ShootingPosition.CLOSE) == ShootingPosition.CLOSE)
                 ? getRelative(new Pose(113.00, 100.00))
                 : getRelative(new Pose(113.00, 63.00));
         nearDriveBack = getRelative(new Pose(71, 113));

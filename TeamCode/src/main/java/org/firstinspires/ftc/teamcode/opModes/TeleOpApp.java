@@ -106,8 +106,8 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
-        //Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
-        startPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
+//        startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        startPose = new Pose(189.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
         if (debugMode) follower.setPose(startPose);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
