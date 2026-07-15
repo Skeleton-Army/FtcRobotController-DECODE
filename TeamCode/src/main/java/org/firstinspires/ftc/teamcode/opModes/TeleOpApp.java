@@ -12,9 +12,14 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.Pose;
+import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
+import com.qualcomm.hardware.limelightvision.LLResult;
+import com.qualcomm.hardware.limelightvision.Limelight3A;
+import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
+import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
@@ -30,10 +35,13 @@ import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
+import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.KalmanConfig;
+import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.config.KalmanConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
@@ -97,7 +105,6 @@ public class TeleOpApp extends ComplexOpMode {
     private long nanoTimeToEpochMillisOffset = 0;
 
     AprilTagPipeline aprilTagPipeline;
-    private EpochTimestampSyncOpMode2.TimestampedPinpoint pinpoint;
 
     private double sizeVarianceX;
     private double sizeVarianceY;
@@ -146,8 +153,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
-        //Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
-        startPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
+        startPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(0));
         if (debugMode) follower.setPose(startPose);
 
         // 1. Calculate the real-time synchronization offset between clocks
@@ -243,18 +249,6 @@ public class TeleOpApp extends ComplexOpMode {
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT))
                 .whileActiveContinuous(
                         new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.003))
-                );
-
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.TOUCHPAD)
-                .toggleWhenPressed(
-                        new InstantCommand(() -> {
-                            shooter.setGoalPose(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
-                            shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
-                        }),
-                        new InstantCommand(() -> {
-                            shooter.setGoalPose(GoalPositions.BLUE_GOAL,GoalPositions.RED_GOAL);
-                            shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_FAR,GoalPositions.RED_GOAL_FAR);
-                        })
                 );
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
@@ -466,7 +460,7 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         double goalDistance = follower.getPose().distanceFrom(
-                alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.RED_GOAL
+                alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
         ) / INCHES_TO_METERS;
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
@@ -532,8 +526,8 @@ public class TeleOpApp extends ComplexOpMode {
         telemetry.addData("Turret window (deg)", Math.toDegrees(shooter.getTurretWindow()));
         telemetry.addData("Turret horizontal offset (deg)", Math.toDegrees(shooter.getHorizontalOffset()));
 
-        double driftXPinpoint = Math.abs(startPose.getX() - pinpointPose.getPose().getX());
-        double driftYPinpoint = Math.abs(startPose.getY() - pinpointPose.getPose().getY());
+        double driftXPinpoint = Math.abs(startPose.getX() - pinpointPose.getX());
+        double driftYPinpoint = Math.abs(startPose.getY() - pinpointPose.getY());
         double driftTotalPinpoint = driftXPinpoint + driftYPinpoint;
         telemetry.addData("Drift x", driftXPinpoint);
         telemetry.addData("Drift y", driftYPinpoint);
@@ -603,7 +597,7 @@ public class TeleOpApp extends ComplexOpMode {
         if (alliance == Alliance.RED) {
             newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         } else {
-            newPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
+            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         }
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));

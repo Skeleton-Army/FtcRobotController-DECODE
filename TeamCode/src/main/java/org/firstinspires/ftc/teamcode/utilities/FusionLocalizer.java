@@ -111,7 +111,8 @@ public class FusionLocalizer implements Localizer {
         // at "whatever P is right now" instead of "what P was at that timestamp".
         // That corrupted the covariance used for interpolation/gain during
         // addMeasurement.
-        history.put(now, new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P.copy()));
+        //history.put(now, new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P.copy()));
+        history.put(tStart, new KalmanState(currentPosition, currentVelocity, currentRelativeTransform, P.copy()));
         if (history.size() > bufferSize) history.pollFirstEntry();
 
         lastUpdateNanos = System.nanoTime() - tStart;
