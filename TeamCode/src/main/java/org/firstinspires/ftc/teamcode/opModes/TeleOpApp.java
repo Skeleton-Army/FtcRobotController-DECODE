@@ -150,6 +150,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         // Fire immediately when entering zone
         new Trigger(() -> autoFireEnabled
+                && !gemsGoal
                 && drive.isInsideLaunchZonePredictive()
                 && shooter.getCanShoot()
                 && isShootingBlocked()
@@ -202,6 +203,7 @@ public class TeleOpApp extends ComplexOpMode {
                             shooter.setGoalPose(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
                             shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
                             gemsGoal = true;
+
                         }),
                         new InstantCommand(() -> {
                             shooter.setGoalPose(GoalPositions.BLUE_GOAL,GoalPositions.RED_GOAL);
