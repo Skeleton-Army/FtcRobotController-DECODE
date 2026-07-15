@@ -180,7 +180,7 @@ public class Drive extends SubsystemBase {
 
 
         Pose loadingZoneEnd = new Pose(22.5,38.5, Math.toRadians(160)); // pose for intaking at the opposing loading zone, the end of the path
-        if (follower.getPose().getX() < 94)
+        if (follower.getPose().getX() < GoalPositions.HALF_FIELD_LENGTH)
             loadingZoneEnd.mirror();
 
         return new DeferredCommand(

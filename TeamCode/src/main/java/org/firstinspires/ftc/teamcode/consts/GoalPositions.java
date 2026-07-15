@@ -4,7 +4,7 @@ import com.pedropathing.geometry.Pose;
 
 public class GoalPositions {
     public final static double FIELD_LENGTH = 189.5;
-    private final static double HALF_FIELD_LENGTH = FIELD_LENGTH/2;
+    public final static double HALF_FIELD_LENGTH = FIELD_LENGTH/2;
 
     public final static Pose BLUE_GOAL = new Pose(10, FIELD_LENGTH - 5);
     public final static Pose RED_GOAL = new Pose(FIELD_LENGTH - BLUE_GOAL.getX(), BLUE_GOAL.getY());
