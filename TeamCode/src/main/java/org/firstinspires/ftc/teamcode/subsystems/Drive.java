@@ -122,7 +122,7 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(125.5, 155.5))
+                                            getRelative(new Pose(53, 155.5))
                                     )
                             )
                             .setLinearHeadingInterpolation(
