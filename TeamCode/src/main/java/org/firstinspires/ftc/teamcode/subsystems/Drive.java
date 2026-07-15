@@ -33,8 +33,8 @@ public class Drive extends SubsystemBase {
     public static final double ROBOT_WIDTH = 16.53; // Side-to-side
     public static final double ROBOT_LENGTH = 14.96; // Front-to-back
 
-    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(188, 188), new Point(94, 94), new Point(0, 188));
-    private final PolygonZone farLaunchZone = new PolygonZone(new Point(72, 0), new Point(72, 46), new Point(94, 68), new Point(117,46), new Point(117, 0));
+    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(189.5, 189.5), new Point(94.75, 94.75), new Point(0, 189.5));
+    private final PolygonZone farLaunchZone = new PolygonZone(new Point(70.75, 0), new Point(70.75, 48), new Point(94.75, 72), new Point(118.75,48), new Point(118.75, 0));
 
     private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
     private final PolygonZone futureRobotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
