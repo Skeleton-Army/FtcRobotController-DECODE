@@ -16,6 +16,7 @@ import com.seattlesolvers.solverslib.controller.PIDController;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
+import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -294,6 +295,8 @@ public class Shooter extends SubsystemBase {
         desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
         flywheel.set(desiredVoltage / voltage);
+
+        OpModeManager.getTelemetry().addData("Flywheel Power", desiredVoltage / voltage);
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {

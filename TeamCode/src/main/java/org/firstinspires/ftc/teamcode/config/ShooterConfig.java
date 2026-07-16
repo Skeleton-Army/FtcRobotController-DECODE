@@ -11,7 +11,7 @@ public class ShooterConfig {
     public static GoBILDA FLYWHEEL_MOTOR = GoBILDA.BARE;
     public static boolean FLYWHEEL1_INVERTED = true;
     public static boolean FLYWHEEL2_INVERTED = false;
-    public static double FLYWHEEL_GEAR_RATIO = 51.0 / 52.0; // Flywheel teeth / Motor teeth
+    public static double FLYWHEEL_GEAR_RATIO = 52.0 / 51.0; // Flywheel teeth / Motor teeth
     public static int RPM_REACHED_THRESHOLD = 200;
     public static double FLYWHEEL_KP = 0.06;
     public static double FLYWHEEL_KP_DOWN = 0.06;
@@ -20,7 +20,7 @@ public class ShooterConfig {
     public static double FLYWHEEL_KS = 1.2;
     public static double FLYWHEEL_KA = 0.008;
     public static double FLYWHEEL_KA_DOWN = 0.008;
-    public static double FLYWHEEL_KV = 0.0049;
+    public static double FLYWHEEL_KV = 0.0046;
     public static double BRAKE_ENTRY_THRESHOLD = -100; // Error must be THIS negative to start braking
     public static double BRAKE_EXIT_THRESHOLD = -50;   // Error must get back up to THIS to stop braking
     public static double FLYWHEEL_DELAY_SEC = 0.02; // ~2 control loops @ 20ms
@@ -67,7 +67,7 @@ public class ShooterConfig {
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
-    public static double TURRET_OFFSET_X = -0.0065; // In meters, Positive = Front
+    public static double TURRET_OFFSET_X = 0; // In meters, Positive = Front
     public static double TURRET_OFFSET_Y = 0; // In meters, Positive = Left
     public static boolean TURRET_WRAP = true;
     public static double TURRET_WRAP_JUMP_THRESHOLD = Math.toRadians(90);
