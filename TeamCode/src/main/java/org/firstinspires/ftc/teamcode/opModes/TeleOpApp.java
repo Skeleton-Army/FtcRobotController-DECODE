@@ -454,11 +454,18 @@ public class TeleOpApp extends ComplexOpMode {
         return gemsGoal;
     }
 
-    private boolean isShootingBlocked(){
-        if(!gemsGoal)
-            return follower.getPose().getX() > getRelative(105) && follower.getPose().getY() > 150;
-        else
-            return follower.getPose().getX() > getRelative(87);
+    private boolean isShootingBlocked() {
+        if (alliance == Alliance.BLUE) {
+            if (gemsGoal)
+                return !(follower.getPose().getX() <= getRelative(75) && follower.getPose().getY() >= 123);
+            else
+                return (follower.getPose().getX() >= getRelative(105) && follower.getPose().getY() > 142);
+        } else {
+            if (gemsGoal)
+                return !(follower.getPose().getX() >= getRelative(75) && follower.getPose().getY() >= 123);
+            else
+                return (follower.getPose().getX() <= getRelative(105) && follower.getPose().getY() > 142);
+        }
     }
 
     private double getRelative(double x){
