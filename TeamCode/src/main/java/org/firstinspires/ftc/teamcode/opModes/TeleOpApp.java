@@ -107,7 +107,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setMaxPower(1);
 
 //        startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
-        startPose = new Pose(189.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
+        startPose = new Pose(GoalPositions.FIELD_LENGTH - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
         if (debugMode) follower.setPose(startPose);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -442,7 +442,7 @@ public class TeleOpApp extends ComplexOpMode {
         if (alliance == Alliance.RED) {
             newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         } else {
-            newPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
+            newPose = new Pose(GoalPositions.FIELD_LENGTH - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         }
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
