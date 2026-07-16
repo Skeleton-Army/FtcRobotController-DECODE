@@ -153,7 +153,7 @@ public class TeleOpApp extends ComplexOpMode {
                 && !gemsGoal
                 && drive.isInsideLaunchZonePredictive()
                 && shooter.getCanShoot()
-                && isShootingBlocked()
+                && !isShootingBlocked()
                 && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
                 && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
                 && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
@@ -434,7 +434,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private boolean isShootingAllowed() {
-        return isShootingBlocked() && drive.isInsideLaunchZonePredictive() || isOverrideActive;
+        return !isShootingBlocked() && drive.isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
     private void resetPoseToNearestCorner() {
