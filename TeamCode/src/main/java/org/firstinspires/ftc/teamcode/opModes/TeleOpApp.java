@@ -107,7 +107,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.setMaxPower(1);
 
 //        startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
-        startPose = new Pose(189.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
+        startPose = new Pose(GoalPositions.FIELD_LENGTH - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
         if (debugMode) follower.setPose(startPose);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -153,7 +153,7 @@ public class TeleOpApp extends ComplexOpMode {
                 && !gemsGoal
                 && drive.isInsideLaunchZonePredictive()
                 && shooter.getCanShoot()
-                && isShootingBlocked()
+                && !isShootingBlocked()
                 && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
                 && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
                 && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
@@ -434,7 +434,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private boolean isShootingAllowed() {
-        return isShootingBlocked() && drive.isInsideLaunchZonePredictive() || isOverrideActive;
+        return !isShootingBlocked() && drive.isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
     private void resetPoseToNearestCorner() {
@@ -442,7 +442,7 @@ public class TeleOpApp extends ComplexOpMode {
         if (alliance == Alliance.RED) {
             newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         } else {
-            newPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
+            newPose = new Pose(GoalPositions.FIELD_LENGTH - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         }
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
@@ -454,11 +454,18 @@ public class TeleOpApp extends ComplexOpMode {
         return gemsGoal;
     }
 
-    private boolean isShootingBlocked(){
-        if(!gemsGoal)
-            return follower.getPose().getX() > getRelative(105) && follower.getPose().getY() > 150;
-        else
-            return follower.getPose().getX() > getRelative(87);
+    private boolean isShootingBlocked() {
+        if (alliance == Alliance.BLUE) {
+            if (gemsGoal)
+                return !(follower.getPose().getX() <= getRelative(75) && follower.getPose().getY() >= 123);
+            else
+                return (follower.getPose().getX() >= getRelative(105) && follower.getPose().getY() > 142);
+        } else {
+            if (gemsGoal)
+                return !(follower.getPose().getX() >= getRelative(75) && follower.getPose().getY() >= 123);
+            else
+                return (follower.getPose().getX() <= getRelative(105) && follower.getPose().getY() > 142);
+        }
     }
 
     private double getRelative(double x){
