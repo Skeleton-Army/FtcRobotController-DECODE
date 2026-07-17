@@ -13,11 +13,11 @@ public class ShooterConfig {
     public static boolean FLYWHEEL2_INVERTED = false;
     public static double FLYWHEEL_GEAR_RATIO = 52.0 / 51.0; // Flywheel teeth / Motor teeth
     public static int RPM_REACHED_THRESHOLD = 200;
-    public static double FLYWHEEL_KP = 0.06;
-    public static double FLYWHEEL_KP_DOWN = 0.06;
+    public static double FLYWHEEL_KP = 0.08;
+    public static double FLYWHEEL_KP_DOWN = 0.08;
     public static double FLYWHEEL_KI = 0;
     public static double FLYWHEEL_KD = 0;
-    public static double FLYWHEEL_KS = 1.2;
+    public static double FLYWHEEL_KS = 1;
     public static double FLYWHEEL_KA = 0.008;
     public static double FLYWHEEL_KA_DOWN = 0.008;
     public static double FLYWHEEL_KV = 0.0046;
@@ -63,7 +63,7 @@ public class ShooterConfig {
     public static double TURRET_KI_CCW = 0.02;
     public static double TURRET_KD_CCW = 0.01;
     public static double TURRET_KV = 2.3;
-    public static double TURRET_KA = 0;
+    public static double TURRET_KA = 0.1;
     public static double TURRET_MIN = Math.toRadians(-184); // Clockwise
     public static double TURRET_MAX = Math.toRadians(184); // Counter-clockwise
     public static double GEAR_RATIO = (double) 111 / 11;
