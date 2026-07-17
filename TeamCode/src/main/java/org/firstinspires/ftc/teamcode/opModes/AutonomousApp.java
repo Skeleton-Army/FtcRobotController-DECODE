@@ -75,11 +75,15 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Pose farStartingPose;
     private Pose nearStartingPose;
+    private  Pose middleStartingPose;
+
+    private Pose startingPose;
 
     private final PathChain[] farPaths = new PathChain[4];
     private final PathChain[] nearPaths = new PathChain[4];
     private final Supplier<PathChain>[] nearPathsReturn = new Supplier[4];
     private final Supplier<PathChain>[] farPathsReturn = new Supplier[4];
+    private final Supplier<PathChain>[] middlePathsReturn = new Supplier[4];
     private final PathChain[] goSort = new PathChain[4];
     private PathChain sortEnd;
     private PathChain spike3Open;
@@ -114,6 +118,32 @@ public class AutonomousApp extends ComplexOpMode {
                         new BezierLine(
                                 follower.getPose(),
                                 farDriveBack
+                        )
+                )
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.4,
+                                        HeadingInterpolator.tangent.reverse()
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.4,
+                                        1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
+                                )
+                        )
+                )
+                .setGlobalDeceleration()
+                .build();
+    }
+    public PathChain middleDriveBack() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                middleDriveBack
                         )
                 )
                 .setHeadingInterpolation(
@@ -258,6 +288,7 @@ public class AutonomousApp extends ComplexOpMode {
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(79,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(17, 162, Math.toRadians(270)), 192);
+        middleStartingPose = getRelative(new Pose(83.5, 162, Math.toRadians(270)));
 
         Pose nearSpike1End = getRelative(new Pose(8.5, 11.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 7));
@@ -269,8 +300,8 @@ public class AutonomousApp extends ComplexOpMode {
 
         farDriveBack = getRelative(new Pose(71, 23.67));
         middleDriveBack = (prompter.getOrDefault("shooting_position", ShootingPosition.CLOSE) == ShootingPosition.CLOSE)
-                ? getRelative(new Pose(113.00, 100.00))
-                : getRelative(new Pose(113.00, 63.00));
+                ? getRelative(new Pose(76.5, 110.00))
+                : getRelative(new Pose(76.5, 60.00));
         nearDriveBack = getRelative(new Pose(65.5, 119));
         sortingPose = getRelative(new Pose(31, 157.5));
 
@@ -298,6 +329,11 @@ public class AutonomousApp extends ComplexOpMode {
         farPathsReturn[2] = this::farDriveBack;
         farPathsReturn[3] = this::farDriveBack;
 
+        middlePathsReturn[0] = this::middleDriveBack;
+        middlePathsReturn[1] = this::farDriveBack;
+        middlePathsReturn[2] = this::farDriveBack;
+        middlePathsReturn[3] = this::farDriveBack;
+
         initialFarPath = follower
                 .pathBuilder()
                 .addPath(
@@ -320,7 +356,8 @@ public class AutonomousApp extends ComplexOpMode {
                                 middleDriveBack
                         )
                 )
-                .setConstantHeadingInterpolation(
+                .setLinearHeadingInterpolation(
+                        getRelative(Math.toRadians(270)),
                         getRelative(Math.toRadians(180))
                 )
                 .setGlobalDeceleration()
@@ -603,8 +640,14 @@ public class AutonomousApp extends ComplexOpMode {
         vision = new Vision(hardwareMap, follower.poseTracker, pipeline);
 
         setupPaths();
+        if (startingPosition == StartingPosition.FAR) {
+            startingPose = farStartingPose;
+        } else if (startingPosition == StartingPosition.MIDDLE) {
+            startingPose = middleStartingPose;
+        } else {
+            startingPose = nearStartingPose;
+        }
 
-        Pose startingPose = startingPosition == StartingPosition.FAR ? farStartingPose : nearStartingPose;
         follower.setPose(startingPose);
 
         threeArtifactsDetectedSupplier = transfer.threeArtifactsDetected(() -> true, 100);
@@ -628,11 +671,14 @@ public class AutonomousApp extends ComplexOpMode {
                 .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
                     .showIf("sorted", false)
                     .or("starting_position", StartingPosition.FAR)
+                    .or("starting_position", StartingPosition.MIDDLE)
                 .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
                     .showIf("sorted", false)
                     .or("starting_position", StartingPosition.FAR)
+                    .or("starting_position", StartingPosition.MIDDLE)
                     .showIf("cycle", false)
                     .or("starting_position", StartingPosition.FAR)
+                    .or("starting_position", StartingPosition.MIDDLE)
                 .prompt("gate_spike", new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4))
                     .showIf("sorted", false)
                     .showIf("cycle", false)
@@ -818,7 +864,6 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 middleInitialScore(),
                 pickupSequence(),
-                middleCycle(),
         new ParallelDeadlineGroup(
                 new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
                 repeatIfTime(this::middleCycle, 0.0)
@@ -1003,7 +1048,13 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private PathChain getBackPath(int spike) {
-        return (startingPosition == StartingPosition.FAR) ? farPathsReturn[spike - 1].get() : nearPathsReturn[spike - 1].get();
+        if (startingPosition == StartingPosition.FAR) {
+            return farPathsReturn[spike - 1].get();
+        } else if (startingPosition == StartingPosition.MIDDLE) {
+            return middlePathsReturn[spike - 1].get();
+        } else {
+            return nearPathsReturn[spike - 1].get();
+        }
     }
 
     private Command collectSortAndScore(int spike, ArtifactPattern target) {
