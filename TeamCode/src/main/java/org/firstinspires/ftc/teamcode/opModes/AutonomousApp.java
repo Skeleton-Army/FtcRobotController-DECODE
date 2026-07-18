@@ -315,7 +315,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(3.620, 7.577)),
+                                getRelative(new Pose(48, 9)),
                                 farSpike1End
                         )
                 )
