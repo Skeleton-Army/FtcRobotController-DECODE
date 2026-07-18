@@ -13,6 +13,7 @@ import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -337,14 +338,16 @@ public class TeleOpApp extends ComplexOpMode {
             if (currentShooterCommand instanceof ShootCommand) {
                 CommandScheduler.getInstance().cancel(currentShooterCommand);
 
-                if (!transfer.isArtifactInIntake() && !gamepad1.right_bumper) {
-                    new SequentialCommandGroup(
-                            new InstantCommand(transfer::release, transfer),
-                            new InstantCommand(intake::release, intake),
-                            new WaitCommand(10),
-                            new InstantCommand(transfer::block, transfer)
-                    ).schedule(false);
-                }
+                new ParallelCommandGroup(
+                        new InstantCommand(transfer::block, transfer),
+                        transfer.kick(),
+                        new SequentialCommandGroup(
+                                new InstantCommand(intake::collect, intake),
+                                new WaitCommand(50),
+                                new InstantCommand(intake::stop, intake)
+                        )
+
+                ).schedule(false);
             }
         }
 
