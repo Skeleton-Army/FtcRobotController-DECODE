@@ -242,7 +242,7 @@ public class Vision extends SubsystemBase {
             List<Artifact> freshArtifacts = new ArrayList<>();
 
             int count = (int) output[0];
-            if (count != 0) artifacts.clear();
+            artifacts.clear();
 
             for (int i = 0; i < count * 3; i += 3) {
                 double tx = output[1 + i];

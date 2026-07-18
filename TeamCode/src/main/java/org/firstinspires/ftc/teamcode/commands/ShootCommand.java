@@ -124,7 +124,7 @@ public class ShootCommand extends SequentialCommandGroup {
      * and the clock keeps counting toward waitMillis.
      */
     private class FeedWhileCanShootCommand extends CommandBase {
-        private static final long DEBOUNCE_MS = 50;
+        private static final long DEBOUNCE_MS = 20;
 
         private final double intakeSpeed;
         private final int waitMillis;
