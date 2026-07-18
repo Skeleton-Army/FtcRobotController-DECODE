@@ -337,7 +337,7 @@ public class TeleOpApp extends ComplexOpMode {
             if (currentShooterCommand instanceof ShootCommand) {
                 CommandScheduler.getInstance().cancel(currentShooterCommand);
 
-                if (!transfer.isArtifactInIntake()) {
+                if (!transfer.isArtifactInIntake() && !gamepad1.right_bumper) {
                     new SequentialCommandGroup(
                             new InstantCommand(transfer::release, transfer),
                             new InstantCommand(intake::release, intake),
