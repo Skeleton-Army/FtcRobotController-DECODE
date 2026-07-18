@@ -73,8 +73,8 @@ public class Shooter extends SubsystemBase {
     private boolean horizontalManualMode;
     private boolean verticalManualMode;
 
-    private double horizontalOffset = 0;
-    private double verticalOffset = 0;
+    private double horizontalOffset = START_HORIZONTAL_OFFSET;
+    private double verticalOffset = START_VERTICAL_OFFSET;
     private double lastShotRPM;
 
     private boolean canShootRPMCalc;
