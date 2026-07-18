@@ -2,6 +2,9 @@ package org.firstinspires.ftc.teamcode.subsystems;
 //TODO: add max width to Pipeline
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.*;
 
+import android.content.Context;
+import android.content.Intent;
+
 import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.localization.PoseTracker;
@@ -10,16 +13,14 @@ import com.qualcomm.hardware.limelightvision.LLResultTypes;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
-import com.skeletonarmy.marrow.OpModeManager;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
-import org.firstinspires.ftc.teamcode.commands.GoToArtifactCommand;
 import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.ArtifactSorting;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
+import org.firstinspires.ftc.teamcode.utilities.Kinematics;
 import org.opencv.core.Mat;
 
 import java.util.ArrayList;
@@ -31,11 +32,11 @@ import java.util.function.Consumer;
 import lombok.var;
 
 public class Vision extends SubsystemBase {
-    private final double METERS_TO_INCHES = 39.37;
-    private static final int GPP_TAG_ID = 21;
+    private static final double METERS_TO_INCHES = 39.37;
+    private static final int GPP_TAG_ID = 23;
     private static final int PGP_TAG_ID = 22;
-    private static final int PPG_TAG_ID = 23;
-    private static final int FIELD_HALF_Y_LEVEL = 72;
+    private static final int PPG_TAG_ID = 21;
+    private static final int FIELD_HALF_Y_LEVEL = 94;
 
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
@@ -43,7 +44,7 @@ public class Vision extends SubsystemBase {
 
 //    private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
     private final List<Consumer<Pose>> onRelocalizeListeners = new ArrayList<>();
-    
+
 //    private boolean firstRelocalization = true;
 
     private final int pipeline;
@@ -51,10 +52,6 @@ public class Vision extends SubsystemBase {
     // ─── Artifact velocity tracking ─────────────────────────────────────────────
     private List<Artifact> previousArtifacts = new ArrayList<>();
     private long previousFetchTimeNanos = -1;
-
-    double ALPHA = 0.2;
-    double prevFilteredDeltaXP = 0;
-    double prevFilteredDeltaYP = 0;
     private double[] previousPythonOutput = null;
 
     // Below this speed (inches/sec), a computed velocity is treated as sensor/vision
@@ -64,7 +61,7 @@ public class Vision extends SubsystemBase {
 
     // Smoothing factor for the velocity estimate (0-1). Higher = trusts the newest
     // raw measurement more; lower = smoother but slower to react to real changes.
-    public static double VELOCITY_SMOOTHING_ALPHA = 0.2;
+    public static double VELOCITY_LOWPASS_ALPHA = 0.2;
     // ────────────────────────────────────────────────────────────────────────────
 
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
@@ -82,7 +79,8 @@ public class Vision extends SubsystemBase {
     @Override
     public void periodic() {
         llResult = limelight.getLatestResult();
-        /*  relocalization isn't in the LL anymore
+        /*
+        relocalization isn't in the LL anymore
         double orientationDeg = Math.toDegrees(poseTracker.getPose().getHeading()) + 90;
         limelight.updateRobotOrientation(orientationDeg);
       // Check if it's the first run OR if the timer is done
@@ -93,7 +91,7 @@ public class Vision extends SubsystemBase {
                 relocalizeTimer.restart();
             }
         }
-         */
+        */
     }
 
     public Pose getAprilTagPose() {
@@ -146,7 +144,8 @@ public class Vision extends SubsystemBase {
     public ArtifactPattern detectPattern() {
         if (pipeline == APRILTAG_PIPELINE) return null;
 
-        llResult = limelight.getLatestResult(); //this method runs before the loop, thus needs explicit redefinition of llResult
+        llResult = limelight.getLatestResult();
+        //this method runs before the loop, thus needs explicit redefinition of llResult
         if (llResult == null || !llResult.isValid()) return null;
 
         for (LLResultTypes.FiducialResult fiducial : llResult.getFiducialResults()) {
@@ -221,13 +220,6 @@ public class Vision extends SubsystemBase {
 
             double[] output = llResult.getPythonOutput();
 
-            // The Limelight pipeline runs at its own (slower) framerate, but this method
-            // gets polled every scheduler tick. Between real camera frames, getPythonOutput()
-            // returns the exact same values as last time. Treating that as a "new" sample
-            // would compare a frame against itself (reading as zero velocity even while the
-            // ball is genuinely moving) and would also corrupt dt for the *next* real frame
-            // by advancing previousFetchTimeNanos too early. So: on a duplicate frame, just
-            // hand back the last known artifacts/velocities untouched.
             if (previousPythonOutput != null && Arrays.equals(output, previousPythonOutput)) {
                 artifacts.addAll(previousArtifacts);
                 return this;
@@ -240,8 +232,6 @@ public class Vision extends SubsystemBase {
             List<Artifact> freshArtifacts = new ArrayList<>();
 
             int count = (int) output[0];
-            if (count != 0) artifacts.clear();
-
             for (int i = 0; i < count * 3; i += 3) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
@@ -336,6 +326,9 @@ public class Vision extends SubsystemBase {
             return new ArrayList<>(artifacts);
         }
 
+        public List<Artifact> prevList() {
+            return new ArrayList<>(previousArtifacts);
+        }
         public int count()      { return artifacts.size(); }
         public boolean isArtifactDetected() { return !artifacts.isEmpty(); }
 
@@ -354,6 +347,7 @@ public class Vision extends SubsystemBase {
             // back to 0 velocity) or to wrongly latch onto some other nearby detection instead.
             // Predicting forward first keeps a genuinely-moving ball's predicted position near
             // its next real detection, so matching stays correct even while it's moving.
+
             List<Mat.Tuple3<Double>> candidates = new ArrayList<>();
             for (int f = 0; f < freshArtifacts.size(); f++) {
                 for (int p = 0; p < previousArtifacts.size(); p++) {
@@ -366,6 +360,7 @@ public class Vision extends SubsystemBase {
             }
             candidates.sort(Comparator.comparingDouble(Mat.Tuple3::get_2));
 
+            List<Artifact> trackedArtifacts = new ArrayList<>(candidates.size());
             boolean[] freshTaken = new boolean[freshArtifacts.size()];
             boolean[] prevTaken = new boolean[previousArtifacts.size()];
 
@@ -387,39 +382,28 @@ public class Vision extends SubsystemBase {
                 double rawVx = (deltaXP) / dt;
                 double rawVy = (deltaYP) / dt;
 
+                double vx, vy;
+                double filteredXP, filteredYP;
+
                 if (Math.hypot(rawVx, rawVy) < VELOCITY_NOISE_FLOOR) {
-                    rawVx = 0;
-                    rawVy = 0;
+                    vx = 0;
+                    vy = 0;
+                    filteredXP = prev.getDeltaX();
+                    filteredYP = prev.getDeltaY();
+                } else {
+                    filteredXP = Kinematics.lowPassFilter(deltaXP, prev.getDeltaX(), VELOCITY_LOWPASS_ALPHA);
+                    filteredYP = Kinematics.lowPassFilter(deltaYP, prev.getDeltaY(), VELOCITY_LOWPASS_ALPHA);
+                    vx = filteredXP / dt;
+                    vy = filteredYP / dt;
                 }
+                Artifact tracked = new Artifact(fresh.getPose(), fresh.getSize())
+                        .withVelocity(vx, vy)
+                        .withPositionDelta(filteredXP, filteredYP);
 
-                /*
-                // Exponential smoothing against the track's previous velocity estimate so a
-                // single noisy frame doesn't cause a wild velocity spike/dip.
-                double vx = VELOCITY_SMOOTHING_ALPHA * rawVx + (1 - VELOCITY_SMOOTHING_ALPHA) * prev.getVelocityX();
-                double vy = VELOCITY_SMOOTHING_ALPHA * rawVy + (1 - VELOCITY_SMOOTHING_ALPHA) * prev.getVelocityY();
-                 */
-
-                double someCon = 1;
-
-                double filteredXP = ALPHA * deltaXP + (1 - ALPHA) * prevFilteredDeltaXP;
-                double filteredYP = ALPHA * deltaYP + (1 - ALPHA) * prevFilteredDeltaYP;
-                /*
-                Telemetry telemetry = OpModeManager.getTelemetry();
-                telemetry.addData("deltax", deltaXP);
-                telemetry.addData("deltaY", deltaYP);
-                 */
-
-                if(Math.abs(deltaXP) > 5 || Math.abs(deltaYP) > 5) continue;
-
-                double vx = filteredXP * someCon / dt;
-                double vy = filteredYP * someCon / dt;
-
-                prevFilteredDeltaXP = filteredXP;
-                prevFilteredDeltaYP = filteredYP;
-                fresh.setVelocity(vx, vy);
+                trackedArtifacts.add(tracked);
             }
 
-            return freshArtifacts;
+            return trackedArtifacts;
         }
 
         private double getDistance(double ty) {

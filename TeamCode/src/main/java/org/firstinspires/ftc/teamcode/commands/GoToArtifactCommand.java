@@ -15,6 +15,7 @@ import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 import com.skeletonarmy.marrow.OpModeManager;
 
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
@@ -50,16 +51,16 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         addCommands(
                 //TODO: fixed 🔰
                 new WaitUntilCommand(() ->
-                        artifactList.fetch()
-                                .filterInvalidX()
-                                //.filterByYLevel(0,0) // add correct y cords
-                                .isArtifactDetected()
+                       artifactList.fetch()
+                               .filterInvalidX()
+                               .filterByYLevel(0, 90)
+                               .isArtifactDetected()
                 ),
                 new DeferredCommand(
                         () ->   new FollowPathCommand(follower,
                                 buildPathFromArtifact(artifactList.getBiggest())),
                         null
-                )
+                ).withTimeout(1500)
         );
     }
 
@@ -118,8 +119,8 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         Pose pose = new Pose(predictedArtifactPose.getX(), predictedArtifactPose.getY());
         //Pose pose = new Pose(10, predictedArtifactPose.getY(), Math.toRadians(180));
         if (alliance == Alliance.RED) {
-            // fix later for shikago //TODO fix name for Chicago //TODO: remove commant after sheekygu //TODO: fixed
-            pose = pose.mirror(188);
+            //TODO: fix later for shikago //TODO: fix name for Chicago //TODO: remove commant after sheekygu //TODO: fixed
+            pose = pose.mirror(GoalPositions.FIELD_LENGTH);
         }
 
         return pose;
