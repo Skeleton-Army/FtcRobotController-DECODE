@@ -201,7 +201,7 @@ public class Vision extends SubsystemBase {
             if (llResult == null) return this;
             double[] output = llResult.getPythonOutput();
             int count = (int) output[0];
-            if (count != 0) artifacts.clear();
+            artifacts.clear();
 
             for (int i = 0; i < count * 3; i += 3) {
                 double tx = output[1 + i];
