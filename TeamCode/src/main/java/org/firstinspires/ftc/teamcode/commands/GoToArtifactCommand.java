@@ -119,7 +119,7 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         Pose pose = new Pose(predictedArtifactPose.getX(), predictedArtifactPose.getY());
         //Pose pose = new Pose(10, predictedArtifactPose.getY(), Math.toRadians(180));
         if (alliance == Alliance.RED) {
-            // fix later for shikago //TODO fix name for Chicago //TODO: remove commant after sheekygu //TODO: fixed
+            //TODO: fix later for shikago //TODO: fix name for Chicago //TODO: remove commant after sheekygu //TODO: fixed
             pose = pose.mirror(GoalPositions.FIELD_LENGTH);
         }
 

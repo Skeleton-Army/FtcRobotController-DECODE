@@ -23,8 +23,11 @@ import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
+import org.firstinspires.ftc.teamcode.utilities.Kinematics;
 
 import java.util.Arrays;
+
+import lombok.var;
 
 @TeleOp
 public class VisionTest extends ComplexOpMode {
@@ -72,10 +75,20 @@ public class VisionTest extends ComplexOpMode {
             telemetry.addData("biggestVelX", biggest.getVelocityX());
             telemetry.addData("biggestVelY", biggest.getVelocityY());
 
+            /*
             Pose predictedPose = predictInterceptPose(biggest);
             telemetry.addData("predictedX", predictedPose.getX());
             telemetry.addData("predictedY", predictedPose.getY());
             //telemetry.addData("go to pose x", Artifact.predictPose())
+             */
+
+            var prev = artifactList.prevList().get(0);
+
+            telemetry.addData("prevX", prev.getPose().getX());
+            telemetry.addData("prevY", prev.getPose().getY());
+            telemetry.addData("prevVelX", prev.getVelocityX());
+            telemetry.addData("prevVelY", prev.getVelocityY());
+
         }
 
         telemetry.update();
@@ -83,11 +96,9 @@ public class VisionTest extends ComplexOpMode {
 
     private Pose predictInterceptPose(Artifact artifact) {
         Pose predictedPose = artifact.getPose();
-        double filtedDist = 0;
 
         for (int i = 0; i < 5; i++) {
             double distance = follower.getPose().distanceFrom(predictedPose);
-            filtedDist = Kinematics.lowPassFilter(d)
             double estimatedTravelTime = distance / 20.0;
             predictedPose = predictPose(artifact, estimatedTravelTime);
         }
