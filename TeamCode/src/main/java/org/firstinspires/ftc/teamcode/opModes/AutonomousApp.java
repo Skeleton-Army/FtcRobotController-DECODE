@@ -95,6 +95,7 @@ public class AutonomousApp extends ComplexOpMode {
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
     private int gateSpike;
+    private boolean takeSpike;
 
     private VoltageSensor voltageSensor;
 
@@ -493,6 +494,7 @@ public class AutonomousApp extends ComplexOpMode {
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.getOrDefault("pickup_order", List.of());
         gateSpike = prompter.getOrDefault("gate_spike", -1);
+        takeSpike = prompter.getOrDefault("take_spike", true);
 
         Settings.set("alliance", alliance);
 
@@ -540,6 +542,9 @@ public class AutonomousApp extends ComplexOpMode {
                 .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
                     .showIf("starting_position", StartingPosition.FAR)
                     .or("starting_position", StartingPosition.MIDDLE)
+                .prompt("take_spike", new BooleanPrompt("TAKE SPIKE 3?", true))
+                    .showIf("starting_position", StartingPosition.CLOSE)
+                    .showIf("cycle", true)
                 .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
                     .showIf("cycle", false)
                     .or("starting_position", StartingPosition.FAR)
@@ -680,9 +685,15 @@ public class AutonomousApp extends ComplexOpMode {
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
-                collect(3).interruptOn(threeArtifactsDetectedSupplier),
-                returnAndScore(4)
-                        .interruptOn(() -> matchTime.getRemaining() < 0.2),
+                new ConditionalCommand(
+                        new SequentialCommandGroup(
+                                collect(3).interruptOn(threeArtifactsDetectedSupplier),
+                                returnAndScore(4)
+                                        .interruptOn(() -> matchTime.getRemaining() < 0.2)
+                        ),
+                        closeCycle(),
+                        () -> takeSpike
+                ),
                 driveForward()
         );
     }
