@@ -23,7 +23,9 @@ import com.skeletonarmy.marrow.settings.Settings;
 import com.skeletonarmy.marrow.zones.Point;
 import com.skeletonarmy.marrow.zones.PolygonZone;
 
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
+import org.firstinspires.ftc.teamcode.opModes.TeleOpApp;
 
 import java.util.Collections;
 
@@ -31,8 +33,8 @@ public class Drive extends SubsystemBase {
     public static final double ROBOT_WIDTH = 16.53; // Side-to-side
     public static final double ROBOT_LENGTH = 14.96; // Front-to-back
 
-    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(144, 144), new Point(72, 72), new Point(0, 144));
-    private final PolygonZone farLaunchZone = new PolygonZone(new Point(48, 0), new Point(72, 24), new Point(96, 0));
+    private final PolygonZone closeLaunchZone = new PolygonZone(new Point(189.5, 189.5), new Point(94.75, 94.75), new Point(0, 189.5));
+    private final PolygonZone farLaunchZone = new PolygonZone(new Point(70.75, 0), new Point(70.75, 48), new Point(94.75, 72), new Point(118.75,48), new Point(118.75, 0));
 
     private final PolygonZone robotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
     private final PolygonZone futureRobotZone = new PolygonZone(ROBOT_LENGTH, ROBOT_WIDTH);
@@ -87,7 +89,7 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(132, 60.5))
+                                            getRelative(new Pose(181, 107))
                                     )
                             )
                             .setLinearHeadingInterpolation(
@@ -120,12 +122,12 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(38.85, 26.72))
+                                            new Pose(alliance == Alliance.RED ? 145 : 70, 157)
                                     )
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    Math.toRadians(0)
+                                    Math.toRadians(90)
                             )
                             .setTranslationalConstraint(1)
                             .setBrakingStrength(1)
@@ -177,8 +179,8 @@ public class Drive extends SubsystemBase {
         if (tabletopMode) return new InstantCommand();
 
 
-        Pose loadingZoneEnd = new Pose(24,18, Math.toRadians(160)); // pose for intaking at the opposing loading zone, the end of the path
-        if (follower.getPose().getX() < 72)
+        Pose loadingZoneEnd = new Pose(22.5,38.5, Math.toRadians(160)); // pose for intaking at the opposing loading zone, the end of the path
+        if (follower.getPose().getX() < GoalPositions.HALF_FIELD_LENGTH)
             loadingZoneEnd.mirror();
 
         return new DeferredCommand(
@@ -265,6 +267,7 @@ public class Drive extends SubsystemBase {
 
             futureRobotZone.setPosition(futureX, futureY);
             futureRobotZone.setRotation(follower.getPose().getHeading());
+
 
             cachedIsInsidePredictive = futureRobotZone.isInside(closeLaunchZone) || futureRobotZone.isInside(farLaunchZone);
             lastPredictiveFrame = lastUpdateFrame;
@@ -358,7 +361,7 @@ public class Drive extends SubsystemBase {
 
     private Pose getRelative(Pose originalPose) {
         if (alliance == Alliance.BLUE) {
-            return originalPose.mirror();
+            return originalPose.mirror(GoalPositions.FIELD_LENGTH);
         }
 
         return originalPose;

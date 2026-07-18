@@ -15,6 +15,8 @@ import com.skeletonarmy.marrow.OpModeManager;
 import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.commands.GoToArtifactCommand;
 import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
@@ -32,10 +34,10 @@ import lombok.var;
 
 public class Vision extends SubsystemBase {
     private final double METERS_TO_INCHES = 39.37;
-    private static final int GPP_TAG_ID = 21;
+    private static final int GPP_TAG_ID = 23;
     private static final int PGP_TAG_ID = 22;
-    private static final int PPG_TAG_ID = 23;
-    private static final int FIELD_HALF_Y_LEVEL = 72;
+    private static final int PPG_TAG_ID = 21;
+    private static final int FIELD_HALF_Y_LEVEL = 94;
 
     private final PoseTracker poseTracker;
     private final Limelight3A limelight;
@@ -43,7 +45,7 @@ public class Vision extends SubsystemBase {
 
 //    private final TimerEx relocalizeTimer = new TimerEx(RELOCALIZE_COOLDOWN);
     private final List<Consumer<Pose>> onRelocalizeListeners = new ArrayList<>();
-    
+
 //    private boolean firstRelocalization = true;
 
     private final int pipeline;
@@ -315,6 +317,16 @@ public class Vision extends SubsystemBase {
 
         public ArtifactList filterInvalidX() {
             artifacts.removeIf(a -> a.getPose().getX() > 188 || a.getPose().getX() < 0);
+            return this;
+        }
+
+        public ArtifactList filterByYLevel(double minY, double maxY) {
+            artifacts.removeIf(a -> a.getArtifactPose().getY() < minY || a.getArtifactPose().getY() > maxY);
+            return this;
+        }
+
+        public ArtifactList filterInvalidX() {
+            artifacts.removeIf(a -> a.getArtifactPose().getX() > GoalPositions.FIELD_LENGTH || a.getArtifactPose().getX() < 0);
             return this;
         }
 

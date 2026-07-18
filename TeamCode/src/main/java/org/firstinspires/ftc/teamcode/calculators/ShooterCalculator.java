@@ -65,31 +65,45 @@ public class ShooterCalculator implements IShooterCalculator {
     /**
      * Checks if the given velocity is within the valid margin for the given distance.
      */
-    private HoodSolution lookup(double distance, double velocity, double referenceSpeed) {
+    private HoodSolution lookup(double distance, double velocity, double horizontalAngleToGoal, Vector3D vRobot) {
         double verticalAngle = calculateVerticalAngle(distance);
 
         double minLimit = evaluatePolynomial(coefficients.MIN_VEL_COEFFS, distance);
         double maxLimit = evaluatePolynomial(coefficients.MAX_VEL_COEFFS, distance);
 
-        // minLimit/maxLimit were calibrated as a margin band around the STATIONARY
-        // ideal speed for this distance. When compensating for robot motion, the
-        // mechanism's real target speed shifts to referenceSpeed. Shift the whole
-        // band by that same delta so the tolerance width is preserved but it's
-        // centered on the speed we're actually trying to hit.
-        double idealSpeedAtDistance = shooterVelocity(distance);
-        double compensationDelta = referenceSpeed - idealSpeedAtDistance;
+        double cosHood = Math.cos(verticalAngle);
+        double sinHood = Math.sin(verticalAngle);
+        double cosHoriz = Math.cos(horizontalAngleToGoal);
+        double sinHoriz = Math.sin(horizontalAngleToGoal);
 
-        double shiftedMin = minLimit + compensationDelta;
-        double shiftedMax = maxLimit + compensationDelta;
+        Vector3D vLaunchMin = new Vector3D(
+                minLimit * cosHood * cosHoriz,
+                minLimit * cosHood * sinHoriz,
+                minLimit * sinHood
+        );
+        Vector3D vLaunchMax = new Vector3D(
+                maxLimit * cosHood * cosHoriz,
+                maxLimit * cosHood * sinHoriz,
+                maxLimit * sinHood
+        );
 
-        boolean isValid = (velocity >= shiftedMin - LOWER_RANGE_BUFFER) && (velocity <= shiftedMax + UPPER_RANGE_BUFFER);
+        double shiftedMin = vLaunchMin.subtract(vRobot).getNorm();
+        double shiftedMax = vLaunchMax.subtract(vRobot).getNorm();
+
+        // Guard against the (rare) case where vRobot is large enough relative to
+        // the shot speed that the projection crosses the corridor and flips order.
+        double lo = Math.min(shiftedMin, shiftedMax);
+        double hi = Math.max(shiftedMin, shiftedMax);
+
+        boolean isValid = (velocity >= lo - LOWER_RANGE_BUFFER) && (velocity <= hi + UPPER_RANGE_BUFFER);
 
         return new HoodSolution(verticalAngle, isValid);
     }
 
-    // Overload for the stationary case, so existing call sites don't need referenceSpeed
+    // Overload for the stationary case: vRobot = 0, so subtraction is a no-op
+    // and horizontalAngleToGoal doesn't matter.
     private HoodSolution lookup(double distance, double velocity) {
-        return lookup(distance, velocity, shooterVelocity(distance)); // delta = 0
+        return lookup(distance, velocity, 0.0, Vector3D.ZERO);
     }
 
     public double calculateTurretAngle(Pose targetPose, Pose robotPose) {
@@ -134,7 +148,7 @@ public class ShooterCalculator implements IShooterCalculator {
         // Validate against the corridor shifted to be centered on vRequired's norm —
         // the speed the flywheel is actually being commanded toward while moving —
         // instead of the stale stationary idealSpeed for this distance.
-        HoodSolution currentHood = lookup(distance, currentSpeed, vRequired.getNorm());
+        HoodSolution currentHood = lookup(distance, currentSpeed, horizontalAngleToGoal, vRobot);
 
         Vector3D vLaunchActual = new Vector3D(
                 currentSpeed * Math.cos(currentHood.getHoodAngle()) * Math.cos(horizontalAngleToGoal),

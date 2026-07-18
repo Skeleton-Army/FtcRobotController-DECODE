@@ -2,24 +2,18 @@ package org.firstinspires.ftc.teamcode.commands;
 
 import static org.firstinspires.ftc.teamcode.config.IntakeConfig.INTAKE_POWER;
 import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SHOOTING_POWER;
-import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
-
-import android.util.Log;
 
 import com.pedropathing.ftc.FTCCoordinates;
-import com.pedropathing.geometry.PedroCoordinates;
 import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.Command;
-import com.seattlesolvers.solverslib.command.ConditionalCommand;
+import com.seattlesolvers.solverslib.command.CommandBase;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.skeletonarmy.marrow.OpModeManager;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
@@ -27,11 +21,7 @@ import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
 import org.firstinspires.ftc.teamcode.utilities.TrajectoryCalculator;
 import org.psilynx.psikit.core.Logger;
-import org.psilynx.psikit.core.mechanism.LoggedMechanism2d;
-import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Translation3d;
-
-import java.util.function.BooleanSupplier;
 
 public class ShootCommand extends SequentialCommandGroup {
     private final Shooter shooter;
@@ -76,12 +66,12 @@ public class ShootCommand extends SequentialCommandGroup {
                     recordShot();
                     drive.setShootingMode(true);
                     transfer.release();
-                    intake.setIntakeSpeed(intakeSpeed);
                 }),
-                new WaitCommand(100), // Wait for stopper to open
-                new InstantCommand(intake::collect),
+                new WaitUntilCommand(shooter::getCanShoot).withTimeout(2000), // don't start feeding until stable
+                new InstantCommand(() -> intake.setIntakeSpeed(intakeSpeed)),
+                new WaitCommand(100), // wait for stopper to open
 
-                new WaitCommand(waitMillis),
+                new FeedWhileCanShootCommand(intakeSpeed, waitMillis),
 
                 new InstantCommand(() -> {
                     transfer.block();
@@ -123,7 +113,84 @@ public class ShootCommand extends SequentialCommandGroup {
         drive.setShootingMode(false);
         shooter.setUpdateHood(true);
         intake.setIntakeSpeed(INTAKE_POWER);
+        transfer.block();
+    }
 
-        if (!interrupted) transfer.block();
+    /**
+     * Feeds artifacts through the intake for a total of {@code waitMillis} of
+     * ACTIVE (canShoot == true) time. If canShoot becomes false mid-shot, the
+     * intake is paused (not stopped/cancelled) and the elapsed-time clock
+     * freezes until canShoot becomes true again, at which point feeding resumes
+     * and the clock keeps counting toward waitMillis.
+     */
+    private class FeedWhileCanShootCommand extends CommandBase {
+        private static final long DEBOUNCE_MS = 50;
+
+        private final double intakeSpeed;
+        private final int waitMillis;
+
+        private long accumulatedMs;
+        private long lastTimestamp;
+
+        // Debounce state
+        private boolean canShootFalseSeen;
+        private long canShootFalseSince;
+        private boolean paused;
+
+        FeedWhileCanShootCommand(double intakeSpeed, int waitMillis) {
+            this.intakeSpeed = intakeSpeed;
+            this.waitMillis = waitMillis;
+            addRequirements(intake);
+        }
+
+        @Override
+        public void initialize() {
+            accumulatedMs = 0;
+            lastTimestamp = System.currentTimeMillis();
+            canShootFalseSeen = false;
+            canShootFalseSince = 0;
+            paused = false;
+        }
+
+        @Override
+        public void execute() {
+            long now = System.currentTimeMillis();
+            long delta = now - lastTimestamp;
+            lastTimestamp = now;
+
+            boolean canShoot = shooter.getCanShoot();
+
+            if (canShoot) {
+                // Reset debounce tracking the instant canShoot is true again
+                canShootFalseSeen = false;
+                paused = false;
+            } else {
+                if (!canShootFalseSeen) {
+                    canShootFalseSeen = true;
+                    canShootFalseSince = now;
+                } else if (!paused && (now - canShootFalseSince) >= DEBOUNCE_MS) {
+                    // canShoot has been continuously false for >= 100ms, actually pause
+                    paused = true;
+                }
+            }
+
+            if (!paused) {
+                intake.setIntakeSpeed(intakeSpeed);
+                intake.collect();
+                accumulatedMs += delta;
+            } else {
+                intake.stop(); // debounced pause: canShoot has been false long enough
+            }
+        }
+
+        @Override
+        public boolean isFinished() {
+            return accumulatedMs >= waitMillis;
+        }
+
+        @Override
+        public void end(boolean interrupted) {
+            intake.stop();
+        }
     }
 }

@@ -83,6 +83,13 @@ public class TeleOpApp extends ComplexOpMode {
 
     private boolean autoFireEnabled = true;
 
+    private final TimerEx zoneExitTimer = new TimerEx(0.3);
+    private boolean zoneExitTimerRunning = false;
+
+    private boolean gemsGoal = false;
+
+    Pose startPose;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -99,7 +106,8 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
-        Pose startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+//        startPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        startPose = new Pose(GoalPositions.FIELD_LENGTH - X_OFFSET, Y_OFFSET, Math.toRadians(180)); // starts it on the bottom-right corner
         if (debugMode) follower.setPose(startPose);
 
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
@@ -142,8 +150,10 @@ public class TeleOpApp extends ComplexOpMode {
 
         // Fire immediately when entering zone
         new Trigger(() -> autoFireEnabled
+                && !gemsGoal
                 && drive.isInsideLaunchZonePredictive()
                 && shooter.getCanShoot()
+                && !isShootingBlocked()
                 && (shooter.getCurrentCommand() == null || shooter.getCurrentCommand() == shooter.getDefaultCommand())
                 && (transfer.getCurrentCommand() == null || transfer.getCurrentCommand() == transfer.getDefaultCommand())
                 && (intake.getCurrentCommand() == null || intake.getCurrentCommand() == intake.getDefaultCommand())
@@ -185,6 +195,21 @@ public class TeleOpApp extends ComplexOpMode {
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_RIGHT))
                 .whileActiveContinuous(
                         new InstantCommand(() -> shooter.setHorizontalOffset(shooter.getHorizontalOffset() - 0.003))
+                );
+
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.TOUCHPAD)
+                .toggleWhenPressed(
+                        new InstantCommand(() -> {
+                            shooter.setGoalPose(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
+                            shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_GEMS,GoalPositions.RED_GOAL_GEMS);
+                            gemsGoal = true;
+
+                        }),
+                        new InstantCommand(() -> {
+                            shooter.setGoalPose(GoalPositions.BLUE_GOAL,GoalPositions.RED_GOAL);
+                            shooter.setGoalPoseFar(GoalPositions.BLUE_GOAL_FAR,GoalPositions.RED_GOAL_FAR);
+                            gemsGoal = false;
+                        })
                 );
 
         new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
@@ -230,7 +255,10 @@ public class TeleOpApp extends ComplexOpMode {
                     .whenPressed(this::resetPoseToNearestCorner);
         }
 
-        new Trigger(transfer.threeArtifactsDetected(intake::isCollecting, 250))
+        new Trigger(transfer.threeArtifactsDetected(
+                () -> gamepadEx1.getButton(GamepadKeys.Button.RIGHT_BUMPER),
+                200
+        ))
                 .whenActive(new InstantCommand(() -> gamepad1.rumble(300)));
 
         // Cancel shooting when turret wraps around
@@ -292,16 +320,26 @@ public class TeleOpApp extends ComplexOpMode {
             isOverrideActive = false;
         }
 
-        if (!drive.isInsideLaunchZonePredictive() && !isOverrideActive) {
+        boolean insideZoneNow = drive.isInsideLaunchZonePredictive();
+
+        if (insideZoneNow) {
+            zoneExitTimerRunning = false;
+        } else if (!zoneExitTimerRunning) {
+            zoneExitTimer.restart();
+            zoneExitTimerRunning = true;
+        }
+
+        boolean confirmedOutsideZone = zoneExitTimerRunning && zoneExitTimer.isDone();
+
+        if (confirmedOutsideZone && !isOverrideActive) {
             Command currentShooterCommand = shooter.getCurrentCommand();
 
-            // Cancel shooting ONLY if we are running a standalone ShootCommand, not a complex macro like CloseCycleCommand
             if (currentShooterCommand instanceof ShootCommand) {
                 CommandScheduler.getInstance().cancel(currentShooterCommand);
 
-                // Reverse intake and then block so an artifact doesn't get stuck above the stopper
-                if (!transfer.isArtifactInIntake()) {
+                if (!transfer.isArtifactInIntake() && !gamepad1.right_bumper) {
                     new SequentialCommandGroup(
+                            new InstantCommand(transfer::release, transfer),
                             new InstantCommand(intake::release, intake),
                             new WaitCommand(10),
                             new InstantCommand(transfer::block, transfer)
@@ -311,7 +349,7 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         double goalDistance = follower.getPose().distanceFrom(
-                alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.BLUE_GOAL
+                alliance == Alliance.RED ? GoalPositions.RED_GOAL : GoalPositions.RED_GOAL
         ) / INCHES_TO_METERS;
 
         Pose rotatedPose = follower.getPose().getAsCoordinateSystem(FTCCoordinates.INSTANCE);
@@ -327,8 +365,8 @@ public class TeleOpApp extends ComplexOpMode {
 
         telemetry.addData("Time remaining", matchTime.getRemaining());
 
-        double driftX = Math.abs(X_OFFSET - follower.getPose().getX());
-        double driftY = Math.abs(Y_OFFSET - follower.getPose().getY());
+        double driftX = Math.abs(startPose.getX() - follower.getPose().getX());
+        double driftY = Math.abs(startPose.getY() - follower.getPose().getY());
         telemetry.addData("Drift x", driftX);
         telemetry.addData("Drift y", driftY);
         telemetry.addData("Drift total", driftX + driftY);
@@ -396,7 +434,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private boolean isShootingAllowed() {
-        return drive.isInsideLaunchZonePredictive() || isOverrideActive;
+        return !isShootingBlocked() && drive.isInsideLaunchZonePredictive() || isOverrideActive;
     }
 
     private void resetPoseToNearestCorner() {
@@ -404,11 +442,36 @@ public class TeleOpApp extends ComplexOpMode {
         if (alliance == Alliance.RED) {
             newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         } else {
-            newPose = new Pose(141.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
+            newPose = new Pose(GoalPositions.FIELD_LENGTH - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         }
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
         follower.startTeleopDrive(USE_BRAKE_MODE);
         gamepad1.rumble(300);
     }
+
+    public boolean getShooterGoal(){
+        return gemsGoal;
+    }
+
+    private boolean isShootingBlocked() {
+        if (alliance == Alliance.BLUE) {
+            if (gemsGoal)
+                return !(follower.getPose().getX() <= getRelative(75) && follower.getPose().getY() >= 123);
+            else
+                return (follower.getPose().getX() >= getRelative(105) && follower.getPose().getY() > 142);
+        } else {
+            if (gemsGoal)
+                return !(follower.getPose().getX() >= getRelative(75) && follower.getPose().getY() >= 123);
+            else
+                return (follower.getPose().getX() <= getRelative(105) && follower.getPose().getY() > 142);
+        }
+    }
+
+    private double getRelative(double x){
+        if(alliance == Alliance.RED)
+            return GoalPositions.FIELD_LENGTH - x;
+        return x;
+    }
+
 }

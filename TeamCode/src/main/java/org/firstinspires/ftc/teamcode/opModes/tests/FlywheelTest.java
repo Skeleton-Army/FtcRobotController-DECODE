@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.config.ShooterConfig.*;
 import static org.firstinspires.ftc.teamcode.config.TransferConfig.*;
 
 import com.acmerobotics.dashboard.config.Config;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -31,6 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 @Config
 @TeleOp(name = "Flywheel Test", group = "Tests")
+@Disabled
 public class FlywheelTest extends OpMode {
     public static int FLYWHEEL_TARGET = 3400;
 

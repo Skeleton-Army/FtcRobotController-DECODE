@@ -18,16 +18,16 @@ import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.servos.ServoEx;
 import com.skeletonarmy.marrow.OpModeManager;
 import com.skeletonarmy.marrow.TimerEx;
-import com.skeletonarmy.marrow.zones.Zone;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.CurrentUnit;
 import org.firstinspires.ftc.teamcode.config.ShooterConfig;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
 import org.firstinspires.ftc.teamcode.calculators.ShootingSolution;
-import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
+import org.firstinspires.ftc.teamcode.opModes.TeleOpApp;
 import org.firstinspires.ftc.teamcode.utilities.Kinematics;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorEx;
 import org.firstinspires.ftc.teamcode.utilities.ModifiedMotorGroup;
@@ -104,6 +104,7 @@ public class Shooter extends SubsystemBase {
     private double filteredTargetVel = 0;
     private double filteredTargetAccel = 0;
     private double filteredTargetAccelFlywheel = 0;
+    private double lastFilteredTargetVel = 0;
 
     // --- Gyroscopic coupling (turret <-> flywheel speed change) ---
     private double lastFilteredRPM = 0;
@@ -294,6 +295,8 @@ public class Shooter extends SubsystemBase {
         desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
         flywheel.set(desiredVoltage / voltage);
+
+        OpModeManager.getTelemetry().addData("Flywheel Power", desiredVoltage / voltage);
     }
 
     private void updateTurretPID(boolean useDelayCompensation) {
@@ -366,31 +369,38 @@ public class Shooter extends SubsystemBase {
 
         double dt = (currentTime - lastTargetUpdateTime) / 1e9;
 
-        // This removes the jitter and jumps at the start of the OpMode
-        if (dt <= 0.005 || startupTimer.getElapsed() < 0.5) {
+        // Skip on startup, tiny dt, or a turret wrap event — a wrap causes a
+        // near-instant jump in the raw setpoint that isn't real motion, and
+        // letting it into the derivative chain spikes filteredTargetAccel.
+        if (dt <= 0.005 || startupTimer.getElapsed() < 0.5 || justWrapped) {
             lastTargetAngle = currentTargetAngle;
             lastTargetUpdateTime = currentTime;
             targetVel = 0;
             return new double[] {0, 0};
         }
 
-        // 1. Calculate Raw Derivatives
+        // 1. Calculate Raw Velocity
         double deltaAngle = MathFunctions.normalizeAngleSigned(currentTargetAngle - lastTargetAngle);
         double rawTargetVel = deltaAngle / dt;
         rawTargetVel = MathUtils.clamp(rawTargetVel, -4, 4);
-
-        double rawTargetAccel = (rawTargetVel - targetVel) / dt;
-        rawTargetAccel = MathUtils.clamp(rawTargetAccel, -4, 4);
-
-        // 2. Apply Low Pass Filter using your Kinematics utility
-        filteredTargetVel = Kinematics.lowPassFilter(rawTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
-        filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_SECOND_DERIVATIVE_GAIN);
 
         targetVel = rawTargetVel;
         lastTargetAngle = currentTargetAngle;
         lastTargetUpdateTime = currentTime;
 
-        // 3. Compute Net Motion (Filtered Target - Filtered/Measured Robot)
+        // 2. Filter velocity FIRST
+        filteredTargetVel = Kinematics.lowPassFilter(rawTargetVel, filteredTargetVel, TURRET_DERIVATIVE_GAIN);
+
+        // 3. Derive acceleration from the FILTERED velocity, not the raw one —
+        // differencing raw velocity twice compounds noise before any smoothing
+        // has a chance to act on it.
+        double rawTargetAccel = (filteredTargetVel - lastFilteredTargetVel) / dt;
+        rawTargetAccel = MathUtils.clamp(rawTargetAccel, -4, 4);
+        lastFilteredTargetVel = filteredTargetVel;
+
+        filteredTargetAccel = Kinematics.lowPassFilter(rawTargetAccel, filteredTargetAccel, TURRET_SECOND_DERIVATIVE_GAIN);
+
+        // 4. Compute Net Motion
         double netVel = filteredTargetVel;
         double netAccel = filteredTargetAccel;
 
@@ -713,6 +723,14 @@ public class Shooter extends SubsystemBase {
 
     public void setGoalPoseFar(Pose bluePose, Pose redPose) {
         this.goalPoseFar = alliance == Alliance.BLUE ? bluePose : redPose;
+    }
+
+    public Pose getGoalPose() {
+        return goalPose;
+    }
+
+    public Pose getGoalPoseFar() {
+        return goalPoseFar;
     }
 
     public boolean justShot() {

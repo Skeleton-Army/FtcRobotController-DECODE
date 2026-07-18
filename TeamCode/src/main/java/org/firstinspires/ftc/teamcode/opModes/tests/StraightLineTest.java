@@ -5,11 +5,13 @@ import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.PathChain;
 import com.pedropathing.follower.Follower;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
 @Autonomous(name = "Straight Line Test")
+@Disabled
 public class StraightLineTest extends ComplexOpMode {
 
     private Follower follower;

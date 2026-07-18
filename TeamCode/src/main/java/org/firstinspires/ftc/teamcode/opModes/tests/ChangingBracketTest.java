@@ -11,12 +11,14 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 
 import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 
 // Does an r shape with heading changing to always drive forward and backwards
 @Autonomous
+@Disabled
 public class ChangingBracketTest extends ComplexOpMode {
     private Follower follower;
 
