@@ -122,12 +122,12 @@ public class Drive extends SubsystemBase {
                             .addPath(
                                     new BezierLine(
                                             follower.getPose(),
-                                            getRelative(new Pose(53, 155.5))
+                                            new Pose(alliance == Alliance.RED ? 145 : 70, 157)
                                     )
                             )
                             .setLinearHeadingInterpolation(
                                     follower.getHeading(),
-                                    Math.toRadians(0)
+                                    Math.toRadians(90)
                             )
                             .setTranslationalConstraint(1)
                             .setBrakingStrength(1)
