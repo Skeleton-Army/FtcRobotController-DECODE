@@ -124,7 +124,8 @@ public class ShootCommand extends SequentialCommandGroup {
      * and the clock keeps counting toward waitMillis.
      */
     private class FeedWhileCanShootCommand extends CommandBase {
-        private static final long DEBOUNCE_MS = 20;
+        private static final long RPM_DEBOUNCE_MS = 20;
+        private static final long ANGLE_DEBOUNCE_MS = 100;
 
         private final double intakeSpeed;
         private final int waitMillis;
@@ -132,10 +133,13 @@ public class ShootCommand extends SequentialCommandGroup {
         private long accumulatedMs;
         private long lastTimestamp;
 
-        // Debounce state
-        private boolean canShootFalseSeen;
-        private long canShootFalseSince;
-        private boolean paused;
+        private boolean rpmFalseSeen;
+        private long rpmFalseSince;
+        private boolean rpmPaused;
+
+        private boolean angleFalseSeen;
+        private long angleFalseSince;
+        private boolean anglePaused;
 
         FeedWhileCanShootCommand(double intakeSpeed, int waitMillis) {
             this.intakeSpeed = intakeSpeed;
@@ -147,9 +151,14 @@ public class ShootCommand extends SequentialCommandGroup {
         public void initialize() {
             accumulatedMs = 0;
             lastTimestamp = System.currentTimeMillis();
-            canShootFalseSeen = false;
-            canShootFalseSince = 0;
-            paused = false;
+
+            rpmFalseSeen = false;
+            rpmFalseSince = 0;
+            rpmPaused = false;
+
+            angleFalseSeen = false;
+            angleFalseSince = 0;
+            anglePaused = false;
         }
 
         @Override
@@ -158,28 +167,43 @@ public class ShootCommand extends SequentialCommandGroup {
             long delta = now - lastTimestamp;
             lastTimestamp = now;
 
-            boolean canShoot = shooter.getCanShoot();
+            boolean rpmOk = shooter.getCanShootRPMCalc();
+            boolean angleOk = shooter.reachedAngle();
 
-            if (canShoot) {
-                // Reset debounce tracking the instant canShoot is true again
-                canShootFalseSeen = false;
-                paused = false;
+            // --- RPM debounce ---
+            if (rpmOk) {
+                rpmFalseSeen = false;
+                rpmPaused = false;
             } else {
-                if (!canShootFalseSeen) {
-                    canShootFalseSeen = true;
-                    canShootFalseSince = now;
-                } else if (!paused && (now - canShootFalseSince) >= DEBOUNCE_MS) {
-                    // canShoot has been continuously false for >= 100ms, actually pause
-                    paused = true;
+                if (!rpmFalseSeen) {
+                    rpmFalseSeen = true;
+                    rpmFalseSince = now;
+                } else if (!rpmPaused && (now - rpmFalseSince) >= RPM_DEBOUNCE_MS) {
+                    rpmPaused = true;
                 }
             }
+
+            // --- Angle debounce ---
+            if (angleOk) {
+                angleFalseSeen = false;
+                anglePaused = false;
+            } else {
+                if (!angleFalseSeen) {
+                    angleFalseSeen = true;
+                    angleFalseSince = now;
+                } else if (!anglePaused && (now - angleFalseSince) >= ANGLE_DEBOUNCE_MS) {
+                    anglePaused = true;
+                }
+            }
+
+            boolean paused = rpmPaused || anglePaused;
 
             if (!paused) {
                 intake.setIntakeSpeed(intakeSpeed);
                 intake.collect();
                 accumulatedMs += delta;
             } else {
-                intake.stop(); // debounced pause: canShoot has been false long enough
+                intake.stop();
             }
         }
 
