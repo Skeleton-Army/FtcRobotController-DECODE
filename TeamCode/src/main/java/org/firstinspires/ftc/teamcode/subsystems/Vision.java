@@ -17,6 +17,7 @@ import com.skeletonarmy.marrow.TimerEx;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.ArtifactColor;
 import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
@@ -256,13 +257,12 @@ public class Vision extends SubsystemBase {
         }
 
         public ArtifactList filterByYLevel(double minY, double maxY) {
-            artifacts.removeIf(a -> a.getArtifactPose().getY() < minY);
-            artifacts.removeIf(a -> a.getArtifactPose().getY() > maxY);
+            artifacts.removeIf(a -> a.getArtifactPose().getY() < minY || a.getArtifactPose().getY() > maxY);
             return this;
         }
 
         public ArtifactList filterInvalidX() {
-            artifacts.removeIf(a -> a.getArtifactPose().getX() > 188 || a.getArtifactPose().getX() < 0);
+            artifacts.removeIf(a -> a.getArtifactPose().getX() > GoalPositions.FIELD_LENGTH || a.getArtifactPose().getX() < 0);
             return this;
         }
 

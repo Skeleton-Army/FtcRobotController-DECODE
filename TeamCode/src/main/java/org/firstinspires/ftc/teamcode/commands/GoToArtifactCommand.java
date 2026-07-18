@@ -9,6 +9,7 @@ import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
 import com.seattlesolvers.solverslib.pedroCommand.FollowPathCommand;
 
+import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.Artifact;
@@ -29,7 +30,7 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
                 new WaitUntilCommand(() ->
                        artifactList.fetch()
                                .filterInvalidX()
-                               .filterByYLevel(0, 50)
+                               .filterByYLevel(0, 90)
                                .isArtifactDetected()
                 ),
                 //new InstantCommand(() -> telemetry.addData("artifactPose", artifactList.getClosest()))
@@ -57,7 +58,7 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         Pose pose = new Pose(10, artifact.getArtifactPose().getY(), Math.toRadians(180));
 
         if (alliance == Alliance.RED) {
-            pose = pose.mirror();
+            pose = pose.mirror(GoalPositions.FIELD_LENGTH);
         }
 
         return pose;
