@@ -92,6 +92,6 @@ public class ShooterConfig {
     public static double STALL_TIMEOUT = 1;
     public static double CURRENT_THRESHOLD = 8;
 
-    public static double START_HORIZONTAL_OFFSET = Math.toRadians(-2.0);
+    public static double START_HORIZONTAL_OFFSET = Math.toRadians(0.0);
     public static double START_VERTICAL_OFFSET = Math.toRadians(0.0);
 }
