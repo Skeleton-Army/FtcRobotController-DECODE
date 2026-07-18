@@ -203,7 +203,7 @@ public class Vision extends SubsystemBase {
             int count = (int) output[0];
             if (count != 0) artifacts.clear();
 
-            for (int i = 0; i < count * 2; i += 2) {
+            for (int i = 0; i < count * 3; i += 3) {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
                 double ta = output[3 + i];
