@@ -180,7 +180,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(15.5, 106))
+                                getRelative(new Pose(15, 104.5))
                         )
                 )
                 .setHeadingInterpolation(
@@ -226,7 +226,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose nearSpike1End = getRelative(new Pose(8.5, 11.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 7));
         Pose spike2End = getRelative(new Pose(7.5, 60));
-        Pose spike3End = getRelative(new Pose(7.5, 84));
+        Pose spike3End = getRelative(new Pose(7.5, 81));
         Pose spike4End = getRelative(new Pose(10.252, 105.570));
 
         Pose openGateEnd = getRelative(new Pose(15, 124));
@@ -332,7 +332,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(58.988, 64.654)),
+                                getRelative(new Pose(70, 60)),
+                                getRelative(new Pose(60, 60)),
                                 spike2End
                         )
                 )
@@ -347,7 +348,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(69.545, 89.204)),
+                                getRelative(new Pose(70, 81)),
+                                getRelative(new Pose(60, 81)),
                                 spike3End
 
                         )
@@ -363,7 +365,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative( new Pose(71.170, 110.816)),
+                                getRelative(new Pose(70, 105.570)),
+                                getRelative(new Pose(60, 105.570)),
                                 spike4End
                         )
                 )
@@ -391,8 +394,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(55.655, 125.827)),
-                                getRelative(new Pose(74.082, 54.749)),
+                                getRelative(new Pose(56, 60)),
+                                getRelative(new Pose(50, 60)),
                                 spike2End
                         )
                 )
@@ -407,8 +410,8 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative(new Pose(69.461, 122.578)),
-                                getRelative(new Pose(76.706, 79.111)),
+                                getRelative(new Pose(56, 81)),
+                                getRelative(new Pose(50, 81)),
                                 spike3End
                         )
                 )
@@ -423,7 +426,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierCurve(
                                 follower::getPose,
-                                getRelative( new Pose(56.061, 101.464)),
+                                getRelative( new Pose(56.061, 105.570)),
                                 spike4End
                         )
                 )
