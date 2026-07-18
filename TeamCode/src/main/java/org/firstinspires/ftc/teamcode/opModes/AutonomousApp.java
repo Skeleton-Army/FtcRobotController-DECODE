@@ -540,8 +540,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .prompt("shooting_position", new OptionPrompt<>("SHOOTING POSITION", ShootingPosition.CLOSE, ShootingPosition.FAR))
                     .showIf("starting_position", StartingPosition.MIDDLE)
                 .prompt("cycle", new BooleanPrompt("RUN CYCLE ROUTINE?", false))
-                    .showIf("starting_position", StartingPosition.FAR)
-                    .or("starting_position", StartingPosition.MIDDLE)
                 .prompt("take_spike", new BooleanPrompt("TAKE SPIKE 3?", true))
                     .showIf("starting_position", StartingPosition.CLOSE)
                     .showIf("cycle", true)
