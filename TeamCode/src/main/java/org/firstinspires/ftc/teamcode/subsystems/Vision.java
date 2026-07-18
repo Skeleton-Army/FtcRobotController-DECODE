@@ -320,16 +320,6 @@ public class Vision extends SubsystemBase {
             return this;
         }
 
-        public ArtifactList filterByYLevel(double minY, double maxY) {
-            artifacts.removeIf(a -> a.getArtifactPose().getY() < minY || a.getArtifactPose().getY() > maxY);
-            return this;
-        }
-
-        public ArtifactList filterInvalidX() {
-            artifacts.removeIf(a -> a.getArtifactPose().getX() > GoalPositions.FIELD_LENGTH || a.getArtifactPose().getX() < 0);
-            return this;
-        }
-
         // ─── Terminals ───────────────────────────────────────────────────────────
 
         /** Returns the closest artifact, or {@code null} if the list is empty. */
