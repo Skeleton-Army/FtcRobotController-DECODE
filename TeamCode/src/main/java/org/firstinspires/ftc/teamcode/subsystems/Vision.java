@@ -228,7 +228,12 @@ public class Vision extends SubsystemBase {
                 double tx = output[1 + i];
                 double ty = output[2 + i];
                 double ta = output[3 + i];
+
+                if (ta <= 0) continue;
+
                 Pose absPose = getAbsolutePosition(tx, ty);
+
+                if (absPose == null) continue;
                 freshArtifacts.add(new Artifact(absPose, ta));
             }
 
@@ -308,8 +313,9 @@ public class Vision extends SubsystemBase {
             return sortByDistance().artifacts.get(0);
         }
 
+        /** Returns the biggest artifact, or {@code null} if the list is empty. */
         public Artifact getBiggest() {
-            if (artifacts.isEmpty()) return new Artifact(new Pose(Double.NaN, Double.NaN), 0);
+            if (artifacts.isEmpty()) return null;
             return sortBySize().artifacts.get(0);
         }
 
@@ -384,6 +390,7 @@ public class Vision extends SubsystemBase {
 
         private double getDistance(double ty) {
             double angleGoalRad = Math.toRadians(LIMELIGHT_MOUNT_ANGLE + ty);
+            if (Math.tan(angleGoalRad) == 0.0) return 0;
             return (ARTIFACT_HEIGHT_FROM_FLOOR - LENS_HEIGHT_INCHES) / Math.tan(angleGoalRad);
         }
 
@@ -410,34 +417,8 @@ public class Vision extends SubsystemBase {
 
         private Pose getAbsolutePosition(double tx, double ty) {
             double distance = getDistance(ty);
+            if (distance < 0.1) return null;
             return getAbsolutePosition(getRelativePose(distance, tx));
-        }
-
-
-        // ─── Deprecated ──────────────────────────────────────────────────────────
-
-        /** @deprecated Neural net pipeline no longer in use. */
-        @Deprecated
-        public List<Artifact> getArtifactsNeuralNet() {
-            if (llResult == null || !llResult.isValid()) return new ArrayList<>();
-
-            List<Artifact> artifactList = new ArrayList<>();
-            var llArtifactList = llResult.getFiducialResults();
-
-            for (var fiducialResult : llArtifactList) {
-                double distance = getDistance(fiducialResult.getTargetYDegrees());
-                Pose relativePose = getRelativePose(distance, fiducialResult.getTargetXDegrees());
-
-                double theta = poseTracker.getPose().getHeading();
-                double x = relativePose.getX() * Math.cos(theta) - relativePose.getY() * Math.sin(theta);
-                double y = relativePose.getX() * Math.sin(theta) - relativePose.getY() * Math.cos(theta);
-
-                artifactList.add(new Artifact(
-                        new Pose(poseTracker.getPose().getX() + x, poseTracker.getPose().getY() + y),
-                        fiducialResult.getFamily()
-                ));
-            }
-            return artifactList;
         }
     }
 }
