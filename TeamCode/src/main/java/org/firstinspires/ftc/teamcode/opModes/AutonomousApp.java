@@ -1,7 +1,5 @@
 package org.firstinspires.ftc.teamcode.opModes;
 
-import static org.firstinspires.ftc.teamcode.config.IntakeConfig.SLOW_SHOOTING_POWER;
-
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.ftc.FTCCoordinates;
@@ -29,7 +27,6 @@ import com.skeletonarmy.marrow.prompts.BooleanPrompt;
 import com.skeletonarmy.marrow.prompts.MultiOptionPrompt;
 import com.skeletonarmy.marrow.prompts.OptionPrompt;
 import com.skeletonarmy.marrow.prompts.Prompter;
-import com.skeletonarmy.marrow.prompts.ValuePrompt;
 import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
@@ -42,7 +39,6 @@ import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
-import org.firstinspires.ftc.teamcode.enums.ArtifactPattern;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.enums.ShootingPosition;
 import org.firstinspires.ftc.teamcode.enums.StartingPosition;
@@ -180,7 +176,7 @@ public class AutonomousApp extends ComplexOpMode {
                 .addPath(
                         new BezierLine(
                                 follower.getPose(),
-                                getRelative(new Pose(15, 104.5))
+                                getRelative(new Pose(15, 108.5))
                         )
                 )
                 .setHeadingInterpolation(
@@ -193,13 +189,28 @@ public class AutonomousApp extends ComplexOpMode {
                                 new HeadingInterpolator.PiecewiseNode(
                                         0.5,
                                         1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(155)))
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(162)))
                                 )
                         )
                 )
                 .setGlobalDeceleration()
                 .build();
     }
+
+    public PathChain getCollectGate() {
+        return follower
+                .pathBuilder()
+                .addPath(
+                        new BezierLine(
+                                follower.getPose(),
+                                getRelative(new Pose(12, 103))
+                        )
+                )
+                .setConstantHeadingInterpolation(getRelative(Math.toRadians(158)))
+                .setGlobalDeceleration()
+                .build();
+    }
+
     public PathChain getMiddleCyclePath() {
         Pose targetPose = (prompter.get("shooting_position") == ShootingPosition.CLOSE)
                 ? new Pose(94, 94)
@@ -506,8 +517,11 @@ public class AutonomousApp extends ComplexOpMode {
         IShooterCalculator shooterCalcClose = new ShooterCalculator(new CloseShooterCoefficients());
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
-        shooter.setSOTMEnabled(false);
-        if (startingPosition == StartingPosition.FAR) shooter.setZoneCalculator(LaunchZone.FAR);
+
+        if (startingPosition == StartingPosition.FAR) {
+            shooter.setSOTMEnabled(false);
+            shooter.setZoneCalculator(LaunchZone.FAR);
+        }
 
         intake = new Intake(hardwareMap);
         transfer = new Transfer(hardwareMap);
@@ -741,12 +755,10 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
                 new DeferredCommand(() -> new FollowPathCommand(follower, getNearCyclePath()).withTimeout(1000), null),
-                new WaitCommand(200),
-                new InstantCommand(() -> {
-                    follower.startTeleOpDrive();
-                    follower.setTeleOpDrive(0.1, 0, 0, true);
-                }),
-                new WaitUntilCommand(threeArtifactsDetectedSupplier).withTimeout(1700),
+                new WaitCommand(400),
+                new DeferredCommand(() -> new FollowPathCommand(follower, getCollectGate()), null)
+                        .interruptOn(threeArtifactsDetectedSupplier)
+                        .withTimeout(1500),
                 followAndShoot(this::nearDriveBack)
         );
     }
@@ -772,10 +784,10 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command nearInitialScore() {
         return new ParallelCommandGroup(
-                new InstantCommand(() -> shooter.setSOTMEnabled(true)),
+//                new InstantCommand(() -> shooter.setSOTMEnabled(true)),
                 new FollowPathCommand(follower, initialNearPath),
-                shoot(),
-                new InstantCommand(() -> shooter.setSOTMEnabled(false))
+                shoot()
+//                new InstantCommand(() -> shooter.setSOTMEnabled(false))
         );
     }
 
@@ -816,9 +828,16 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Command collect(int spike) {
         PathChain[] paths = (startingPosition == StartingPosition.FAR) ? farPaths : nearPaths;
+        PathChain path = paths[spike - 1];
         return new SequentialCommandGroup(
                 new InstantCommand(intake::collect),
-                new FollowPathCommand(follower, paths[spike - 1]),
+                new ParallelCommandGroup(
+                        new FollowPathCommand(follower, path),
+                        new SequentialCommandGroup(
+                                new WaitUntilCommand(() -> spike != 1 && follower.getCurrentTValue() > 0.5 && follower.getVelocity().getMagnitude() < 30.0),
+                                new InstantCommand(follower::breakFollowing)
+                        )
+                ),
                 new InstantCommand(intake::stop)
         );
     }
