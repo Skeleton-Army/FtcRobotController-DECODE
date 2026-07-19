@@ -148,7 +148,7 @@ public class AutonomousApp extends ComplexOpMode {
                                 new HeadingInterpolator.PiecewiseNode(
                                         0.4,
                                         1,
-                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
+                                        HeadingInterpolator.constant(middleDriveBack.getHeading())
                                 )
                         )
                 )
@@ -212,24 +212,6 @@ public class AutonomousApp extends ComplexOpMode {
                 .build();
     }
 
-    public PathChain getMiddleCyclePath() {
-        Pose targetPose = (prompter.get("shooting_position") == ShootingPosition.CLOSE)
-                ? new Pose(94, 94)
-                : new Pose(94, 70);
-
-        return follower
-                .pathBuilder()
-                .addPath(
-                        new BezierLine(
-                                follower.getPose(),
-                                getRelative(targetPose)
-                        )
-                )
-                .setConstantHeadingInterpolation(getRelative(Math.toRadians(180)))
-                .setGlobalDeceleration()
-                .build();
-    }
-
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(79,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(17, 162, Math.toRadians(270)), 192);
@@ -245,8 +227,8 @@ public class AutonomousApp extends ComplexOpMode {
 
         farDriveBack = getRelative(new Pose(71, 23.67));
         middleDriveBack = (prompter.getOrDefault("shooting_position", ShootingPosition.CLOSE) == ShootingPosition.CLOSE)
-                ? getRelative(new Pose(76.5, 110.00))
-                : getRelative(new Pose(76.5, 60.00));
+                ? getRelative(new Pose(76.5, 110.00, Math.toRadians(200)))
+                : getRelative(new Pose(76.5, 60.00, Math.toRadians(180)));
         nearDriveBack = getRelative(new Pose(65.5, 119));
 
         nearPathsReturn[0] = this::nearDriveBack;
@@ -274,9 +256,9 @@ public class AutonomousApp extends ComplexOpMode {
         farPathsReturn[3] = this::farDriveBack;
 
         middlePathsReturn[0] = this::middleDriveBack;
-        middlePathsReturn[1] = this::farDriveBack;
-        middlePathsReturn[2] = this::farDriveBack;
-        middlePathsReturn[3] = this::farDriveBack;
+        middlePathsReturn[1] = this::middleDriveBack;
+        middlePathsReturn[2] = this::middleDriveBack;
+        middlePathsReturn[3] = this::middleDriveBack;
 
         initialFarPath = follower
                 .pathBuilder()
@@ -769,10 +751,10 @@ public class AutonomousApp extends ComplexOpMode {
         return new SequentialCommandGroup(
                 middleInitialScore(),
                 pickupSequence(),
-        new ParallelDeadlineGroup(
-                new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
-                repeatIfTime(this::middleCycle, 0.0)
-        ),
+                new ParallelDeadlineGroup(
+                        new WaitUntilCommand(() -> matchTime.isLessThan(0.2)), // Cancel if no time to park last minute
+                        repeatIfTime(this::farCycle, 0.0)
+                ),
                 driveForward()
                 // console.log("Roem Samsh need to make new instant coffee for me.,"
         );
@@ -800,15 +782,6 @@ public class AutonomousApp extends ComplexOpMode {
                         .interruptOn(threeArtifactsDetectedSupplier)
                         .withTimeout(1500),
                 followAndShoot(this::nearDriveBack)
-        );
-    }
-
-    private Command middleCycle() {
-        return new SequentialCommandGroup(
-                new InstantCommand(intake::collect),
-                new GoToArtifactCommand(follower, vision, alliance)
-                        .interruptOn(threeArtifactsDetectedSupplier),
-                new DeferredCommand(() -> new FollowPathCommand(follower, getMiddleCyclePath()).withTimeout(10000), null)
         );
     }
 
