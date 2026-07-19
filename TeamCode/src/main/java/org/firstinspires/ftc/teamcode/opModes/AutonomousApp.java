@@ -215,7 +215,7 @@ public class AutonomousApp extends ComplexOpMode {
     public void setupPaths() {
         farStartingPose = getRelative(new Pose(79,7.48, Math.toRadians(90)));
         nearStartingPose = getRelative(new Pose(17, 162, Math.toRadians(270)), 192);
-        middleStartingPose = getRelative(new Pose(83.5, 162, Math.toRadians(270)));
+        middleStartingPose = getRelative(new Pose(80, 162, Math.toRadians(270)));
 
         Pose nearSpike1End = getRelative(new Pose(8.5, 11.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 7));
@@ -227,8 +227,8 @@ public class AutonomousApp extends ComplexOpMode {
 
         farDriveBack = getRelative(new Pose(71, 23.67));
         middleDriveBack = (prompter.getOrDefault("shooting_position", ShootingPosition.CLOSE) == ShootingPosition.CLOSE)
-                ? getRelative(new Pose(76.5, 110.00, Math.toRadians(200)))
-                : getRelative(new Pose(76.5, 60.00, Math.toRadians(180)));
+                ? getRelative(new Pose(80, 105, Math.toRadians(200)))
+                : getRelative(new Pose(80, 65, Math.toRadians(180)));
         nearDriveBack = getRelative(new Pose(65.5, 119));
 
         nearPathsReturn[0] = this::nearDriveBack;
@@ -277,8 +277,9 @@ public class AutonomousApp extends ComplexOpMode {
         initialMiddlePath = follower
                 .pathBuilder()
                 .addPath(
-                        new BezierLine(
+                        new BezierCurve(
                                 follower::getPose,
+                                getRelative(new Pose(40, 140)),
                                 middleDriveBack
                         )
                 )
@@ -537,8 +538,7 @@ public class AutonomousApp extends ComplexOpMode {
         transfer = new Transfer(hardwareMap);
         drive = new Drive(follower, alliance);
 
-        int pipeline = startingPosition == StartingPosition.FAR ? VisionConfig.DETECTION_PIPELINE : VisionConfig.OBELISK_PIPELINE;
-        vision = new Vision(hardwareMap, follower.poseTracker, pipeline);
+        vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.DETECTION_PIPELINE);
 
         setupPaths();
         if (startingPosition == StartingPosition.FAR) {
