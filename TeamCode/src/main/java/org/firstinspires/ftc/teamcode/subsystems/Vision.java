@@ -50,18 +50,10 @@ public class Vision extends SubsystemBase {
     private final int pipeline;
 
     // ─── Artifact velocity tracking ─────────────────────────────────────────────
-    private List<Artifact> previousArtifacts = new ArrayList<>();
+    private List<Artifact> previousArtifacts = new ArrayList<>(); //do not use outside fetch() or estimateVelocities(). needs to be part of the bigger class to preserve state
     private long previousFetchTimeNanos = -1;
-    private double[] previousPythonOutput = null;
+    private double[] previousPythonOutput = null; //small optimization to avoid recalculating if nothing changed
 
-    // Below this speed (inches/sec), a computed velocity is treated as sensor/vision
-    // jitter rather than real motion and is clamped to zero. Tune alongside
-    // MAX_ARTIFACT_VELOCITY — this should be comfortably smaller than that threshold.
-    public static double VELOCITY_NOISE_FLOOR = 0.8;
-
-    // Smoothing factor for the velocity estimate (0-1). Higher = trusts the newest
-    // raw measurement more; lower = smoother but slower to react to real changes.
-    public static double VELOCITY_LOWPASS_ALPHA = 0.2;
     // ────────────────────────────────────────────────────────────────────────────
 
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {
@@ -325,28 +317,13 @@ public class Vision extends SubsystemBase {
         public List<Artifact> toList() {
             return new ArrayList<>(artifacts);
         }
-
-        public List<Artifact> prevList() {
-            return new ArrayList<>(previousArtifacts);
-        }
         public int count()      { return artifacts.size(); }
         public boolean isArtifactDetected() { return !artifacts.isEmpty(); }
 
         // ─── Geometry helpers ────────────────────────────────────────────────────
 
         private List<Artifact> estimateVelocities(List<Artifact> freshArtifacts, double dt) {
-            if (dt <= 0 || previousArtifacts.isEmpty()) return freshArtifacts; // nothing to compare against; defaults to velocity 0
-
-            // Match against where each previous artifact is PREDICTED to be now (its last
-            // position extrapolated forward by its last known velocity), not where it was
-            // last seen. A ball's index in the detector's output isn't stable frame to frame
-            // (i=1 this frame could be i=3 next frame), so identity is never assumed from
-            // index — but matching against last raw position alone also breaks down for
-            // anything actually moving: a fast ball can easily travel further than
-            // MAX_ARTIFACT_MATCH_DISTANCE in one dt, causing it to fail to match (defaulting
-            // back to 0 velocity) or to wrongly latch onto some other nearby detection instead.
-            // Predicting forward first keeps a genuinely-moving ball's predicted position near
-            // its next real detection, so matching stays correct even while it's moving.
+            if (dt <= 0 || previousArtifacts.isEmpty()) return freshArtifacts;
 
             List<Mat.Tuple3<Double>> candidates = new ArrayList<>();
             for (int f = 0; f < freshArtifacts.size(); f++) {
@@ -358,9 +335,9 @@ public class Vision extends SubsystemBase {
                     }
                 }
             }
-            candidates.sort(Comparator.comparingDouble(Mat.Tuple3::get_2));
 
             List<Artifact> trackedArtifacts = new ArrayList<>(candidates.size());
+            candidates.sort(Comparator.comparingDouble(Mat.Tuple3::get_2));
             boolean[] freshTaken = new boolean[freshArtifacts.size()];
             boolean[] prevTaken = new boolean[previousArtifacts.size()];
 
@@ -377,8 +354,6 @@ public class Vision extends SubsystemBase {
                 double deltaXP = fresh.getPose().getX() - prev.getPose().getX();
                 double deltaYP = fresh.getPose().getY() - prev.getPose().getY();
 
-                // Raw instantaneous velocity from actual measured positions (not predicted
-                // ones) — the prediction above was only to help matching, not to compute speed.
                 double rawVx = (deltaXP) / dt;
                 double rawVy = (deltaYP) / dt;
 
@@ -396,6 +371,7 @@ public class Vision extends SubsystemBase {
                     vx = filteredXP / dt;
                     vy = filteredYP / dt;
                 }
+
                 Artifact tracked = new Artifact(fresh.getPose(), fresh.getSize())
                         .withVelocity(vx, vy)
                         .withPositionDelta(filteredXP, filteredYP);
@@ -417,10 +393,7 @@ public class Vision extends SubsystemBase {
             double deltaX = distance * Math.cos(theta) + X_OFFSET_INCHES;
             double deltaY = -distance * Math.sin(theta) + Y_OFFSET_INCHES;
 
-            return new Pose(
-                    deltaX,
-                    deltaY
-            );
+            return new Pose(deltaX, deltaY);
         }
 
         private Pose getAbsolutePosition(Pose relativePose) {

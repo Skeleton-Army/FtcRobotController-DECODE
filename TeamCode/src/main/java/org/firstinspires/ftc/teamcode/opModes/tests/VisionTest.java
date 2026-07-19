@@ -34,6 +34,7 @@ public class VisionTest extends ComplexOpMode {
     Follower follower;
     Vision vision;
     GamepadEx gamepadEx;
+
     @Override
     public void initialize() {
         telemetry = new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry());
@@ -74,36 +75,8 @@ public class VisionTest extends ComplexOpMode {
             telemetry.addData("biggestY", biggest.getPose().getY());
             telemetry.addData("biggestVelX", biggest.getVelocityX());
             telemetry.addData("biggestVelY", biggest.getVelocityY());
-
-            /*
-            Pose predictedPose = predictInterceptPose(biggest);
-            telemetry.addData("predictedX", predictedPose.getX());
-            telemetry.addData("predictedY", predictedPose.getY());
-            //telemetry.addData("go to pose x", Artifact.predictPose())
-             */
-
-            var prev = artifactList.prevList().get(0);
-
-            telemetry.addData("prevX", prev.getPose().getX());
-            telemetry.addData("prevY", prev.getPose().getY());
-            telemetry.addData("prevVelX", prev.getVelocityX());
-            telemetry.addData("prevVelY", prev.getVelocityY());
-
         }
 
         telemetry.update();
     }
-
-    private Pose predictInterceptPose(Artifact artifact) {
-        Pose predictedPose = artifact.getPose();
-
-        for (int i = 0; i < 5; i++) {
-            double distance = follower.getPose().distanceFrom(predictedPose);
-            double estimatedTravelTime = distance / 20.0;
-            predictedPose = predictPose(artifact, estimatedTravelTime);
-        }
-
-        return predictedPose;
-    }
-
 }
