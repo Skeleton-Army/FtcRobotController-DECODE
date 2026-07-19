@@ -4,16 +4,16 @@ import com.acmerobotics.dashboard.config.Config;
 
 @Config
 public class VisionConfig {
-    public static String LIMELIGHT_NAME = "limelight";
+    public final static String LIMELIGHT_NAME = "limelight";
     public static double VELOCITY_THRESHOLD = 0.2;
     public static double RELOCALIZE_COOLDOWN = 60;
-    public static int APRILTAG_PIPELINE = 0;
-    public static int OBELISK_PIPELINE = 1;
-    public static int DETECTION_PIPELINE = 2;
+    public final static int APRILTAG_PIPELINE = 0;
+    public final static int OBELISK_PIPELINE = 1;
+    public final static int DETECTION_PIPELINE = 2;
     public static int NEURAL_DETECTION_PIPELINE = 3; //poopoo kaka
     public static double Y_CALIBRATION_OFFSET = 1;
 
-    //Pose Detection
+    //Physical offsets
     public static double LIMELIGHT_MOUNT_ANGLE = -10.0;
     public static double LENS_HEIGHT_INCHES = 9.07; //8.75
     public static double ARTIFACT_HEIGHT_FROM_FLOOR = 2.5;
@@ -22,4 +22,11 @@ public class VisionConfig {
 
     // Velocity Tracking
     public static double MAX_ARTIFACT_MATCH_DISTANCE = 3.0;
+    public static double VELOCITY_NOISE_FLOOR = 0.8; //below this speed is sensor noise
+    public static double VELOCITY_LOWPASS_ALPHA = 0.2;
+
+    //Pose prediction
+    public static double AVERAGE_APPROACH_VELOCITY = 25.0; // inch/sec
+    public static int PREDICTION_ITERATIONS = 10;
+    public static int MIN_DETECTION_CYCLES = 15;
 }

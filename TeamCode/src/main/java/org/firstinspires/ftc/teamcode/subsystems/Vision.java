@@ -194,6 +194,10 @@ public class Vision extends SubsystemBase {
     }
      */
 
+    public boolean isLimelightConnected() {
+        return limelight.isConnected();
+    }
+
     public ArtifactList artifactList() {
         return new ArtifactList().fetch();
     }
