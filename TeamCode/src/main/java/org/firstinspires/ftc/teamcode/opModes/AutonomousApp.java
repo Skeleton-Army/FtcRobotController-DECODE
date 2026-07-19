@@ -86,12 +86,13 @@ public class AutonomousApp extends ComplexOpMode {
     private PathChain initialFarPath;
     private PathChain initialMiddlePath;
     private PathChain initialNearPath;
+    private PathChain collectSpike4AndOpen;
 
     private Alliance alliance;
     private StartingPosition startingPosition;
     private List<Integer> pickupOrder;
-    private int gateSpike;
     private boolean takeSpike;
+    private boolean openGate;
 
     private VoltageSensor voltageSensor;
 
@@ -447,6 +448,33 @@ public class AutonomousApp extends ComplexOpMode {
                 .setGlobalDeceleration()
                 .build();
 
+        collectSpike4AndOpen = follower
+                .pathBuilder()
+                .addPath(
+                        new BezierCurve(
+                                follower::getPose,
+                                getRelative(new Pose(54, 108)),
+                                getRelative(new Pose(14, 108)),
+                                getRelative(new Pose(12, 110))
+                        )
+                )
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.6,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.6,
+                                        1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(160)))
+                                )
+                        )
+                )
+                .setGlobalDeceleration()
+                .build();
+
         spike3Open = follower
                 .pathBuilder()
                 .addPath(
@@ -507,8 +535,8 @@ public class AutonomousApp extends ComplexOpMode {
         alliance = prompter.get("alliance");
         startingPosition = prompter.get("starting_position");
         pickupOrder = prompter.getOrDefault("pickup_order", List.of());
-        gateSpike = prompter.getOrDefault("gate_spike", -1);
         takeSpike = prompter.getOrDefault("take_spike", true);
+        openGate = prompter.getOrDefault("open_gate", true);
 
         Settings.set("alliance", alliance);
 
@@ -560,13 +588,16 @@ public class AutonomousApp extends ComplexOpMode {
                 .prompt("take_spike", new BooleanPrompt("TAKE SPIKE 3?", true))
                     .showIf("starting_position", StartingPosition.CLOSE)
                     .showIf("cycle", true)
+                .prompt("open_gate", new BooleanPrompt("OPEN GATE?", true))
+                    .showIf("starting_position", StartingPosition.CLOSE)
+                    .showIf("cycle", true)
+                .prompt("take_spike", new BooleanPrompt("TAKE SPIKE 3?", true))
+                    .showIf("starting_position", StartingPosition.CLOSE)
+                    .showIf("cycle", true)
                 .prompt("pickup_order", new MultiOptionPrompt<>("SELECT ARTIFACT PICKUP ORDER", false, true, 0, 1, 2, 3, 4))
                     .showIf("cycle", false)
                     .or("starting_position", StartingPosition.FAR)
                     .or("starting_position", StartingPosition.MIDDLE)
-                .prompt("gate_spike", new OptionPrompt<>("AFTER WHICH SPIKE MARK?", 3, 4))
-                    .showIf("cycle", false)
-                    .showIf("open_gate", true)
                 .showSummary()
                 .onComplete(this::afterPrompts);
 
@@ -691,8 +722,17 @@ public class AutonomousApp extends ComplexOpMode {
     private Command closeCycleRoutine() {
         return new SequentialCommandGroup(
                 nearInitialScore(), // Score first 3 artifacts
-                collect(4).interruptOn(threeArtifactsDetectedSupplier),
-                returnAndScore(4), // Spike 4 so it goes in a straight line
+                new ConditionalCommand(
+                        new SequentialCommandGroup(
+                                new InstantCommand(intake::collect),
+                                new FollowPathCommand(follower, collectSpike4AndOpen)
+                                        .interruptOn(() -> follower.getCurrentTValue() > 0.5 && follower.getVelocity().getMagnitude() < 1.0),
+                                new InstantCommand(intake::stop)
+                        ),
+                        collect(4).interruptOn(threeArtifactsDetectedSupplier),
+                        () -> openGate
+                ),
+                returnAndScore(4),
                 closeCycle(),
                 closeCycle(),
                 closeCycle(),
@@ -818,7 +858,6 @@ public class AutonomousApp extends ComplexOpMode {
 
             sequence.addCommands(
                     collect(spike).interruptOn(threeArtifactsDetectedSupplier),
-                    openGate(spike),
                     returnAndScore(spike)
             );
         }
@@ -839,28 +878,6 @@ public class AutonomousApp extends ComplexOpMode {
                         )
                 ),
                 new InstantCommand(intake::stop)
-        );
-    }
-
-    private Command openGate(int spike) {
-        if (spike != gateSpike) return new InstantCommand();
-
-        return new ParallelCommandGroup(
-                new SequentialCommandGroup(
-                        new FollowPathCommand(follower, spike == 3 ? spike3Open : spike4Open)
-                                .withTimeout(500),
-                        new InstantCommand(() -> {
-                            // Drive into the gate to make sure it stays open
-                            follower.startTeleOpDrive();
-                            follower.setTeleOpDrive(0.5, 0, 0, true);
-                        }),
-                        new WaitCommand(800)
-                ),
-                new SequentialCommandGroup( // Run intake for a bit to make sure the last artifact pickup was successful
-                        new InstantCommand(intake::collect),
-                        new WaitCommand(500),
-                        new InstantCommand(intake::stop)
-                )
         );
     }
 
