@@ -155,6 +155,7 @@ public class Shooter extends SubsystemBase {
 
         turretPID = new PIDController(TURRET_KP, TURRET_KI, TURRET_KD);
         turretPID.setTolerance(TURRET_POSITION_TOLERANCE, TURRET_VELOCITY_TOLERANCE);
+        turretPID.setIntegrationBounds(-TURRET_KI_MAX_INTEGRAL, TURRET_KI_MAX_INTEGRAL);
 
         setHorizontalAngle(0);
 
