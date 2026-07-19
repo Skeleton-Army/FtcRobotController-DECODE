@@ -53,15 +53,6 @@ public class Vision extends SubsystemBase {
     private List<Artifact> previousArtifacts = new ArrayList<>();
     private long previousFetchTimeNanos = -1;
     private double[] previousPythonOutput = null;
-
-    // Below this speed (inches/sec), a computed velocity is treated as sensor/vision
-    // jitter rather than real motion and is clamped to zero. Tune alongside
-    // MAX_ARTIFACT_VELOCITY — this should be comfortably smaller than that threshold.
-    public static double VELOCITY_NOISE_FLOOR = 0.8;
-
-    // Smoothing factor for the velocity estimate (0-1). Higher = trusts the newest
-    // raw measurement more; lower = smoother but slower to react to real changes.
-    public static double VELOCITY_LOWPASS_ALPHA = 0.2;
     // ────────────────────────────────────────────────────────────────────────────
 
     public Vision(HardwareMap hardwareMap, PoseTracker poseTracker, int pipelineIndex) {

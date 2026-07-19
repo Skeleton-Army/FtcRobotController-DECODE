@@ -22,6 +22,8 @@ public class VisionConfig {
 
     // Velocity Tracking
     public static double MAX_ARTIFACT_MATCH_DISTANCE = 3.0;
+    public static double VELOCITY_NOISE_FLOOR = 0.8; // Below this speed is sensor noise
+    public static double VELOCITY_LOWPASS_ALPHA = 0.6;
 
     //Pose prediction
     public static double AVERAGE_APPROACH_VELOCITY = 25.0; // inch/sec
