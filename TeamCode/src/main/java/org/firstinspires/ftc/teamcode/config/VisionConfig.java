@@ -22,11 +22,9 @@ public class VisionConfig {
 
     // Velocity Tracking
     public static double MAX_ARTIFACT_MATCH_DISTANCE = 3.0;
-    public static double VELOCITY_NOISE_FLOOR = 0.8; //below this speed is sensor noise
-    public static double VELOCITY_LOWPASS_ALPHA = 0.2;
 
     //Pose prediction
     public static double AVERAGE_APPROACH_VELOCITY = 25.0; // inch/sec
-    public static int PREDICTION_ITERATIONS = 10;
+    public static double MAX_INTERCEPT_TIME = 1.0; // seconds - caps how far forward we extrapolate the artifact's position
     public static int MIN_DETECTION_CYCLES = 15;
 }
