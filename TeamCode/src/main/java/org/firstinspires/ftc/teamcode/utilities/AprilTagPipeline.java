@@ -190,8 +190,8 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
                 .setDrawTagID(false)
                 //            .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
                 .setTagLibrary(criApriltagLibrary.build())
-                .setCameraPose(cameraPosition, new YawPitchRollAngles(AngleUnit.DEGREES, yaw, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
-//                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
+                //.setCameraPose(cameraPosition, new YawPitchRollAngles(AngleUnit.DEGREES, yaw, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
+                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, yaw, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
                 .setLensIntrinsics(baseFx, baseFy, baseCx, baseCy)
                 .build();
 

@@ -35,7 +35,7 @@ public class FusionLocalizer implements Localizer {
 
     public static double EPSILON = 1e-6; //floor for covariance matrices
     public static double OUTLIER_THRESHOLD = 9.21; // Mahalanobis^2 gate, ~99% for 2 active dims
-    public static double MAX_TRANSLATION_ERROR = 10.0; // inches
+    public static double MAX_TRANSLATION_ERROR = 5; // inches
 
     private final Localizer deadReckoning;
     private Pose currentRawPose;
@@ -246,6 +246,8 @@ public class FusionLocalizer implements Localizer {
             lastMeasurementTotalNanos = lastMeasurementGateNanos;
             return; // AprilTag pose too far from odometry — reject outright
         }
+
+        OpModeManager.getTelemetry().addData("translation error", translationError);
 
         Matrix y = new Matrix(new double[][]{
                 {dx},

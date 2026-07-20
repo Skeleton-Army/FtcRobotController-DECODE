@@ -47,9 +47,9 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
             0
     );
     public static boolean on = false;
-    public static double actualX = 72;
-    public static double actualY = 72;
-    public static double actualHeading = Math.toRadians(45);
+    public static double actualX = 120;
+    public static double actualY = 144;
+    public static double actualHeading = Math.toRadians(90);
     private final WelfordVariance varianceX = new WelfordVariance();
     private final WelfordVariance varianceY = new WelfordVariance();
     private final WelfordVariance varianceHeading = new WelfordVariance();
@@ -74,12 +74,12 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
 
         drive = new Drive(follower, Alliance.BLUE);
 
-        drive.setDefaultCommand(
-                new RunCommand(
-                        () -> drive.teleOpDrive(gamepad1),
-                        drive
-                )
-        );
+//        drive.setDefaultCommand(
+//                new RunCommand(
+//                        () -> drive.teleOpDrive(gamepad1),
+//                        drive
+//                )
+//        );
         /*rocessor = new AprilTagProcessor.Builder()
                 .setCameraPose(cameraPosition, cameraOrientation)
                 .setLensIntrinsics(700.34, 697.2591, 615.85, 359.44)

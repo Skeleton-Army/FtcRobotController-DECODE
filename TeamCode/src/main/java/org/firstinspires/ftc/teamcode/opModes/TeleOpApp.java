@@ -110,6 +110,7 @@ public class TeleOpApp extends ComplexOpMode {
     private AprilTagPipeline.PoseSnapshot lastKnownSnapshot = null;
 
     Pose pinpointPose;
+    Pose acceptedTagPose;
 
     WelfordVariance welfordVarianceX =  new WelfordVariance();
     WelfordVariance welfordVarianceY =  new WelfordVariance();
@@ -317,6 +318,17 @@ public class TeleOpApp extends ComplexOpMode {
             Logger.recordOutput("apriltag pose heading", lastKnownSnapshot.pose.getHeading());
         }
 
+        if (acceptedTagPose != null) {
+            Pose2D acceptedTagPose2D = poseToPose2D(acceptedTagPose, FTCCoordinates.INSTANCE);
+            telemetry.addData("accepted apriltag pose x", -acceptedTagPose2D.getX(DistanceUnit.INCH));
+            telemetry.addData("accepted apriltag pose y", -acceptedTagPose2D.getY(DistanceUnit.INCH));
+            telemetry.addData("accepted apriltag pose heading", acceptedTagPose2D.getHeading(AngleUnit.RADIANS) - Math.PI);
+
+            Logger.recordOutput("accepted apriltag pose x", acceptedTagPose.getX());
+            Logger.recordOutput("accepted apriltag pose y", acceptedTagPose.getY());
+            Logger.recordOutput("accepted apriltag pose heading", acceptedTagPose.getHeading());
+        }
+
         pinpointPose = ((FusionLocalizer)follower.getPoseTracker().getLocalizer()).getDeadReckoning().getPose();
         Pose2D pinpointPos2D = poseToPose2D(pinpointPose, FTCCoordinates.INSTANCE);
         telemetry.addData("pinpoint pose x", -pinpointPos2D.getX(DistanceUnit.INCH));
@@ -350,13 +362,17 @@ public class TeleOpApp extends ComplexOpMode {
             lastKnownSnapshot = snapshot;
         }
 
+        int id = aprilTagPipeline.getTagId();
+        double distance = getDistanceFromTag(id);
+
         if (snapshot == null
                 || !KalmanConfig.enableMeasurements
-                || Math.abs(follower.getAngularVelocity()) >= 0.5) {
+                || Math.abs(follower.getAngularVelocity()) >= 0.5
+                || distance > 120) {
             return;
         }
 
-        Pose variance = getLimelightKalmanVariance();
+        Pose variance = getKalmanVariance();
 
         // Skip duplicate camera frames — the main loop can outrun the camera's
         // frame rate, which would otherwise re-inject the same detection repeatedly.
@@ -369,12 +385,32 @@ public class TeleOpApp extends ComplexOpMode {
 
         FusionLocalizer fusionLocalizer = (FusionLocalizer) follower.getPoseTracker().getLocalizer();
         fusionLocalizer.addMeasurement(snapshot.pose, correctedTimestamp, variance);
+
+        acceptedTagPose = snapshot.pose;
     }
 
-    private Pose getLimelightKalmanVariance() {
-        Pose tagPose = null;
+    private Pose getKalmanVariance() {
         Pose variance = KalmanConfig.measurementVariance;
         int id = aprilTagPipeline.getTagId();
+        double distance = getDistanceFromTag(id);
+
+        if (distance > KalmanConfig.farVarianceThreshold) {
+            double xVar = KalmanConfig.farVariance;
+            double yVar = KalmanConfig.farVariance;
+
+           variance = new Pose(
+                   xVar,
+                   yVar,
+                   KalmanConfig.measurementVariance.getHeading()
+           );
+        }
+
+        return variance;
+    }
+
+    private double getDistanceFromTag(double id) {
+        Pose tagPose = null;
+
         if (id == 20) {
             tagPose = GoalPositions.BLUE_GOAL;
         } else if (id == 24) {
@@ -382,19 +418,10 @@ public class TeleOpApp extends ComplexOpMode {
         }
 
         if (tagPose != null) {
-            double dist = follower.getPose().distanceFrom(tagPose);
-            if (dist > KalmanConfig.farVarianceThreshold) {
-                double xVar = KalmanConfig.farVariance;
-                double yVar = KalmanConfig.farVariance;
-
-               variance = new Pose(
-                       xVar,
-                       yVar,
-                       KalmanConfig.measurementVariance.getHeading()
-               );
-            }
+            return follower.getPose().distanceFrom(tagPose);
         }
-        return variance;
+
+        return 0;
     }
 
     @Override
