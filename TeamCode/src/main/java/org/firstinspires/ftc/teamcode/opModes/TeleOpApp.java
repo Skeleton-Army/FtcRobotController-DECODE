@@ -3,27 +3,17 @@ package org.firstinspires.ftc.teamcode.opModes;
 import static com.pedropathing.ftc.PoseConverter.poseToPose2D;
 import static org.firstinspires.ftc.teamcode.config.DriveConfig.USE_BRAKE_MODE;
 import static org.firstinspires.ftc.teamcode.config.KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS;
-import static org.firstinspires.ftc.teamcode.config.VisionConfig.LIMELIGHT_NAME;
-import static org.firstinspires.ftc.teamcode.config.KalmanConfig.CAMERA_PHYSICAL_LATENCY_MS;
 
 import com.acmerobotics.dashboard.FtcDashboard;
 import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.ftc.FTCCoordinates;
-import com.pedropathing.ftc.PoseConverter;
 import com.pedropathing.geometry.Pose;
-import com.qualcomm.hardware.gobilda.GoBildaPinpointDriver;
-import com.qualcomm.hardware.limelightvision.LLResult;
-import com.qualcomm.hardware.limelightvision.Limelight3A;
-import com.pedropathing.math.MathFunctions;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.I2cDeviceSynchSimple;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
-import com.qualcomm.robotcore.util.RobotLog;
 import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.command.InstantCommand;
-import com.seattlesolvers.solverslib.command.RepeatCommand;
 import com.seattlesolvers.solverslib.command.RunCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
@@ -35,35 +25,27 @@ import com.skeletonarmy.marrow.settings.Settings;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Pose2D;
-import org.firstinspires.ftc.robotcore.external.navigation.Pose3D;
 import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
-import org.firstinspires.ftc.teamcode.config.KalmanConfig;
-import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.config.KalmanConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.GoalPositions;
 import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.teamcode.enums.LaunchZone;
-import org.firstinspires.ftc.teamcode.opModes.tests.EpochTimestampSyncOpMode2;
-import org.firstinspires.ftc.teamcode.pedroPathing.Constants;
-import org.firstinspires.ftc.teamcode.enums.LaunchZone;
 import org.firstinspires.ftc.teamcode.subsystems.Drive;
 import org.firstinspires.ftc.teamcode.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.subsystems.Kickstand;
 import org.firstinspires.ftc.teamcode.subsystems.Shooter;
 import org.firstinspires.ftc.teamcode.subsystems.Transfer;
-import org.firstinspires.ftc.teamcode.subsystems.Vision;
 import org.firstinspires.ftc.teamcode.utilities.AprilTagPipeline;
 import org.firstinspires.ftc.teamcode.utilities.CameraUtil;
 import org.firstinspires.ftc.teamcode.utilities.ComplexOpMode;
 import org.firstinspires.ftc.teamcode.utilities.FollowerManager;
 import org.firstinspires.ftc.teamcode.utilities.FusionLocalizer;
 import org.firstinspires.ftc.teamcode.utilities.WelfordVariance;
-import org.firstinspires.ftc.teamcode.utilities.FusionLocalizer;
 import org.psilynx.psikit.core.Logger;
 import org.psilynx.psikit.core.wpi.math.Pose2d;
 import org.psilynx.psikit.core.wpi.math.Rotation2d;
@@ -374,6 +356,8 @@ public class TeleOpApp extends ComplexOpMode {
             return;
         }
 
+        Pose variance = getLimelightKalmanVariance();
+
         // Skip duplicate camera frames — the main loop can outrun the camera's
         // frame rate, which would otherwise re-inject the same detection repeatedly.
         if (snapshot.timestampNanos == lastInjectedFrameTs) return;
@@ -384,7 +368,33 @@ public class TeleOpApp extends ComplexOpMode {
         long correctedTimestamp = snapshot.timestampNanos - (cameraLatencyNanos - pinpointLatencyNanos);
 
         FusionLocalizer fusionLocalizer = (FusionLocalizer) follower.getPoseTracker().getLocalizer();
-        fusionLocalizer.addMeasurement(snapshot.pose, correctedTimestamp);
+        fusionLocalizer.addMeasurement(snapshot.pose, correctedTimestamp, variance);
+    }
+
+    private Pose getLimelightKalmanVariance() {
+        Pose tagPose = null;
+        Pose variance = KalmanConfig.measurementVariance;
+        int id = aprilTagPipeline.getTagId();
+        if (id == 20) {
+            tagPose = GoalPositions.BLUE_GOAL;
+        } else if (id == 24) {
+            tagPose = GoalPositions.RED_GOAL;
+        }
+
+        if (tagPose != null) {
+            double dist = follower.getPose().distanceFrom(tagPose);
+            if (dist > KalmanConfig.farVarianceThreshold) {
+                double xVar = KalmanConfig.farVariance;
+                double yVar = KalmanConfig.farVariance;
+
+               variance = new Pose(
+                       xVar,
+                       yVar,
+                       KalmanConfig.measurementVariance.getHeading()
+               );
+            }
+        }
+        return variance;
     }
 
     @Override

@@ -57,9 +57,12 @@ import org.openftc.easyopencv.TimestampedOpenCvPipeline;
 
 import java.util.List;
 
+import lombok.Getter;
+
 @Config
 public class AprilTagPipeline extends TimestampedOpenCvPipeline
 {
+    @Getter
     private AprilTagProcessor processor;
     private AprilTagProcessor processor2;
     private CameraCalibrationIdentity ident;
@@ -125,9 +128,14 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     private double yaw;
 
     private Position cameraPosition;
+    @Getter
     private double tagSizeX = 0;
+    @Getter
     private double tagSizeY = 0;
+    @Getter
     private double tagSizeArea = 0;
+    @Getter
+    private int tagId = 0;
 
     public AprilTagPipeline(Alliance alliance) {
 
@@ -156,7 +164,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         criApriltagLibrary.addTag(newRedApriltag);
 
 
-        if (alliance == alliance.BLUE) {
+        if (alliance == Alliance.BLUE) {
             baseFx = BlackWhiteCamera.cameraMatrix[0];
             baseFy = BlackWhiteCamera.cameraMatrix[4];
             baseCx = BlackWhiteCamera.cameraMatrix[2];
@@ -164,7 +172,7 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
             yaw = -90;
             cameraPosition = relativePos;
             dist = new MatOfDouble(distCoeffs[0], distCoeffs[1], distCoeffs[2], distCoeffs[3], distCoeffs[4]);
-        } else if (alliance == Alliance.RED) {
+        } else {
             baseFx = cameraMatrix2[0];
             baseFy = cameraMatrix2[4];
             baseCx = cameraMatrix2[2];
@@ -316,6 +324,8 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
             AprilTagDetection tag = detections.get(0);
             lostFrameCount = 0;
 
+            tagId = tag.id;
+
             double minX = Double.MAX_VALUE;
             double maxX = Double.MIN_VALUE;
             double minY = Double.MAX_VALUE;
@@ -414,10 +424,6 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         return (detections != null && !detections.isEmpty()) ? detections.get(0) : null;
     }
 
-    public AprilTagProcessor getProcessor() {
-        return processor;
-    }
-
     /**
      * Atomic (pose, capture-timestamp) pair from the most recent trusted frame, or
      * null if the latest frame had no valid detection or was a fallback frame.
@@ -455,15 +461,4 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
         );
     }
 
-    public double getTagSizeArea() {
-        return tagSizeArea;
-    }
-
-    public double getTagSizeY() {
-        return tagSizeY;
-    }
-
-    public double getTagSizeX() {
-        return tagSizeX;
-    }
 }

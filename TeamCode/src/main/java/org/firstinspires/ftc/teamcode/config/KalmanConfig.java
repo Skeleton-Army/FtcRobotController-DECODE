@@ -31,10 +31,6 @@ public class KalmanConfig {
 
     public static double apriltagTagSizeCoeffAngle = 0;
 
-
-
-
-
-
-
+    public static double farVarianceThreshold = 100;
+    public static double farVariance = 1.2;
 }
