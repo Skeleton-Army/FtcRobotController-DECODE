@@ -124,8 +124,8 @@ public class ShootCommand extends SequentialCommandGroup {
      * and the clock keeps counting toward waitMillis.
      */
     private class FeedWhileCanShootCommand extends CommandBase {
-        private static final long RPM_DEBOUNCE_MS = 20;
-        private static final long ANGLE_DEBOUNCE_MS = 100;
+        private static final long RPM_DEBOUNCE_MS = 100;
+        private static final long ANGLE_DEBOUNCE_MS = 200;
 
         private final double intakeSpeed;
         private final int waitMillis;
@@ -168,6 +168,7 @@ public class ShootCommand extends SequentialCommandGroup {
             lastTimestamp = now;
 
             boolean rpmOk = shooter.getCanShootRPMCalc();
+//            boolean rpmOk = Math.abs(shooter.getTargetRPM() - shooter.filteredRPM) < 200;
             boolean angleOk = shooter.reachedAngle();
 
             // --- RPM debounce ---

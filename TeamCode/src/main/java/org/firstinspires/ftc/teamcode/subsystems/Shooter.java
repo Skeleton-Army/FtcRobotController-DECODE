@@ -351,7 +351,7 @@ public class Shooter extends SubsystemBase {
         double desiredVoltage = totalRequest + staticComp;
         desiredVoltage = Math.max(-voltage, Math.min(voltage, desiredVoltage));
 
-        turret.set(desiredVoltage / voltage);
+        if (!turretPID.atSetPoint()) turret.set(desiredVoltage / voltage);
     }
 
     /**
