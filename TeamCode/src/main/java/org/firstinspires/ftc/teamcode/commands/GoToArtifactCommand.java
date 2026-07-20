@@ -54,11 +54,11 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
                         HeadingInterpolator.piecewise(
                                 new HeadingInterpolator.PiecewiseNode(
                                         0,
-                                        0.7,
+                                        0.5,
                                         HeadingInterpolator.tangent
                                 ),
                                 new HeadingInterpolator.PiecewiseNode(
-                                        0.7,
+                                        0.5,
                                         1,
                                         HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
                                 )
