@@ -5,12 +5,15 @@ import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.DECIMATION_
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.blueTagBiasX;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.blueTagBiasY;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.cameraMatrix;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.cameraMatrix2;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.distCoeffs;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.distCoeffs2;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetX_turret;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.offsetY_turret;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.redTagBiasX;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.redTagBiasY;
 import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.relativePos;
+import static org.firstinspires.ftc.teamcode.config.BlackWhiteCamera.relativePos2;
 
 import android.graphics.Canvas;
 import android.graphics.Color;
@@ -35,6 +38,7 @@ import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibra
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibrationHelper;
 import org.firstinspires.ftc.robotcore.internal.camera.calibration.CameraCalibrationIdentity;
 import org.firstinspires.ftc.teamcode.config.BlackWhiteCamera;
+import org.firstinspires.ftc.teamcode.enums.Alliance;
 import org.firstinspires.ftc.vision.apriltag.AprilTagDetection;
 import org.firstinspires.ftc.vision.apriltag.AprilTagGameDatabase;
 import org.firstinspires.ftc.vision.apriltag.AprilTagLibrary;
@@ -57,6 +61,7 @@ import java.util.List;
 public class AprilTagPipeline extends TimestampedOpenCvPipeline
 {
     private AprilTagProcessor processor;
+    private AprilTagProcessor processor2;
     private CameraCalibrationIdentity ident;
 
     private Mat fullBlackCanvas = new Mat();
@@ -112,17 +117,19 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
     // --- Debugging Paint System ---
     private final Paint debugPaint = new Paint();
 
-    private final double baseFx = BlackWhiteCamera.cameraMatrix[0];
-    private final double baseFy = BlackWhiteCamera.cameraMatrix[4];
-    private final double baseCx = BlackWhiteCamera.cameraMatrix[2];
-    private final double baseCy = BlackWhiteCamera.cameraMatrix[5];
+    private  double baseFx = BlackWhiteCamera.cameraMatrix[0];
+    private  double baseFy = BlackWhiteCamera.cameraMatrix[4];
+    private  double baseCx = BlackWhiteCamera.cameraMatrix[2];
+    private  double baseCy = BlackWhiteCamera.cameraMatrix[5];
 
+    private double yaw;
+
+    private Position cameraPosition;
     private double tagSizeX = 0;
     private double tagSizeY = 0;
     private double tagSizeArea = 0;
 
-    public AprilTagPipeline()
-    {
+    public AprilTagPipeline(Alliance alliance) {
 
         AprilTagLibrary.Builder criApriltagLibrary = new AprilTagLibrary.Builder()
                 .addTag(21, "Obelisk_GPP",
@@ -136,36 +143,66 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
                 20,                                              // Tag ID
                 "BlueTarget",                               // Name
                 6.5,                                             // Size
-                new VectorF(-58.3727f - 48, -55.6425f, 29.5f), DistanceUnit.INCH,
+                new VectorF(-58.3727f - 24, -55.6425f - 24, 29.5f), DistanceUnit.INCH,
                 new Quaternion(0.2182149f, -0.2182149f, -0.6725937f, 0.6725937f, 0)        // Orientation Quaternion (w, x, y, z)
         );
         AprilTagMetadata newRedApriltag = new AprilTagMetadata(
                 24, "RedTarget",
-                6.5, new VectorF(-58.3727f - 48, 55.6425f + 48, 29.5f), DistanceUnit.INCH,
+                6.5, new VectorF(-58.3727f - 24, 55.6425f + 24, 29.5f), DistanceUnit.INCH,
                 new Quaternion(0.6725937f, -0.6725937f, -0.2182149f, 0.2182149f, 0)       // Orientation Quaternion (w, x, y, z)
         );
 
         criApriltagLibrary.addTag(newBlueApriltag);
         criApriltagLibrary.addTag(newRedApriltag);
 
+
+        if (alliance == alliance.BLUE) {
+            baseFx = BlackWhiteCamera.cameraMatrix[0];
+            baseFy = BlackWhiteCamera.cameraMatrix[4];
+            baseCx = BlackWhiteCamera.cameraMatrix[2];
+            baseCy = BlackWhiteCamera.cameraMatrix[5];
+            yaw = -90;
+            cameraPosition = relativePos;
+            dist = new MatOfDouble(distCoeffs[0], distCoeffs[1], distCoeffs[2], distCoeffs[3], distCoeffs[4]);
+        } else if (alliance == Alliance.RED) {
+            baseFx = cameraMatrix2[0];
+            baseFy = cameraMatrix2[4];
+            baseCx = cameraMatrix2[2];
+            baseCy = cameraMatrix2[5];
+            yaw = 90;
+            cameraPosition = relativePos2;
+            dist = new MatOfDouble(distCoeffs2[0], distCoeffs2[1], distCoeffs2[2], distCoeffs2[3], distCoeffs2[4]);
+        }
+
+
         this.processor = new AprilTagProcessor.Builder()
                 .setDrawAxes(false)
                 .setDrawCubeProjection(true)
                 .setDrawTagOutline(false)
                 .setDrawTagID(false)
-   //            .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
+                //            .setTagLibrary(AprilTagGameDatabase.getCurrentGameTagLibrary())
                 .setTagLibrary(criApriltagLibrary.build())
-                .setCameraPose(relativePos, new YawPitchRollAngles(AngleUnit.DEGREES, 180, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
+                .setCameraPose(cameraPosition, new YawPitchRollAngles(AngleUnit.DEGREES, yaw, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
 //                .setCameraPose(new Position(), new YawPitchRollAngles(AngleUnit.DEGREES, 0, -90 + BlackWhiteCamera.pitchAngle, 0, 0))
                 .setLensIntrinsics(baseFx, baseFy, baseCx, baseCy)
                 .build();
 
+
         setDecimation(DECIMATION_LOCKED);
 
-        matrix.put(0, 0,
-                cameraMatrix[0], cameraMatrix[1], cameraMatrix[2],
-                cameraMatrix[3], cameraMatrix[4], cameraMatrix[5],
-                cameraMatrix[6], cameraMatrix[7], cameraMatrix[8]);
+        if (alliance == Alliance.BLUE) {
+            matrix.put(0, 0,
+                    cameraMatrix[0], cameraMatrix[1], cameraMatrix[2],
+                    cameraMatrix[3], cameraMatrix[4], cameraMatrix[5],
+                    cameraMatrix[6], cameraMatrix[7], cameraMatrix[8]);
+        }
+
+        else if (alliance == Alliance.RED) {
+            matrix.put(0, 0,
+                    cameraMatrix2[0], cameraMatrix2[1], cameraMatrix2[2],
+                    cameraMatrix2[3], cameraMatrix2[4], cameraMatrix2[5],
+                    cameraMatrix2[6], cameraMatrix2[7], cameraMatrix2[8]);
+        }
 
         debugPaint.setColor(Color.GREEN);
         debugPaint.setStyle(Paint.Style.STROKE);
@@ -412,8 +449,8 @@ public class AprilTagPipeline extends TimestampedOpenCvPipeline
 
         // 2. Construct using FTC coordinates, then let Pedro convert it safely
         return new Pose(
-                pose.y + 72 + fieldBiasX,
-                -pose.x + 72 + fieldBiasY,
+                pose.y + 96 + fieldBiasX,
+                -pose.x + 96 + fieldBiasY,
                 heading
         );
     }

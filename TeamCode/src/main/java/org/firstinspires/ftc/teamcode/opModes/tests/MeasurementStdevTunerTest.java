@@ -63,7 +63,7 @@ public class MeasurementStdevTunerTest extends ComplexOpMode {
     @Override
     public void initialize() {
 
-        aprilTagPipeline = new AprilTagPipeline();
+        aprilTagPipeline = new AprilTagPipeline(Alliance.BLUE);
         CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
 
         follower = Constants.createFollower(hardwareMap);

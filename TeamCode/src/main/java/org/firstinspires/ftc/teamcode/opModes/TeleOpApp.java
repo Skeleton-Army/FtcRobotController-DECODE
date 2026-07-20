@@ -153,7 +153,7 @@ public class TeleOpApp extends ComplexOpMode {
         follower.startTeleopDrive(USE_BRAKE_MODE);
         follower.setMaxPower(1);
 
-        startPose = new Pose(188 - X_OFFSET, Y_OFFSET, Math.toRadians(0));
+        startPose = new Pose(189.5 - X_OFFSET, Y_OFFSET, Math.toRadians(180));
         if (debugMode) follower.setPose(startPose);
 
         // 1. Calculate the real-time synchronization offset between clocks
@@ -179,7 +179,7 @@ public class TeleOpApp extends ComplexOpMode {
 
         autoFireEnabled = Settings.get("auto_fire", true);
 
-        aprilTagPipeline = new AprilTagPipeline();
+        aprilTagPipeline = new AprilTagPipeline(alliance);
         CameraUtil.configureWebcam(aprilTagPipeline, hardwareMap);
 
         gamepadEx1 = new GamepadEx(gamepad1);
@@ -370,7 +370,6 @@ public class TeleOpApp extends ComplexOpMode {
 
         if (snapshot == null
                 || !KalmanConfig.enableMeasurements
-                || drive.distanceFromLaunchZone() >= 20
                 || Math.abs(follower.getAngularVelocity()) >= 0.5) {
             return;
         }
