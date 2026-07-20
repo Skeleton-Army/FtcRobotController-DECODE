@@ -18,6 +18,7 @@ import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.ParallelDeadlineGroup;
+import com.seattlesolvers.solverslib.command.SelectCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.command.WaitUntilCommand;
@@ -213,10 +214,6 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     public void setupPaths() {
-        farStartingPose = getRelative(new Pose(79,7.48, Math.toRadians(90)));
-        nearStartingPose = getRelative(new Pose(17, 162, Math.toRadians(270)), 192);
-        middleStartingPose = getRelative(new Pose(80, 162, Math.toRadians(270)));
-
         Pose nearSpike1End = getRelative(new Pose(8.5, 11.708060475161995));
         Pose farSpike1End = getRelative(new Pose(9, 7));
         Pose spike2End = getRelative(new Pose(7.5, 60));
@@ -278,14 +275,14 @@ public class AutonomousApp extends ComplexOpMode {
                 .pathBuilder()
                 .addPath(
                         new BezierCurve(
-                                follower::getPose,
-                                getRelative(new Pose(40, 140)),
+                                middleStartingPose,
+                                getRelative(new Pose(70, 140)),
                                 middleDriveBack
                         )
                 )
                 .setLinearHeadingInterpolation(
                         getRelative(Math.toRadians(270)),
-                        getRelative(Math.toRadians(180))
+                        middleDriveBack.getHeading()
                 )
                 .setGlobalDeceleration()
                 .build();
@@ -540,7 +537,10 @@ public class AutonomousApp extends ComplexOpMode {
 
         vision = new Vision(hardwareMap, follower.poseTracker, VisionConfig.DETECTION_PIPELINE);
 
-        setupPaths();
+        farStartingPose = getRelative(new Pose(79,7.48, Math.toRadians(90)));
+        nearStartingPose = getRelative(new Pose(17, 162, Math.toRadians(270)), 192);
+        middleStartingPose = getRelative(new Pose(80, 162, Math.toRadians(270)));
+
         if (startingPosition == StartingPosition.FAR) {
             startingPose = farStartingPose;
         } else if (startingPosition == StartingPosition.MIDDLE) {
@@ -552,6 +552,8 @@ public class AutonomousApp extends ComplexOpMode {
         follower.setPose(startingPose);
 
         threeArtifactsDetectedSupplier = transfer.threeArtifactsDetected(() -> true, 100);
+
+        setupPaths();
     }
 
     @Override
@@ -694,8 +696,17 @@ public class AutonomousApp extends ComplexOpMode {
     // ---- ROUTINES ----
 
     private Command standardRoutine() {
+        Command command;
+        if (startingPosition == StartingPosition.CLOSE) {
+            command = nearInitialScore();
+        } else if (startingPosition == StartingPosition.MIDDLE) {
+            command = middleInitialScore();
+        } else {
+            command = farInitialScore();
+        }
+
         return new SequentialCommandGroup(
-                startingPosition == StartingPosition.CLOSE ? nearInitialScore() : farInitialScore(),
+                command,
                 pickupSequence(),
                 driveForward()
         );
@@ -796,17 +807,15 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command nearInitialScore() {
-        return new ParallelCommandGroup(
-//                new InstantCommand(() -> shooter.setSOTMEnabled(true)),
+        return new SequentialCommandGroup(
                 new FollowPathCommand(follower, initialNearPath),
                 shoot()
-//                new InstantCommand(() -> shooter.setSOTMEnabled(false))
         );
     }
 
     private Command farInitialScore() {
         return new ParallelCommandGroup(
-                new DeferredCommand(() -> new FollowPathCommand(follower, initialFarPath), null),
+                new FollowPathCommand(follower, initialFarPath),
                 new SequentialCommandGroup(
                         shoot(),
                         new InstantCommand(follower::breakFollowing)
@@ -815,11 +824,9 @@ public class AutonomousApp extends ComplexOpMode {
     }
 
     private Command middleInitialScore() {
-        return new ParallelCommandGroup(
-            new DeferredCommand(() -> new FollowPathCommand(follower, initialMiddlePath), null),
-            new SequentialCommandGroup(
-                shoot(),
-                new InstantCommand(follower::breakFollowing))
+        return new SequentialCommandGroup(
+                new FollowPathCommand(follower, initialMiddlePath),
+                shoot()
         );
     }
 
