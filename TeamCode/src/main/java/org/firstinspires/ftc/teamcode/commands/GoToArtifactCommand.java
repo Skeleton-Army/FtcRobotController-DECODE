@@ -12,6 +12,8 @@ import com.pedropathing.ftc.FTCCoordinates;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.math.MathFunctions;
+import com.pedropathing.math.MathFunctions;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.paths.PathChain;
 import com.seattlesolvers.solverslib.command.DeferredCommand;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
@@ -87,7 +89,20 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
 
         return follower.pathBuilder()
                 .addPath(new BezierLine(follower.getPose(), artifactPose))
-                .setTangentHeadingInterpolation()
+                .setHeadingInterpolation(
+                        HeadingInterpolator.piecewise(
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0,
+                                        0.5,
+                                        HeadingInterpolator.tangent
+                                ),
+                                new HeadingInterpolator.PiecewiseNode(
+                                        0.5,
+                                        1,
+                                        HeadingInterpolator.constant(getRelative(Math.toRadians(180)))
+                                )
+                        )
+                )
                 .setGlobalDeceleration()
                 .build();
     }
@@ -152,4 +167,11 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
         return pose;
     }
 
+    private double getRelative(double headingRad) {
+        if (alliance == Alliance.RED) {
+            return MathFunctions.normalizeAngle(Math.PI - headingRad);
+        }
+
+        return headingRad;
+    }
 }

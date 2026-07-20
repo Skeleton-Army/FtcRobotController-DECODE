@@ -28,6 +28,7 @@ import org.firstinspires.ftc.teamcode.calculators.ShooterCalculator;
 import org.firstinspires.ftc.teamcode.commands.ShootCommand;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.calculators.IShooterCalculator;
+import org.firstinspires.ftc.teamcode.config.IntakeConfig;
 import org.firstinspires.ftc.teamcode.config.VisionConfig;
 import org.firstinspires.ftc.teamcode.consts.CloseShooterCoefficients;
 import org.firstinspires.ftc.teamcode.consts.FarShooterCoefficients;
@@ -141,7 +142,7 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.CROSS)
                 .whenPressed(new InstantCommand(() -> {
                     if (isShootingAllowed()) {
-                        schedule(new ShootCommand(shooter, intake, transfer, drive));
+                        schedule(new ShootCommand(shooter, intake, transfer, drive, gemsGoal ? IntakeConfig.SLOW_SHOOTING_POWER : IntakeConfig.SHOOTING_POWER, 2000));
                     } else {
                         gamepad1.rumble(300);
                         isOverrideActive = true;
