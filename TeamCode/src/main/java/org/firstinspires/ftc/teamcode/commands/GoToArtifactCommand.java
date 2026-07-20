@@ -1,8 +1,8 @@
 package org.firstinspires.ftc.teamcode.commands;
 
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.AVERAGE_APPROACH_VELOCITY;
-import static org.firstinspires.ftc.teamcode.config.VisionConfig.MAX_INTERCEPT_TIME;
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.MIN_DETECTION_CYCLES;
+import static org.firstinspires.ftc.teamcode.config.VisionConfig.PREDICTION_ITERATIONS;
 import static org.firstinspires.ftc.teamcode.utilities.Artifact.predictPose;
 
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -108,53 +108,15 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
     }
 
     private Pose predictInterceptPose(Artifact artifact) {
-        Pose robotPose = follower.getPose();
-        Pose artifactPose = artifact.getPose();
+        Pose predictedPose = artifact.getPose();
 
-        double dx = artifactPose.getX() - robotPose.getX();
-        double dy = artifactPose.getY() - robotPose.getY();
-        double vx = artifact.getVelocityX();
-        double vy = artifact.getVelocityY();
-
-        double t = solveInterceptTime(dx, dy, vx, vy);
-
-        return predictPose(artifact, t);
-    }
-
-    private double solveInterceptTime(double dx, double dy, double vx, double vy) {
-        double S = AVERAGE_APPROACH_VELOCITY;
-
-        double a = (vx * vx + vy * vy) - (S * S);
-        double b = 2 * (dx * vx + dy * vy);
-        double c = dx * dx + dy * dy;
-
-        double t;
-
-        if (Math.abs(a) < 1e-6) {
-            // |v| ≈ S: quadratic term vanishes, solve the remaining linear equation
-            t = Math.abs(b) < 1e-6 ? 0 : -c / b;
-        } else {
-            double discriminant = b * b - 4 * a * c;
-            if (discriminant < 0) {
-                // No real solution — e.g. artifact outrunning our approach speed.
-                // Don't extrapolate wildly; just aim at its current position.
-                t = 0;
-            } else {
-                double sqrtDisc = Math.sqrt(discriminant);
-                double t1 = (-b + sqrtDisc) / (2 * a);
-                double t2 = (-b - sqrtDisc) / (2 * a);
-
-                t = Double.POSITIVE_INFINITY;
-                if (t1 >= 0) t = Math.min(t, t1);
-                if (t2 >= 0) t = Math.min(t, t2);
-                if (Double.isInfinite(t)) t = 0;
-            }
+        for (int i = 0; i < PREDICTION_ITERATIONS; i++) {
+            double distance = follower.getPose().distanceFrom(predictedPose);
+            double estimatedTravelTime = distance / AVERAGE_APPROACH_VELOCITY;
+            predictedPose = predictPose(artifact, estimatedTravelTime);
         }
 
-        // Safety clamp: a noisy velocity spike should never be able to push the
-        // predicted pose an unreasonable distance ahead of where the artifact
-        // actually is.
-        return Math.max(0, Math.min(t, MAX_INTERCEPT_TIME));
+        return predictedPose;
     }
 
     private Pose getCorrectedPose(Pose predictedArtifactPose) {

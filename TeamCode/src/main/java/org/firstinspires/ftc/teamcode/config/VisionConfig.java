@@ -27,6 +27,6 @@ public class VisionConfig {
 
     //Pose prediction
     public static double AVERAGE_APPROACH_VELOCITY = 25.0; // inch/sec
-    public static double MAX_INTERCEPT_TIME = 1.0; // seconds - caps how far forward we extrapolate the artifact's position
+    public static int PREDICTION_ITERATIONS = 10;
     public static int MIN_DETECTION_CYCLES = 15;
 }
