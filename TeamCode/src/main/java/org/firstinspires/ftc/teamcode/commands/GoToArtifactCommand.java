@@ -1,8 +1,7 @@
 package org.firstinspires.ftc.teamcode.commands;
 
-import static org.firstinspires.ftc.teamcode.config.VisionConfig.AVERAGE_APPROACH_VELOCITY;
+import static org.firstinspires.ftc.teamcode.config.VisionConfig.APPROACH_TIME;
 import static org.firstinspires.ftc.teamcode.config.VisionConfig.MIN_DETECTION_CYCLES;
-import static org.firstinspires.ftc.teamcode.config.VisionConfig.PREDICTION_ITERATIONS;
 import static org.firstinspires.ftc.teamcode.utilities.Artifact.predictPose;
 
 import com.acmerobotics.dashboard.FtcDashboard;
@@ -69,7 +68,7 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
     }
 
     private PathChain buildPathFromArtifact(Artifact artifact) {
-        Pose predictedArtifactPose = predictInterceptPose(artifact);
+        Pose predictedArtifactPose = predictPose(artifact, APPROACH_TIME);
         Pose correctedPose = getCorrectedPose(predictedArtifactPose);
         if (correctedPose.getY() < 8) {
             correctedPose = new Pose(correctedPose.getX(), 8);
@@ -105,18 +104,6 @@ public class GoToArtifactCommand extends SequentialCommandGroup {
                 )
                 .setGlobalDeceleration()
                 .build();
-    }
-
-    private Pose predictInterceptPose(Artifact artifact) {
-        Pose predictedPose = artifact.getPose();
-
-        for (int i = 0; i < PREDICTION_ITERATIONS; i++) {
-            double distance = follower.getPose().distanceFrom(predictedPose);
-            double estimatedTravelTime = distance / AVERAGE_APPROACH_VELOCITY;
-            predictedPose = predictPose(artifact, estimatedTravelTime);
-        }
-
-        return predictedPose;
     }
 
     private Pose getCorrectedPose(Pose predictedArtifactPose) {

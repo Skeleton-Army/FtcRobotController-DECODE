@@ -26,7 +26,6 @@ public class VisionConfig {
     public static double VELOCITY_LOWPASS_ALPHA = 0.6;
 
     //Pose prediction
-    public static double AVERAGE_APPROACH_VELOCITY = 25.0; // inch/sec
-    public static int PREDICTION_ITERATIONS = 10;
+    public static double APPROACH_TIME = 1.5;
     public static int MIN_DETECTION_CYCLES = 15;
 }
