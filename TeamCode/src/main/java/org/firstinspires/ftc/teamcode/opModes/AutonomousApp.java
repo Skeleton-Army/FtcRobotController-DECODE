@@ -91,6 +91,7 @@ public class AutonomousApp extends ComplexOpMode {
 
     private Alliance alliance;
     private StartingPosition startingPosition;
+    private ShootingPosition shootingPosition;
     private List<Integer> pickupOrder;
     private boolean takeSpike;
     private boolean openGate;
@@ -223,7 +224,7 @@ public class AutonomousApp extends ComplexOpMode {
         Pose openGateEnd = getRelative(new Pose(15, 124));
 
         farDriveBack = getRelative(new Pose(71, 23.67));
-        middleDriveBack = (prompter.getOrDefault("shooting_position", ShootingPosition.CLOSE) == ShootingPosition.CLOSE)
+        middleDriveBack = (shootingPosition == ShootingPosition.CLOSE)
                 ? getRelative(new Pose(80, 105, Math.toRadians(200)))
                 : getRelative(new Pose(80, 65, Math.toRadians(180)));
         nearDriveBack = getRelative(new Pose(65.5, 119));
@@ -514,6 +515,7 @@ public class AutonomousApp extends ComplexOpMode {
     public void afterPrompts() {
         alliance = prompter.get("alliance");
         startingPosition = prompter.get("starting_position");
+        shootingPosition = prompter.getOrDefault("shooting_position", ShootingPosition.CLOSE);
         pickupOrder = prompter.getOrDefault("pickup_order", List.of());
         takeSpike = prompter.getOrDefault("take_spike", true);
         openGate = prompter.getOrDefault("open_gate", true);
@@ -526,7 +528,7 @@ public class AutonomousApp extends ComplexOpMode {
         IShooterCalculator shooterCalcFar = new ShooterCalculator(new FarShooterCoefficients());
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
 
-        if (startingPosition == StartingPosition.FAR) {
+        if (startingPosition == StartingPosition.FAR || shootingPosition == ShootingPosition.FAR) {
             shooter.setSOTMEnabled(false);
             shooter.setZoneCalculator(LaunchZone.FAR);
         }
