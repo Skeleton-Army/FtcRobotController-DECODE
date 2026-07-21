@@ -529,7 +529,6 @@ public class AutonomousApp extends ComplexOpMode {
         shooter = new Shooter(hardwareMap, follower.poseTracker, shooterCalcClose, shooterCalcFar, alliance);
 
         if (startingPosition == StartingPosition.FAR || shootingPosition == ShootingPosition.FAR) {
-            shooter.setSOTMEnabled(false);
             shooter.setZoneCalculator(LaunchZone.FAR);
         }
 
