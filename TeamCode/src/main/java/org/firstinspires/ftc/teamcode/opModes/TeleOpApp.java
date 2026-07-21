@@ -455,7 +455,7 @@ public class TeleOpApp extends ComplexOpMode {
     }
 
     private void resetPoseToGate() {
-        Pose newPose = new Pose(19, 127, Math.toRadians(180));
+        Pose newPose = new Pose(19, 127.5, Math.toRadians(180));
         if (alliance == Alliance.RED) {
             newPose = newPose.mirror(GoalPositions.FIELD_LENGTH);
         }
