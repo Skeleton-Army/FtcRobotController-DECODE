@@ -235,7 +235,7 @@ public class TeleOpApp extends ComplexOpMode {
                 .whenPressed(drive.goToBase());
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SHARE)
-                .whenPressed(drive.LoadingZoneCycle());
+                .whenPressed(this::resetPoseToGate);
 
 
 //        gamepadEx1.getGamepadButton(GamepadKeys.Button.LEFT_STICK_BUTTON)
@@ -447,6 +447,17 @@ public class TeleOpApp extends ComplexOpMode {
             newPose = new Pose(X_OFFSET, Y_OFFSET, Math.toRadians(0));
         } else {
             newPose = new Pose(GoalPositions.FIELD_LENGTH - X_OFFSET, Y_OFFSET, Math.toRadians(180));
+        }
+
+        follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
+        follower.startTeleopDrive(USE_BRAKE_MODE);
+        gamepad1.rumble(300);
+    }
+
+    private void resetPoseToGate() {
+        Pose newPose = new Pose(19, 127, Math.toRadians(180));
+        if (alliance == Alliance.RED) {
+            newPose = newPose.mirror(GoalPositions.FIELD_LENGTH);
         }
 
         follower.setPose(new Pose(newPose.getX(), newPose.getY(), newPose.getHeading()));
