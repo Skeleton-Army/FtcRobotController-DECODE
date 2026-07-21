@@ -175,17 +175,17 @@ public class TeleOpApp extends ComplexOpMode {
                         })
                 );
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
-                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_UP))
-                .whileActiveContinuous(
-                        new InstantCommand(() -> shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.05))
-                );
-
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
-                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_DOWN))
-                .whileActiveContinuous(
-                        new InstantCommand(() -> shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.05))
-                );
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_UP)
+//                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_UP))
+//                .whileActiveContinuous(
+//                        new InstantCommand(() -> shooter.setVerticalOffset(shooter.getVerticalOffset() + 0.05))
+//                );
+//
+//        gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_DOWN)
+//                .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_DOWN))
+//                .whileActiveContinuous(
+//                        new InstantCommand(() -> shooter.setVerticalOffset(shooter.getVerticalOffset() - 0.05))
+//                );
 
         gamepadEx1.getGamepadButton(GamepadKeys.Button.DPAD_LEFT)
                 .or(gamepadEx2.getGamepadButton(GamepadKeys.Button.DPAD_LEFT))
