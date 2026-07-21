@@ -214,7 +214,7 @@ public class TeleOpApp extends ComplexOpMode {
                         })
                 );
 
-        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5 && (matchTime.isLessThan(20) || debugMode))
+        new Trigger(() -> gamepadEx1.getTrigger(GamepadKeys.Trigger.LEFT_TRIGGER) > 0.5)
                 .toggleWhenActive(
                         new InstantCommand(() -> {
                             kickstand.raise();
