@@ -234,7 +234,7 @@ public class TeleOpApp extends ComplexOpMode {
         gamepadEx1.getGamepadButton(GamepadKeys.Button.SQUARE)
                 .whenPressed(drive.goToBase());
 
-        gamepadEx1.getGamepadButton(GamepadKeys.Button.SHARE)
+        gamepadEx1.getGamepadButton(GamepadKeys.Button.OPTIONS)
                 .whenPressed(this::resetPoseToGate);
 
 
