@@ -227,7 +227,7 @@ public class AutonomousApp extends ComplexOpMode {
         middleDriveBack = (shootingPosition == ShootingPosition.CLOSE)
                 ? getRelative(new Pose(80, 105, Math.toRadians(200)))
                 : getRelative(new Pose(80, 65, Math.toRadians(180)));
-        nearDriveBack = getRelative(new Pose(65.5, 119));
+        nearDriveBack = getRelative(new Pose(66.5, 120));
 
         nearPathsReturn[0] = this::nearDriveBack;
         nearPathsReturn[1] = this::nearDriveBack;
